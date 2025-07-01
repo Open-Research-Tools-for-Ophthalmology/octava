@@ -1,6 +1,6 @@
 # Octava
 ## Set-up
-Hi everyone, welcome to the repository, please clone the repository to your device first. When developing, please create a new feature branch from `dev`. Do not work on `main` branch directly (this helps prevent accidental merges). The `main` branch will be updated from `dev` periodically. 
+Hi everyone, welcome to the repository, please clone the repository to your device first. When developing, please create a new feature branch from `dev`. Do not work on `main` branch directly (this helps prevent accidental merges). And when creating pull requests, merge your feature branch into `dev`. The `main` branch can be updated from `dev` periodically. 
 
 Explanations of `main` and `dev`:
 	•	main: Production-ready code
