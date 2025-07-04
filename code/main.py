@@ -4,8 +4,6 @@ from tkinter import Label, filedialog, ttk, messagebox
 from pandas import read_excel
 from load_image import *
 
-
-
 def main():
     root = tk.Tk()
     root.title('Image Renamer')
@@ -19,8 +17,6 @@ def main():
     # #Create a label and a Button to Open the dialog
     # select_oct_file_button= ttk.Button(root, text="  Select a single OCT MIP  ", command= lambda: select_file(root))
     # select_oct_file_button.pack(ipadx=2, pady=8)
-
-
 
 
     root.mainloop()

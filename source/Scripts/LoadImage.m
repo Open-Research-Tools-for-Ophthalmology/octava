@@ -1,4 +1,7 @@
-%% This funtion allows the user to load a single OCT MIP into the app
+%% (Done by Mila)
+
+This funtion allows the user to load a single OCT MIP into the app
+%% 
 
 [Filename, Pathname] = uigetfile({'*.*'}, 'Select MIP');
 
