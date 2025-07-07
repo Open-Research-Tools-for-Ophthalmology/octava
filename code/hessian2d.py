@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import convolve
 
-def hessian_2d(I, sigma=1):
+def hessian_filter(I, sigma=1):
     """
     Compute the second-order derivatives (Hessian) of an image.
 
@@ -31,32 +31,35 @@ def hessian_2d(I, sigma=1):
     return Dxx, Dxy, Dyy
 
 
+def main():
+    # Testing
+    from skimage import io, img_as_float
+    import matplotlib.pyplot as plt
 
-# Testing
-from skimage import io, img_as_float
-import matplotlib.pyplot as plt
+    # Load grayscale image
+    image = img_as_float(io.imread('/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/LEI/to_be_rename/MILA_renamed/test/5000.tif', as_gray=True))
 
-# Load grayscale image
-image = img_as_float(io.imread('/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/LEI/to_be_rename/MILA_renamed/test/5000.tif', as_gray=True))
+    # Check shape and range
+    print(image.shape, image.min(), image.max())
 
-# Check shape and range
-print(image.shape, image.min(), image.max())
+    Dxx, Dxy, Dyy = hessian_filter(image, sigma=2)
 
-Dxx, Dxy, Dyy = hessian_2d(image, sigma=2)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    axes[0].imshow(Dxx, cmap='gray')
+    axes[0].set_title('Dxx (∂²I/∂x²)')
 
-axes[0].imshow(Dxx, cmap='gray')
-axes[0].set_title('Dxx (∂²I/∂x²)')
+    axes[1].imshow(Dxy, cmap='gray')
+    axes[1].set_title('Dxy (∂²I/∂x∂y)')
 
-axes[1].imshow(Dxy, cmap='gray')
-axes[1].set_title('Dxy (∂²I/∂x∂y)')
+    axes[2].imshow(Dyy, cmap='gray')
+    axes[2].set_title('Dyy (∂²I/∂y²)')
 
-axes[2].imshow(Dyy, cmap='gray')
-axes[2].set_title('Dyy (∂²I/∂y²)')
+    for ax in axes:
+        ax.axis('off')
 
-for ax in axes:
-    ax.axis('off')
+    plt.tight_layout()
+    plt.show()
 
-plt.tight_layout()
-plt.show()
+if __name__ == "__main__":
+    main()
