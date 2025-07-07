@@ -14,7 +14,8 @@ function [Dxx,Dxy,Dyy] = Hessian2D(I,Sigma)
 %   Dxx, Dxy, Dyy: The 2nd derivatives
 
 
-if nargin < 2, Sigma = 1; end
+if nargin < 2, Sigma = 1; end 
+% "If the function was called with fewer than 2 input arguments, set Sigma to 1."
 
 % Make kernel coordinates
 [X,Y]   = ndgrid(-round(3*Sigma):round(3*Sigma));
