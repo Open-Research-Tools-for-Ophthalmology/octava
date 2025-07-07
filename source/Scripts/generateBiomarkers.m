@@ -1,3 +1,4 @@
+// File Path Selection and Initialization
 if Batch
     dir = app.batchSaveFile;
     app.biomarkers.name = app.FileLabelName;
@@ -5,13 +6,14 @@ if Batch
 else
     dir = app.singleSaveFile;
 end
-
+// Process the CSV file name
 app.biomarkers.name = app.FileLabelName;
 app.csvFile = char(app.csvFile);
 if ~(app.csvFile(end) == 'v')
     app.csvFile = app.csvFile(1:end-1);
 end
     
+// Extract image number suffix from the filename
 inds= strfind(app.csvFile,'Table');
 inds2= strfind(app.csvFile,'.');
 imgnum = app.csvFile(inds+6:inds2-1);
@@ -19,12 +21,12 @@ if ~isempty(imgnum)
     imgnum = ['-' imgnum ];
 end
 
-
+// Pixel to Millimeter Conversion
 [Nx, ~] = size(app.BinaryImage);
 pix_to_mm = app.RealImageSizemm.Value/Nx; %This assumes images are square - we may want to update this! 
 
 
-
+// Reading Excel Table and Converting Units
 %LoadDiameterTable - Loads the diameter, length, and tortuosity
 %of each identified vessel in the image 
 DiamTableFile = [dir '\CSVs\' app.csvFile];
