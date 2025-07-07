@@ -18,7 +18,7 @@ function B=shiftmat(A,n,dim,pad)
 %      PAD must be scalar valued.
 %
 
-
+// Argument Validation and Defaults
 error(nargchk(1,4,nargin))
 if nargin<2, n=0;end                    %do nothing
 if isempty(n), n=0;end
@@ -28,12 +28,16 @@ if nargin<3, dim=1;end                  %rotate row vectors
 if dim<1, dim=ndims(A)+1;end            %if less than one, do nothing
 if nargin<4, pad=0;end                  %trailing elements are zeros as default
 if prod(size(pad))~=1, error('PAD must be a scalar.'),end
+// Permutation Vector and Early Return
 dims=[dim:max(ndims(A),dim) 1:dim-1];
 if dims(1)<=ndims(A) & n
+   // Permute and Reshape to 2D
    A=permute(A,dims);                             %move dimension to front
    sizA=size(A);                                  %get dimension sizes
    A=reshape(A,[sizA(1) prod(sizA(2:end))]);      %reshape to a 2-D matrix
+   // Determine Rows to Keep
    idx=1:sizA(1);                                 %the row indices
+   // Pad with pad Value
    if n<0
       idx=idx(1-n:end);                           %remove low valued indices
       B=A(idx,:);                                 %truncate matrix
@@ -43,6 +47,7 @@ if dims(1)<=ndims(A) & n
       B=A(idx,:);                                 %truncate matrix
       B=[pad*ones(min(n,sizA(1)),prod(sizA(2:end)));B];     %pad with zeros (or PAD)
    end
+   // Restore Shape and Axis Order
    B=reshape(B,[size(B,1) sizA(2:end)]);          %back to previous shape minus removed vectors
    B=ipermute(B,dims);                            %replace dimensions to initial location
 else
