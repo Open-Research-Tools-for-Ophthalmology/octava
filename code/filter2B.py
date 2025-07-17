@@ -29,5 +29,5 @@ def filter2B(h:np.ndarray, I:np.ndarray)->np.ndarray:
     Ny= My//2
 
     I_expanded = im_expand(I,Nx,Ny)
-    I2=correlate2d(I_expanded, h,mode='valid')
+    I2=correlate2d(I_expanded, h,mode='valid') #valid mode returns those values without padding
     return I2
