@@ -1,7 +1,21 @@
 from hessian2d import hessian_filter
 import numpy as np
 
-def eig2im(Dxx, Dxy, Dyy):
+def eig2im(Dxx:np.ndarray, Dxy:np.ndarray, Dyy:np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute the eigenvalues and eigenvectors of the Hessian matrix at each pixel.
+
+    Parameters:
+    - Dxx: Second-order derivative in the x direction
+    - Dxy: Second-order mixed derivative
+    - Dyy: Second-order derivative in the y direction
+
+    Returns:
+    - X: x-component of the dominant eigenvector
+    - Y: y-component of the dominant eigenvector
+    - m2: Eigenvalue of the dominant direction (larger absolute value)
+    - m1: Eigenvalue of the orthogonal direction (smaller absolute value)
+    """
     tmp = np.sqrt((Dxx - Dyy)**2 + 4 * Dxy**2)
 
     eig1 = 0.5 * (Dxx + Dyy + tmp)
@@ -29,9 +43,25 @@ def eig2im(Dxx, Dxy, Dyy):
     return X, Y, m2, m1
 
 
-def frangi_2Dfilter(X, opts):
-    """Equivalent to MATLAB's frangi_2Dfilter.m"""
+def frangi_2Dfilter(X:np.ndarray, opts:dict) -> np.ndarray:
+    """
+    Apply Frangi vesselness filter to a 2D grayscale image across multiple scales.
 
+    This function enhances tubular or vessel-like structures in the input image
+    by computing the Hessian matrix at multiple Gaussian scales and evaluating
+    a vesselness measure based on eigenvalue analysis.
+
+    Parameters:
+    - X (np.ndarray): 2D grayscale input image
+    - opts (dict): Dictionary of options with keys:
+        - 'sigmarange': tuple(float, float), range of sigma values
+        - 'sigmastepsize': float, step size for sigma
+        - 'correctionconst1': float, Frangi filter parameter (beta)
+        - 'correctionconst2': float, Frangi filter parameter (c)
+
+    Returns:
+    - Y (np.ndarray): 2D image with vesselness response (same shape as X)
+    """
     # Generate array of sigma values (scales) for multi-scale filtering
     sigmas = np.arange(opts['sigmarange'][0],
                        opts['sigmarange'][1] + opts['sigmastepsize'],
