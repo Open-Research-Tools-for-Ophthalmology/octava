@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import convolve
 
-def hessian_filter(I, sigma=1):
+def hessian_filter(I:np.ndarray, sigma:float=1)-> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the second-order derivatives (Hessian) of an image.
 
