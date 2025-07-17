@@ -3,7 +3,7 @@ from scipy.ndimage import uniform_filter
 from skimage.util import invert
 from skimage import img_as_float
 
-def adaptivethresholding_matlab_style(X, w):
+def adaptive_thresholding(X:np.ndarray, w:int) -> np.ndarray:
     """
     Adaptive thresholding closely replicating MATLAB's method using:
     - Local mean subtraction
