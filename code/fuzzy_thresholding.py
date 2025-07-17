@@ -3,7 +3,18 @@ from scipy.ndimage import median_filter, convolve
 from skfuzzy.cluster import cmeans
 
 
-def fuzzy_thresholding(X, nth, w):
+def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
+    """
+    Perform fuzzy thresholding on an input image using Fuzzy C-Means clustering and trapezoidal fuzzy membership functions, followed by median filtering.
+
+    Parameters:
+    - X: 2D numpy array (grayscale image)
+    - nth: Number of fuzzy thresholds (clusters)
+    - w: Window size for median filtering
+
+    Returns:
+    - Y: 2D numpy array of class labels (1-based) for each pixel
+    """
     X = X.astype(np.float64)
 
     # Normalize the image using mean ± 2*std range
@@ -53,7 +64,17 @@ def fuzzy_thresholding(X, nth, w):
     return Y
 
 
-def gaussian_kernel(size, sigma):
+def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
+    """
+    Generate a 2D Gaussian kernel.
+
+    Parameters:
+    - size: The width and height of the square kernel (must be an odd number for symmetry).
+    - sigma: The standard deviation of the Gaussian distribution.
+
+    Returns:
+    - A 2D NumPy array representing the normalized Gaussian kernel.
+    """
     # Create a 1D array of evenly spaced values from -size//2 to size//2
     ax = np.linspace(-(size // 2), size // 2, size)
     # Create 2D coordinate grids from the 1D array (meshgrid of x and y)
@@ -65,6 +86,16 @@ def gaussian_kernel(size, sigma):
 
 
 def smooth_function(h, X):
+    """
+    Apply 2D convolution to smooth the input image using the given kernel, with edge padding handled by mirrored expansion.
+
+    Parameters:
+    - h: 2D NumPy array representing the convolution kernel (e.g., Gaussian filter)
+    - X: 2D NumPy array representing the input image
+
+    Returns:
+    - A 2D NumPy array of the same shape as X, containing the smoothed image
+    """
     Mx, My = h.shape
     nx = (Mx - 1) // 2
     ny = (My - 1) // 2
@@ -73,7 +104,18 @@ def smooth_function(h, X):
     return fXe[nx:-nx, ny:-ny]
 
 
-def iexpansion(X, nx, ny):
+def iexpansion(X:np.ndarray, nx:int, ny:int) -> np.ndarray:
+    """
+    Expand the input image by mirroring its borders.
+
+    Parameters:
+    - X: 2D NumPy array (input image or matrix)
+    - nx: Number of rows to expand at the top and bottom
+    - ny: Number of columns to expand at the left and right
+
+    Returns:
+    - A 2D NumPy array with mirrored padding added on all sides
+    """
     Xn = np.flipud(X)[-nx:, :]
     Xs = np.flipud(X)[:nx, :]
     Xe = np.fliplr(X)[:, :ny]
@@ -92,7 +134,22 @@ def iexpansion(X, nx, ny):
     return np.vstack((top, mid, bot))
 
 
-def trapezoid_fuzzy_membership(x, a, b, c, d):
+def trapezoid_fuzzy_membership(x:np.ndarray, a:float, b:float, c:float, d:float) -> np.ndarray:
+    """
+    Compute the trapezoidal fuzzy membership values for input x.
+
+    Parameters:
+    - x: Input NumPy array
+    - a, b, c, d: Float parameters defining the shape of the trapezoid.
+      The membership function is:
+        - 0 for x <= a or x >= d
+        - Linearly increases from 0 to 1 between a and b
+        - 1 between b and c
+        - Linearly decreases from 1 to 0 between c and d
+
+    Returns:
+    - y: NumPy array of membership values in [0, 1], same shape as x
+    """
     x = x.astype(np.float64)
     y = np.zeros_like(x)
 
