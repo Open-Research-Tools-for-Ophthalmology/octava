@@ -14,11 +14,13 @@ function I_out=im_expand(I,Nx,Ny)
 %
 
 Ir=flipdim(I,1);
-I_N=Ir(end-(Nx-1):end,:);
+I_N=Ir(end-(Nx-1):end,:); % from row (end-(Nx-1)) to end
 I_S=Ir(1:Nx,:);
+
 Ir=flipdim(I,2);
 I_E=Ir(:,1:Ny);
 I_W=Ir(:,end-(Ny-1):end);
+
 Ir=flipdim(Ir,1);
 I_NE=Ir(end-(Nx-1):end,1:Ny);
 I_NO=Ir(end-(Nx-1):end,end-(Ny-1):end);
