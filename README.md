@@ -7,4 +7,4 @@ Explanations of `main` and `dev`:
 	•	dev: Stable development integration branch
 
 
-Source code is placed under the folder `source` for the ease of development (please try not to change the source files), please place our Python code in the folder `code`.
+Source code is placed under the folder `source` for the ease of development (please try not to change the source code if unnecessary), please place our Python code in the folder `code`.
