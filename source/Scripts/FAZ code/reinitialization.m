@@ -14,7 +14,7 @@ for i=1:10
     G(pos) = sqrt(max(max(a(pos),0).^2 , min(b(pos),0).^2) + max(max(c(pos),0).^2 , min(d(pos),0).^2)) - 1;
     G(neg) = sqrt(max(min(a(neg),0).^2 , max(b(neg),0).^2) + max(min(c(neg),0).^2 , max(d(neg),0).^2)) - 1;
     S = phi./abs(phi + eps);
-    phi = phi - dt*S.*G;
+    phi = phi - dt*S.*G; % element-wise 
 
     % Stop iteration
     ind = find(abs(phi)<=1);
