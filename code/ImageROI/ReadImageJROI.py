@@ -22,6 +22,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+
+''' 
+COMMENTS:
+- I am not sure when this function is used. OCTAVA supports user defined ROIs using matlab 
+tools and a separate GUI, but it seems it can also support uploading ROIs straight from 
+Image J. I'll look into this later
+'''
+
+
 import os
 import struct
 import numpy as np
