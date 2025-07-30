@@ -1,10 +1,8 @@
-# backend_ROI.py
 """
 Backend logic for GUI-based ROI cropping and management.
 This module implements the Python equivalent logic for the `doneButtonPushed` MATLAB callback,
 cropping an image based on user-selected ROI properties.
 """
-
 import numpy as np
 from typing import Tuple, Dict, Any, Optional
 
@@ -100,11 +98,13 @@ class ROIProcessor:
         self.fullImSizePix = full_size
         self.FAZ_ctr = ctr
 
+        # these returns are not produced by gpt just 'cause, they are part of the original implementation
+        # I just need to figure out where to use which...
         return {
             "cropped_image": cropped,
-            "fullImSizePix": full_size,
-            "FAZ_ctr": ctr,
-            "imgShape": self.roi_shape
+            "fullImSizePix": full_size, # this can be used to display in the GUI what was the size of the selected ROI
+            "FAZ_ctr": ctr, # center with respect to ROI, but i'm not sure what is the purpose of this one..
+            "imgShape": self.roi_shape # Handy for user feedback, debugging, or saving processing steps.
         }
 
     def get_current_roi_size(self) -> Dict[str, Any]:
@@ -128,5 +128,3 @@ class ROIProcessor:
             }
         else:
             return {}
-
-    # If you later want to add pixel<->mm conversion, you can add method(s) here.
