@@ -35,31 +35,32 @@ class ROISelectorApp:
         self.setup_canvas()
 
     def setup_controls(self):
-        '''
-        Creates a left pannel with the buttons
-        Defines the buttons and assigns their respective functions
-        Adds text labels
-        '''
         control_frame = tk.Frame(self.root)
         control_frame.pack(side='left', fill='y')
 
-        tk.Button(control_frame, text="Open Image", command=self.open_image).pack(fill='x', pady=2) # will remove later
-        tk.Label(control_frame, text="ROI shape:").pack(anchor='w')
+        # All your top widgets here...
+        tk.Button(control_frame, text="Open Image", command=self.open_image).pack(fill='x', pady=2)
         ttk.Radiobutton(control_frame, text='Rectangle', variable=self.roi_shape, value='Rectangle', command=self.change_roi_shape).pack(anchor='w')
         ttk.Radiobutton(control_frame, text='Round', variable=self.roi_shape, value='Round', command=self.change_roi_shape).pack(anchor='w')
         tk.Button(control_frame, text="Start ROI", command=self.start_roi).pack(fill='x', pady=2)
         tk.Button(control_frame, text="Clear ROI", command=self.clear_roi).pack(fill='x', pady=2)
-        tk.Button(control_frame, text="Done", command=self.done).pack(fill='x', pady=2)
-        tk.Button(control_frame, text="Cancel", command=self.root.quit).pack(fill='x', pady=2)
         tk.Label(control_frame, text="ROI Size:").pack(anchor='w')
-
         self.label_roi_size = tk.Label(control_frame, text="N/A", bg='white')
         self.label_roi_size.pack(fill='x', pady=5)
-
         ttk.Checkbutton(control_frame, text="Show size in mm", variable=self.use_mm, command=self.update_roi_label).pack(anchor='w')
-
         tk.Label(control_frame, text="Img width (mm):").pack(anchor='w')
         tk.Entry(control_frame, textvariable=self.img_width_mm).pack(fill='x', pady=2)
+        
+        # Add a stretchable spacer (optional, for aesthetics)
+        spacer = tk.Label(control_frame)
+        spacer.pack(side='top', fill='both', expand=True)
+
+        # Bottom frame for action buttons
+        bottom_frame = tk.Frame(control_frame)
+        bottom_frame.pack(side='bottom', fill='x', pady=(10, 0))  
+
+        tk.Button(bottom_frame, text="Done", command=self.done).pack(fill='x', pady=2)
+        tk.Button(bottom_frame, text="Cancel", command=self.root.quit).pack(fill='x', pady=2)
 
     def setup_canvas(self):
         '''
@@ -135,10 +136,6 @@ class ROISelectorApp:
         self.canvas.draw()
 
     def clear_roi(self):
-        '''
-        Sets currently active matplotlib's figure selector off
-        Cleans the previous ROI coordinates
-        '''
         if self.rect_selector:
             self.rect_selector.set_active(False)
             self.rect_selector = None
@@ -148,6 +145,7 @@ class ROISelectorApp:
         self.rect_info = None
         self.circle_info = None
         self.label_roi_size.config(text="N/A")
+        self.show_image()  # this clears and redraws image, removing old overlays!
         self.canvas.draw()
 
     def on_select_rect(self, eclick, erelease):
@@ -181,14 +179,18 @@ class ROISelectorApp:
         Just updates info for LABEL, doesn't draw new circles
         '''
         if self.ellipse_selector:
-            xc, yc = self.ellipse_selector.center
-            w, h = self.ellipse_selector.width, self.ellipse_selector.height
+            x0, x1, y0, y1 = self.ellipse_selector.extents
+            xc = (x0 + x1) / 2
+            yc = (y0 + y1) / 2
+            w = abs(x1 - x0)
+            h = abs(y1 - y0)
             r = int(round((w + h) / 4))
-            self.circle_info = {
+            circle = {
                 "cx": int(xc),
                 "cy": int(yc),
                 "r": r
             }
+            self.circle_info = circle
             self.update_roi_label()
             self.canvas.draw()
 
@@ -252,8 +254,11 @@ class ROISelectorApp:
 
         # Elipse
         elif roi_shape == 'round' and self.ellipse_selector:
-            xc, yc = self.ellipse_selector.center
-            w, h = self.ellipse_selector.width, self.ellipse_selector.height
+            x0, x1, y0, y1 = self.ellipse_selector.extents
+            xc = (x0 + x1) / 2
+            yc = (y0 + y1) / 2
+            w = abs(x1 - x0)
+            h = abs(y1 - y0)
             r = int(round((w + h) / 4))
             circle = {
                 "cx": int(xc),
