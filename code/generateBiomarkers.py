@@ -1,11 +1,31 @@
-# joshua is working on task5
+from typing import Any
 import os
 import numpy as np
 import pandas as pd
 import zipfile
 import matplotlib.pyplot as plt
 
-def compute_biomarkers(app, Batch: bool):
+def compute_biomarkers(app: Any, Batch: bool) -> None:
+    """
+    Compute a series of vascular biomarkers from the provided image data,
+    update the application state, and display results in the UI.
+
+    Parameters
+    ----------
+    app : Any
+        The application object providing:
+        - batchSaveFile or singleSaveFile paths
+        - csvFile and FileLabelName attributes
+        - BinaryImage (numpy array) and RealImageSizemm.Value for scaling
+        - biomarkers (dict), biomarkers_counter (int), biomarkers_cumulative (list)
+        - UI labels for displaying results (e.g., VesselAreaDensityLabel.Text)
+    Batch : bool
+        If True, process a batch directory; otherwise, process a single file.
+
+    Returns
+    -------
+    None
+    """
     # File Path Selection and Initialization
     dir_path = app.batchSaveFile if Batch else app.singleSaveFile
     app.biomarkers['name'] = app.FileLabelName
@@ -72,7 +92,7 @@ def compute_biomarkers(app, Batch: bool):
         'BD':          BD,
     })
 
-    # Display results - caluclulated biomarkers
+    # Display results - calculated biomarkers
     app.VesselAreaDensityLabel.Text    = f"Vessel Area Density = {VAD:.4f}"
     app.VesselLengthDensityLabel.Text  = f"Vessel Length Density = {VLD:.4f} (1/mm)"
     app.MeanDiameterLabel.Text         = f"Mean Diameter = {mean_diam:.2f} µm"
