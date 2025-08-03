@@ -1,6 +1,18 @@
 import numpy as np
 
-def shiftmat(A, n=0, dim=0, pad=0):
+def shiftmat(A: np.ndarray, n: int = 0, dim: int = 0, pad: int | float = 0) -> np.ndarray:
+    """
+    Shift the entries of an array along a specified dimension, padding with a constant value.
+
+    Parameters:
+        A (np.ndarray): Input array to shift.
+        n (int): Number of positions to shift. Positive shifts towards higher indices, negative towards lower.
+        dim (int): Axis along which to shift. Defaults to 0 (first axis).
+        pad (int | float): Scalar value used to fill the vacated positions. Defaults to 0.
+
+    Returns:
+        np.ndarray: A new array of the same shape as A with entries shifted and padded.
+    """
     # Argument Validation & Defaults
     A = np.asarray(A)
 
