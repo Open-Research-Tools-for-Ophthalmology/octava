@@ -2,6 +2,7 @@ function K = curvature(I)
 
 [m,n]=size(I);
 
+% I(1:m,2)-I(1:m,1) this computes the change from column 1 to column 2, for each row
 phix = [I(1:m,2)-I(1:m,1) 1/2*(I(1:m,3:n)-I(1:m,1:n-2)) I(1:m,n)-I(1:m,n-1)];
 phiy = [I(2,1:n)-I(1,1:n);1/2*(I(3:m,1:n)-I(1:m-2,1:n));I(m,1:n)-I(m-1,1:n)];
 
