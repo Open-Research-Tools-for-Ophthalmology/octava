@@ -1,3 +1,4 @@
+# Checked and tested
 import numpy as np
 
 def reinitialization(phi: np.ndarray, dt: float) -> np.ndarray:
