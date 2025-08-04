@@ -20,7 +20,7 @@ for i=1:10
     ind = find(abs(phi)<=1);
     M = length(ind);
     Q = sum(abs(phi(ind) - old(ind)))./M;
-    if Q <= dt*1^2
+    if Q <= dt*1^2 %? could this be an error?
         return;
     end
 end
