@@ -10,12 +10,16 @@ function Y=fuzzy_thresholding(X,nth,w)
 % X must be a 2-dimensional grayscale image 
 % 
 %
+% Convert the image to double for precise operations
 X=double(X);
 
+% Normalise the iamge
 sigmaX=std(X(:));              
 muX=mean(X(:));
 norma=max(X((X>(muX-2.*sigmaX))&(X<(muX+2.*sigmaX))));
 X=X./norma;
+
+% Use a Gaussian filter to smooth the image
 h=fspecial('gaussian', 11, 1.5);
 gX= smooth_function(h,X);
 
@@ -25,7 +29,7 @@ max_gX=max(gX(:));
 min_gX=min(gX(:));
 Xfcm=sort(Xfcm);
 
-for imax=1:nth
+for imax=1:nth % for each region
     if imax==1 %First set
         a1=min_gX;
         a2=min_gX;
@@ -42,13 +46,14 @@ for imax=1:nth
         a3=Xfcm(imax);
         a4=Xfcm(imax+1);
     end
-
+    
+    % for each cluster, constructs a trapezoidal fuzzy membership function
     Xtrap=trapezoid_fuzzy_memberhip(X,a1,a2,a3,a4);
     Xtrap3(:,:,imax)=Xtrap; 
 end 
    
 [~, ~, n3]=size(Xtrap3);
-for ii=1:n3
+for ii=1:n3  % local median filtering
     medXtrap3(:,:,ii)=medfilt2(Xtrap3(:,:,ii),[w,w]);
 end
 [~, Y]=max(medXtrap3,[],3);

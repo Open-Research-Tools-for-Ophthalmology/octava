@@ -1,3 +1,5 @@
+% Mila is working on this
+
 %Function for binarizing image in apptest 2
 function [Im]= BinarizeImage(app,Im)
 %%Load info 
@@ -35,7 +37,5 @@ end
 
 Im(Im==Im(rr,cc)) = 255;
 Im(Im~=Im(rr,cc)) = 0;
-
-
 
 
