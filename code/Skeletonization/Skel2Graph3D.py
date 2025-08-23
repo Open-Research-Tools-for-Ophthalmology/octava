@@ -4,7 +4,7 @@ from scipy.ndimage import label, generate_binary_structure
 from skimage.measure import label as skimage_label
 from pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
 
-def skel2graph3d(skel, THR, early_return = 0):
+def skel2graph3d(skel, THR):
     """
     Calculate the network graph of a 3D voxel skeleton.
 
@@ -163,17 +163,6 @@ def skel2graph3d(skel, THR, early_return = 0):
             link_cands = np.intersect1d(link_cands, cans_all[:,0]) if cans_all.shape[0] > 0 else []
 
             for cand in link_cands:
-                temp_dict_obj = {
-                    "skel2" : skel2,
-                    "node" : node,
-                    "i" : i,
-                    "j" : j,
-                    "cand" : cand,
-                    "cans_all" : cans_all,
-                    "c2n": c2n
-                }
-                if early_return:
-                    return temp_dict_obj
                 vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n)
                 skel2.flat[np.array(vox)[1:-1]] = 0
 

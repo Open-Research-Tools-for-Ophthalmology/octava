@@ -1,6 +1,6 @@
 import numpy as np
 
-def pk_follow_link(skel, node, k, j, idx, cans, c2n, max_iter=10000, debug=True):
+def pk_follow_link(skel, node, k, j, idx, cans, c2n, max_iter=10000, debug=False):
     vox = []
     n_idx = None
     ep = 0
