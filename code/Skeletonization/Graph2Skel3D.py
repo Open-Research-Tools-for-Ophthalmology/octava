@@ -22,6 +22,13 @@ def graph2skel3d(node, link, w, l, h):
             # collect all points from its links
             pts = []
             for li in n['links']:
+                print("\n\n\n")
+                print("Type of li: ", type(li))
+                print("Type of link: ", type(link)) # list of dictionaries
+                print("This is link: ", link)
+                print("Type of link[li]: ", type(link[li])) # should be a dictionary
+                print("This is link[li]: ", link[li])
+                print("type of link[li]['point']: ", type(link[li]['point']))
                 if li >= 0:
                     pts.extend(link[li]['point'])
             if pts:

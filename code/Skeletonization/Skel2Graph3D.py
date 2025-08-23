@@ -4,7 +4,7 @@ from scipy.ndimage import label, generate_binary_structure
 from skimage.measure import label as skimage_label
 from pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
 
-def skel2graph3d(skel, THR):
+def skel2graph3d(skel, THR, debug = False):
     """
     Calculate the network graph of a 3D voxel skeleton.
 
@@ -98,7 +98,7 @@ def skel2graph3d(skel, THR):
         x, y, z = np.unravel_index(idxs, (w,l,h))
         node.append({
             'idx': idxs.tolist(),
-            'links': [],
+            'links': [], # indices to access each link's metadata (defined below)
             'conn': [],
             'comx': float(np.mean(x)),
             'comy': float(np.mean(y)),
@@ -120,7 +120,7 @@ def skel2graph3d(skel, THR):
         # create node structure for endpoints (node metadata)
         node.append({
             'idx': idxs.tolist(),
-            'links': [],
+            'links': [], # indices to access each link's metadata (defined below)
             'conn': [],
             'comx': float(np.mean(x)),
             'comy': float(np.mean(y)),
@@ -163,6 +163,8 @@ def skel2graph3d(skel, THR):
             link_cands = np.intersect1d(link_cands, cans_all[:,0]) if cans_all.shape[0] > 0 else []
 
             for cand in link_cands:
+                # if debug:
+                #     vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n, debug = True)
                 vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n)
                 skel2.flat[np.array(vox)[1:-1]] = 0
 
@@ -179,10 +181,23 @@ def skel2graph3d(skel, THR):
                     node[n_idx]['links'].append(l_idx)
                     node[n_idx]['conn'].append(int(i))
                     l_idx += 1
-            # If short branches allowed
+            # If short branches allowed (2 connected pixels)
+            iter = 0 # remove later
             if THR == 0:
+                if debug:
+                    print("\n\n")
+                    print("==== DEBUGGING SKEL2GRAPH3D WHEN THR IS 0 ===")
+                    print("Ep_cands: ", ep_cands)
+                    print("Len of ep_cands: ", len(ep_cands))
+                    print("Type of ep_cands: ", type(ep_cands))
                 for ep_cand in ep_cands:
-                    n_idx = skel2.flat[ep_cand]-1
+                    if debug:
+                        print(f"--- Iter count: {iter} ---: ")
+                        print("Current ep_cand: ", ep_cand)
+                        print("Type of ep_cand: ", type(ep_cand))
+                        print("Current n_idx: ", n_idx)
+                        print("current l_idx: ",l_idx)
+                    n_idx = skel2.flat[ep_cand]
                     if n_idx and n_idx != i:
                         skel2.flat[ep_cand] = 0
                         link.append({
@@ -196,6 +211,7 @@ def skel2graph3d(skel, THR):
                         node[int(n_idx)]['links'].append(l_idx)
                         node[int(n_idx)]['conn'].append(int(i))
                         l_idx += 1
+                    iter += 1
 
     # Mark single-link nodes as endpoints
     if node:
