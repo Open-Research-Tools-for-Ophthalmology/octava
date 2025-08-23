@@ -53,6 +53,9 @@ def BinarizeImage(app, Im:np.ndarray) -> np.ndarray:
     Im[Im == vessel_value] = 255
     Im[Im != 255] = 0
 
+    # make sure to return consistent output type
+    Im = Im.astype(np.float32)
+    
     return Im
 
 

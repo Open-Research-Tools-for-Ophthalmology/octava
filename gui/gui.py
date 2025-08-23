@@ -10,7 +10,7 @@ import os
 
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/build/assets/frame0")
+ASSETS_PATH = OUTPUT_PATH / Path("./assets/frame0")
 
 
 def relative_to_assets(path: str) -> Path:
