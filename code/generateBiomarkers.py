@@ -2,125 +2,77 @@ from typing import Any
 import os
 import numpy as np
 import pandas as pd
-import zipfile
 import matplotlib.pyplot as plt
 
+
 def compute_biomarkers(app: Any, Batch: bool) -> None:
-    """
-    Compute a series of vascular biomarkers from the provided image data,
-    update the application state, and display results in the UI.
+    if Batch:
+        dir_path = app.batchSaveFile  # dir = app.batchSaveFile
+        app.biomarkers['name'] = app.FileLabelName  # app.biomarkers.name = app.FileLabelName
+    else:
+        dir_path = app.singleSaveFile  # dir = app.singleSaveFile
 
-    Parameters
-    ----------
-    app : Any
-        The application object providing:
-        - batchSaveFile or singleSaveFile paths
-        - csvFile and FileLabelName attributes
-        - BinaryImage (numpy array) and RealImageSizemm.Value for scaling
-        - biomarkers (dict), biomarkers_counter (int), biomarkers_cumulative (list)
-        - UI labels for displaying results (e.g., VesselAreaDensityLabel.Text)
-    Batch : bool
-        If True, process a batch directory; otherwise, process a single file.
+    app.biomarkers['name'] = app.FileLabelName  # repeat assignment as in MATLAB
 
-    Returns
-    -------
-    None
-    """
-    # File Path Selection and Initialization
-    dir_path = app.batchSaveFile if Batch else app.singleSaveFile
-    app.biomarkers['name'] = app.FileLabelName
+    app.csvFile = str(app.csvFile)  # app.csvFile = char(app.csvFile)
+    if not app.csvFile.endswith('v'):
+        app.csvFile = app.csvFile[:-1]  # if ~(app.csvFile(end) == 'v') then trim last char
 
-    # Process the CSV file name
-    csv_file = str(app.csvFile)
-    if not csv_file.endswith('v'):
-        csv_file = csv_file[:-1]  # Remove last character if it's not 'v'
+    inds = app.csvFile.find('Table')  # inds = strfind(app.csvFile,'Table')
+    inds2 = app.csvFile.find('.')  # inds2 = strfind(app.csvFile,'.')
+    if inds != -1 and inds2 != -1 and inds2 > inds + 6:
+        imgnum = app.csvFile[inds + 6:inds2]  # imgnum = app.csvFile(inds+6:inds2-1)
+    else:
+        imgnum = ''
+    if imgnum:  # if ~isempty(imgnum)
+        imgnum = f"-{imgnum}"  # imgnum = ['-' imgnum ]
 
-    # Extract image number suffix from the filename
-    imgnum = ''
-    if 'Table' in csv_file and '.' in csv_file:
-        start = csv_file.index('Table') + len('Table')
-        end = csv_file.rindex('.')
-        num = csv_file[start:end]
-        if num:
-            imgnum = f"-{num}"
+    Nx, _ = app.BinaryImage.shape  # [Nx, ~] = size(app.BinaryImage)
+    pix_to_mm = app.RealImageSizemm.Value / Nx  # assumes square image
 
-    # Pixel to Millimeter Conversion
-    Nx, _ = app.BinaryImage.shape
-    pix_to_mm = app.RealImageSizemm.Value / Nx
+    diam_table_path = os.path.join(dir_path, 'CSVs', app.csvFile)  # DiamTableFile = [dir '\CSVs\' app.csvFile]
+    if app.csvFile.lower().endswith('.csv'):
+        DiamTable = pd.read_csv(diam_table_path, header=None).to_numpy()  # xlsread for CSV
+    else:
+        DiamTable = pd.read_excel(diam_table_path, header=None).to_numpy()  # xlsread for Excel
 
-    # Reading Excel Table and Converting Units
-    diam_table_path = os.path.join(dir_path, 'CSVs', csv_file)
-    diam_df = pd.read_excel(diam_table_path, header=None)
-    diams   = (diam_df.iloc[:,  2] * pix_to_mm * 1000).dropna().to_numpy()  # in microns
-    tort    = (diam_df.iloc[:, 20]).dropna().to_numpy()
-    lengths = (diam_df.iloc[:, 18] * pix_to_mm).dropna().to_numpy()  # in mm
+    app.biomarkers['Diams'] = (DiamTable[:, 2] * pix_to_mm * 1000)  # rmmissing later via numpy ops
+    app.biomarkers['Diams'] = app.biomarkers['Diams'][~np.isnan(app.biomarkers['Diams'])]  # rmmissing
+    app.biomarkers['Tort'] = DiamTable[:, 20]
+    app.biomarkers['Tort'] = app.biomarkers['Tort'][~np.isnan(app.biomarkers['Tort'])]  # rmmissing
+    app.biomarkers['Lengths'] = DiamTable[:, 18] * pix_to_mm  # in mm
+    app.biomarkers['Lengths'] = app.biomarkers['Lengths'][~np.isnan(app.biomarkers['Lengths'])]  # rmmissing
 
-    app.biomarkers.update({
-        'Diams':   diams,
-        'Tort':    tort,
-        'Lengths': lengths,
-    })
+    # ROI reading & node counting is commented out in MATLAB; keep it disabled here.
 
-    # Read ROIS to count nodes, Still not 100% sure this is correct - need to double check
-    roi_zip = os.path.join(
-        dir_path,
-        'ROIs',
-        f"{app.FileLabelName}_Network-RoiSet{imgnum}.zip"
+    app.biomarkers['VAD'] = np.sum(app.BinaryImage) / 255.0 / app.BinaryImage.size  # Vessel Area Fraction
+    app.biomarkers['totalLength'] = np.sum(app.biomarkers['Lengths'])  # in mm
+    app.biomarkers['VLD'] = app.biomarkers['totalLength'] / (app.RealImageSizemm.Value ** 2)  # in 1/mm
+    app.biomarkers['MeanDiam'] = np.mean(app.biomarkers['Diams'])  # in microns
+    app.biomarkers['MedianDiam'] = np.median(app.biomarkers['Diams'])
+    app.biomarkers['BD'] = np.divide(  # Branchpoint density (use numpy divide to mirror MATLAB Inf on zero)
+        app.biomarkers['nodes'], app.biomarkers['totalLength']
     )
-    nodes = 0
-    if os.path.exists(roi_zip):
-        with zipfile.ZipFile(roi_zip, 'r') as zf:
-            for name in zf.namelist():
-                if 'junction' in name or 'node' in name:
-                    nodes += 1
-    app.biomarkers['nodes'] = nodes
 
-    # Calculate biomarkers
-    VAD          = np.sum(app.BinaryImage) / 255.0 / app.BinaryImage.size  # Vessel Area Density
-    total_length = np.sum(lengths)
-    VLD          = total_length / (app.RealImageSizemm.Value ** 2)         # Vessel Length Density
-    mean_diam    = np.mean(diams)
-    median_diam  = np.median(diams)
-    BD           = nodes / total_length if total_length != 0 else 0        # Branchpoint Density
+    app.VesselAreaDensityLabel.Text = f"Vessel Area Density = {app.biomarkers['VAD']}"  # display text
+    app.VesselLengthDensityLabel.Text = f"Vessel Length Density = {app.biomarkers['VLD']} (1/mm)"
+    app.MeanDiameterLabel.Text = f"Mean Diameter = {app.biomarkers['MeanDiam']} µm"
+    app.MedianDiameterLabel.Text = f"Median Diameter = {app.biomarkers['MedianDiam']} µm"
+    app.BranchpointDensityLabel.Text = f"Branchpoint Density = {app.biomarkers['BD']} (1/mm)"
 
-    app.biomarkers.update({
-        'VAD':         VAD,
-        'totalLength': total_length,
-        'VLD':         VLD,
-        'MeanDiam':    mean_diam,
-        'MedianDiam':  median_diam,
-        'BD':          BD,
-    })
-
-    # Display results - calculated biomarkers
-    app.VesselAreaDensityLabel.Text    = f"Vessel Area Density = {VAD:.4f}"
-    app.VesselLengthDensityLabel.Text  = f"Vessel Length Density = {VLD:.4f} (1/mm)"
-    app.MeanDiameterLabel.Text         = f"Mean Diameter = {mean_diam:.2f} µm"
-    app.MedianDiameterLabel.Text       = f"Median Diameter = {median_diam:.2f} µm"
-    app.BranchpointDensityLabel.Text   = f"Branchpoint Density = {BD:.4f} (1/mm)"
-
-    # Will using histogram vs hist cause an issue with non-uniform, bin size between datasets? Need to check this!
     if not Batch:
-        fig, axes = plt.subplots(3, 1, figsize=(6, 8))
-        axes[0].hist(diams, bins=np.arange(0, diams.max()+10, 10))
-        axes[0].set_title('Diameter Distribution')
-        axes[1].hist(tort, bins=np.arange(tort.min(), tort.max()+0.1, 0.1))
-        axes[1].set_title('Tortuosity Distribution')
-        axes[2].hist(lengths, bins=np.arange(lengths.min(), lengths.max()+0.1, 0.1))
-        axes[2].set_title('Length Distribution')
-        plt.tight_layout()
-        plt.show()
+        plt.figure(); plt.hist(app.biomarkers['Diams'], bins=np.arange(0, np.max(app.biomarkers['Diams']) + 10, 10)); plt.title('Diameter Distribution'); plt.tight_layout(); plt.show()  # BinWidth=10
+        plt.figure(); plt.hist(app.biomarkers['Tort'], bins=np.arange(np.min(app.biomarkers['Tort']), np.max(app.biomarkers['Tort']) + 0.1, 0.1)); plt.title('Tortuosity Distribution'); plt.tight_layout(); plt.show()  # BinWidth=0.1
+        plt.figure(); plt.hist(app.biomarkers['Lengths'], bins=np.arange(np.min(app.biomarkers['Lengths']), np.max(app.biomarkers['Lengths']) + 0.1, 0.1)); plt.title('Length Distribution'); plt.tight_layout(); plt.show()  # BinWidth=0.1
 
-    # Store biomarkers in cumulative list
-    app.biomarkers_counter += 1
-    entry = {
-        'name':         app.biomarkers['name'],
-        'nodes':        nodes,
-        'VAD':          VAD,
-        'totalLength':  total_length,
-        'VLD':          VLD,
-        'MeanDiam':     mean_diam,
-        'MedianDiam':   median_diam,
-        'BD':           BD,
-    }
-    app.biomarkers_cumulative.append(entry)
+    app.biomarkers_counter = app.biomarkers_counter + 1  # increment
+    app.biomarkers_cumulative.append({  # store cumulative entry
+        'name': app.biomarkers['name'],
+        'nodes': app.biomarkers['nodes'],
+        'VAD': app.biomarkers['VAD'],
+        'totalLength': app.biomarkers['totalLength'],
+        'VLD': app.biomarkers['VLD'],
+        'MeanDiam': app.biomarkers['MeanDiam'],
+        'MedianDiam': app.biomarkers['MedianDiam'],
+        'BD': app.biomarkers['BD'],
+    })
