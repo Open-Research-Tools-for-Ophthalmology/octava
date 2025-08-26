@@ -129,13 +129,14 @@ def subwindow3():
       bd=0,
       bg="#FEEFBB",
       fg="#000716",
-      highlightthickness=0
+      highlightthickness=0,
+      justify='center'
   )
   entry_1.place(
       x=211.0,
-      y=147.0,
+      y=149.0,
       width=86.0,
-      height=28.0
+      height=26.0
   )
   subwindow.resizable(False, False)
   subwindow.mainloop()

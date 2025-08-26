@@ -28,6 +28,8 @@ text_colour = "#10203F"
 button_green_colour = "#DDF6D4"
 button_yellow_colour = "#FEF0BC"
 button_yellow_hover = "#FFF4C1"
+button_blue_hover = "#DBF2FF"
+button_green_hover = "#EAFCE3"
 button_blue_colour = "#CDEDFF"
 button_border_colour = "#4D4D4D"
 theme_blue = "#4483FF"
@@ -163,53 +165,40 @@ canvas.create_text(
     font=("Roboto Bold", 12 * -1)
 )
 
-button_image_1 = PhotoImage(
-    file=relative_to_assets("button_1.png"))
-button_1 = Button(
-    image=button_image_1,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: load_image(canvas, 165, 230, 300, 45),
-    relief="flat"
-)
-button_1.place(
-    x=33.0,
-    y=380.0,
-    width=120.0,
-    height=37.0
-)
+button1 = ctk.CTkButton(window, text="Load image",
+                        command=lambda: load_image(canvas, 165, 230, 300, 45),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour  )
+button1.place(x=33, y=380)
 
-button_image_2 = PhotoImage(
-    file=relative_to_assets("button_2.png"))
-button_2 = Button(
-    image=button_image_2,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_2 clicked"),
-    relief="flat"
-)
-button_2.place(
-    x=174.0,
-    y=380.0,
-    width=120.0,
-    height=37.0
-)
+button3 = ctk.CTkButton(window, text="Process",
+                        command=lambda: print("Process clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour  )
+button3.place(x=380, y=380)
 
-button_image_3 = PhotoImage(
-    file=relative_to_assets("button_3.png"))
-button_3 = Button(
-    image=button_image_3,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_3 clicked"),
-    relief="flat"
-)
-button_3.place(
-    x=173.0,
-    y=427.0,
-    width=121.0,
-    height=37.0
-)
+
+button41 = ctk.CTkButton(window, text="Invert",
+                        command=lambda: print("Invert clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour  )
+button41.place(x=550, y=380)
+
 
 button4 = ctk.CTkButton(window, text="Advanced Settings",
                         command=subwindow1,
@@ -246,69 +235,51 @@ button5 = ctk.CTkButton(window, text="Batch Processing Settings",
 button5.place(x=900, y=700)
 
 
-button_image_7 = PhotoImage(
-    file=relative_to_assets("button_7.png"))
-button_7 = Button(
-    image=button_image_7,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_7 clicked"),
-    relief="flat"
-)
-button_7.place(
-    x=905.0,
-    y=380.0,
-    width=119.0,
-    height=37.0
-)
+button7 = ctk.CTkButton(window, text="Free FAZ",
+                        command=lambda: print("Free FAZ clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_green_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_green_hover,
+    border_color=button_border_colour  )
+button7.place(x=700, y=380)
 
-button_image_8 = PhotoImage(
-    file=relative_to_assets("button_8.png"))
-button_8 = Button(
-    image=button_image_8,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_8 clicked"),
-    relief="flat"
-)
-button_8.place(
-    x=905.0,
-    y=428.0,
-    width=119.0,
-    height=37.0
-)
+button8 = ctk.CTkButton(window, text="Measure FAZ",
+                        command=lambda: print("Measure FAZ clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_green_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_green_hover,
+    border_color=button_border_colour  )
+button8.place(x=850, y=380)
 
-button_image_9 = PhotoImage(
-    file=relative_to_assets("button_9.png"))
-button_9 = Button(
-    image=button_image_9,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_9 clicked"),
-    relief="flat"
-)
-button_9.place(
-    x=1046.0,
-    y=380.0,
-    width=119.0,
-    height=37.0
-)
 
-button_image_10 = PhotoImage(
-    file=relative_to_assets("button_10.png"))
-button_10 = Button(
-    image=button_image_10,
-    borderwidth=0,
-    highlightthickness=0,
-    command=lambda: print("button_10 clicked"),
-    relief="flat"
-)
-button_10.place(
-    x=33.0,
-    y=427.0,
-    width=120.0,
-    height=37.0
-)
+button9 = ctk.CTkButton(window, text="Rapid FAZ",
+                        command=lambda: print("Rapid FAZ clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_green_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_green_hover,
+    border_color=button_border_colour  )
+button9.place(x=1000, y=380)
+
+button10 = ctk.CTkButton(window, text="Save folder",
+                        command=lambda: print("Save folder clicked"),
+                        width=135,height=40,
+                        font=("Roboto Bold", 16 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour  )
+button10.place(x=200, y=380)
+
 
 image_image_7 = PhotoImage(
     file=relative_to_assets("image_7.png"))
@@ -345,6 +316,36 @@ img_type.place(
     y=475.0,
     width=115.0,
     height=30.0
+)
+
+canvas.create_text(
+    300.0,
+    480.0,
+    anchor="nw",
+    text="Image size (mm)",
+    fill=text_colour,
+    font=("Roboto", 14 * -1)
+)
+
+entry_image_1 = PhotoImage(
+    file=relative_to_assets("entry_1.png"))
+entry_bg_1 = canvas.create_image(
+    480.0,
+    480.0,
+    image=entry_image_1
+)
+entry_1 = Entry(
+    bd=0,
+    bg="#EFEFEF",
+    fg="#000716",
+    highlightthickness=0,
+    justify='center'
+)
+entry_1.place(
+    x=450.0,
+    y=470.0,
+    width=86.0,
+    height=25.0
 )
 
 canvas.create_text(
