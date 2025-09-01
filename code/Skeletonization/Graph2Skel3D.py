@@ -13,17 +13,17 @@ def graph2skel3d(nodes, links, w, l, h):
     Return [np.ndarray]: 3D boolean array representing the reconstructed skeleton.
     """
     skel = np.zeros((w, l, h), dtype=bool)
-    
-    for node in nodes:
-        if node['links']:  # node has links
-            skel[node['idx']] = True  # set node voxels
-            
-            # collect all edge voxels connected to this node
-            a = []
-            for link_idx in node['links']:
-                if link_idx >= 0:
-                    a.extend(links[link_idx]['point'])
-            if a:
-                skel[a] = True  # set edge voxels
-    
+
+    # for all nodes
+    for n in node:
+        if n['links']:  # if node has links
+            skel.flat[n['idx']] = True  # node voxels
+            # collect all points from its links
+            pts = []
+            for li in n['links']:
+                if li >= 0:
+                    pts.extend(link[li]['point'])
+            if pts:
+                skel.flat[np.array(pts)] = True  # edge voxels
+
     return skel

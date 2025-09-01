@@ -272,9 +272,7 @@ classdef OCTAVA_2p0_MSD < matlab.apps.AppBase
                 nodes = [];
                 links = [];
             else
-                [~,nodes,links] = Skel2Graph3D(app.imgSkel,app.TwigsizeSpinner.Value);
-                
-                
+                [~,nodes,links] = Skel2Graph3D(app.imgSkel, app.TwigsizeSpinner.Value);
                 
                 
                 %Calculate total length of network
