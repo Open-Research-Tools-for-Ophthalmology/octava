@@ -1,8 +1,8 @@
 from pathlib import Path
-
-# from tkinter import *
-# Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar
+from theme import *
+from tkinter.ttk import Combobox
+import customtkinter as ctk
 
 
 def close(subwindow):
@@ -18,14 +18,22 @@ def subwindow2():
 
 
   subwindow = Toplevel()
-  subwindow.title("Regional analysis settings")
+  subwindow.title("Regional Analysis Settings")
   subwindow.geometry("349x380")
   subwindow.configure(bg = "#FBE3D6")
+
+  eye_var = StringVar()
+  load_faz_var = IntVar(value=0)
+  square_grid_var = IntVar(value=0)
+  etdrs_grid_var = IntVar(value=0)
+  extended_etdrs_var = IntVar(value=0)
+  foveal_rings_var = IntVar(value=0)
+  optic_nerve_head_var = IntVar(value=0)
 
 
   canvas = Canvas(
       subwindow,
-      bg = "#FBE3D6",
+      bg = subwindow_bg_colour,
       height = 380,
       width = 349,
       bd = 0,
@@ -34,93 +42,125 @@ def subwindow2():
   )
 
   canvas.place(x = 0, y = 0)
-  canvas.create_text(
-      45.0,
-      27.0,
-      anchor="nw",
-      text="Regional analysis settings",
-      fill="#10203F",
-      font=("Roboto Bold", 16 * -1)
-  )
 
-  canvas.create_text(
-      48.0,
-      72.0,
-      anchor="nw",
-      text="Eyes",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      106.0,
-      anchor="nw",
-      text="Load FAZ masks",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      140.0,
-      anchor="nw",
-      text="Square grid",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      174.0,
-      anchor="nw",
-      text="ETDRS grid",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      208.0,
-      anchor="nw",
-      text="Extended DTDRS grid",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      242.0,
-      anchor="nw",
-      text="Foveal rings",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  canvas.create_text(
-      48.0,
-      276.0,
-      anchor="nw",
-      text="Optic nerve head",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
-
-  button_image_1 = PhotoImage(
-      file=relative_to_assets("button_1.png"))
-  button_1 = Button(
+  # eye type dropdown
+  eye_list = ["Left Eye", "Right Eye"]
+  eye_combobox = Combobox(
       subwindow,
-      image=button_image_1,
-      borderwidth=0,
-      highlightthickness=0,
-      command=lambda: close(subwindow),
-      relief="flat"
+      textvariable=eye_var,
+      values=eye_list,
+      state="readonly"
   )
-  button_1.place(
-      x=114.0,
-      y=314.0,
-      width=121.0,
-      height=37.0
+  eye_combobox.place(
+      x=40.0,
+      y=30.0,
+      width=140.0,
+      height=30.0
   )
+
+  # def show_selection(event=None):
+  #     print("Selected:", eye_var.get())
+
+  # eye_combobox.bind("<<ComboboxSelected>>", show_selection)
+
+
+  # load faz checkbox
+  load_faz_checkbox = Checkbutton(
+      subwindow,
+      text="Load FAZ masks",
+      variable=load_faz_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  load_faz_checkbox.place(
+      x=40.0,
+      y=70.0
+  )
+
+  # square grid checkbox
+  square_grid_checkbox = Checkbutton(
+      subwindow,
+      text="Square grid",
+      variable=square_grid_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  square_grid_checkbox.place(
+      x=40.0,
+      y=100.0
+  )
+
+
+  # etdrs grid checkbox
+  etdrs_grid_checkbox = Checkbutton(
+      subwindow,
+      text="ETDRS grid",
+      variable=etdrs_grid_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  etdrs_grid_checkbox.place(
+      x=40.0,
+      y=130.0
+  )
+
+  # extended etdrs grid checkbox
+  extended_etdrs_checkbox = Checkbutton(
+      subwindow,
+      text="Extended ETDRS grid",
+      variable=extended_etdrs_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  extended_etdrs_checkbox.place(
+      x=40.0,
+      y=160.0
+  )
+
+  # foveal rings checkbox
+  foveal_rings_checkbox = Checkbutton(
+      subwindow,
+      text="Foveal rings",
+      variable=foveal_rings_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  foveal_rings_checkbox.place(
+      x=40.0,
+      y=190.0
+  )
+
+  # optic nerve head checkbox
+  optic_nerve_head_checkbox = Checkbutton(
+      subwindow,
+      text="Optic nerve head",
+      variable=optic_nerve_head_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  optic_nerve_head_checkbox.place(
+      x=40.0,
+      y=220.0
+  )
+
+  #close
+  button_close = ctk.CTkButton(subwindow, text="Close",
+                          command=lambda: close(subwindow),
+                          width=130,height=45,
+                          font=("Roboto", 14 * -1),
+                          text_color=text_colour,
+                          fg_color=button_blue_colour,
+                          corner_radius=8,border_width=1,
+                          hover_color=button_blue_hover,
+      border_color=button_border_colour  )
+  button_close.place(x=100, y=300)
+
+
   subwindow.resizable(False, False)
   subwindow.mainloop()
