@@ -160,7 +160,10 @@ def skel2graph3d(skel, THR):
             link_cands = np.intersect1d(link_cands, cans_all[:,0]) if cans_all.shape[0] > 0 else []
 
             for cand in link_cands:
+                print("Entry")
                 vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n)
+                print("Exit?")
+                print("\n")
                 skel2.flat[np.array(vox)[1:-1]] = 0
 
                 # create link structure (link metadata) respecting the THR branch size
@@ -188,8 +191,8 @@ def skel2graph3d(skel, THR):
             # If short branches allowed (2 connected pixels)      
             if THR == 0:
                 for ep_cand in ep_cands:
-                    n_idx = skel2.flat[ep_cand]
-                    if n_idx and n_idx != i:
+                    n_idx = int(skel2.flat[ep_cand]) - 1
+                    if n_idx > 0 and n_idx != i:
                         skel2.flat[ep_cand] = 0
                         link.append({
                             'n1': i,
@@ -197,26 +200,10 @@ def skel2graph3d(skel, THR):
                             'point': [int(ep_cand)],
                             'label': int(lm.flat[ep_cand])
                         })
-                        
-                        # find the ep node's index with respect to node list
-                        cur_node_idx = 0
-                        ep_node_idx = None
-
-                        while cur_node_idx < len(nodes):
-                            cur_node = node[cur_node_idx]
-                            if cur_node['idx'][0] == n_idx:
-                                ep_node_idx = cur_node_idx
-                                break
-                                
-                            cur_node_idx += 1
-
-                        
-                        if ep_node_idx is None: raise ValueError("ep_cand is not a node that was previously added to the nodes list.")
-
                         n['links'].append(l_idx)
-                        n['conn'].append(int(n_idx))
-                        node[int(ep_node_idx)]['links'].append(l_idx)
-                        node[int(ep_node_idx)]['conn'].append(int(i))
+                        n['conn'].append(n_idx)
+                        node[n_idx]['links'].append(l_idx)
+                        node[n_idx]['conn'].append(i)
                         l_idx += 1
 
     # Mark single-link nodes as endpoints

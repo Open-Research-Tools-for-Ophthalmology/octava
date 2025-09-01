@@ -1,7 +1,5 @@
 import numpy as np
 
-import numpy as np
-
 def pk_get_nh(img, indices):
     """
     Compute the 3x3x3 neighborhood for each voxel in indices.
@@ -105,3 +103,63 @@ def pk_get_nh_idx(img, indices):
                 w_idx += 1
 
     return nhood
+
+
+def pk_follow_link(skel, node, k, j, idx, cans, c2n):
+    """
+    Follow a skeleton link from a starting voxel until a node is reached.
+
+    Parameters
+    ----------
+    skel : ndarray
+        3D skeleton array (with node labels >1 and unvisited voxels = 1)
+    node : list of dict
+        Node metadata list.
+    k : int
+        Index of starting node in node list.
+    j : int
+        Index of starting voxel within node[k]['idx'].
+    idx : int
+        Linear index of the first candidate voxel to follow.
+    cans : ndarray
+        Array of canal voxels and their two neighbors, shape (N, 3)
+    c2n : ndarray
+        Map from linear voxel index to row index in `cans`.
+
+    Returns
+    -------
+    vox : list
+        List of linear indices for the voxels along the link.
+    n_idx : int or None
+        Index of the node reached at the other end of the link.
+    ep : int
+        1 if the node reached is an endpoint, 0 otherwise.
+    """
+    vox = []
+    n_idx = None
+    ep = 0
+
+    # assign start node to first voxel
+    vox.append(node[k]['idx'][j])
+
+    i = 0
+    isdone = False
+    while not isdone:
+        i += 1
+        next_cand = c2n[idx]
+        cand = cans[next_cand, 1]  # second column (neighbor 1)
+        if cand == vox[i-1]:
+            cand = cans[next_cand, 2]  # switch to neighbor 2
+
+        if skel.flat[cand] > 1:  # node found
+            vox.append(idx)
+            vox.append(cand)
+            n_idx = int(skel.flat[cand]) -1  # node number (MATLAB 1-index to Python 0-index)
+            if node[n_idx]['ep']:
+                ep = 1
+            isdone = True
+        else:
+            vox.append(idx)
+            idx = cand
+
+    return vox, n_idx, ep
