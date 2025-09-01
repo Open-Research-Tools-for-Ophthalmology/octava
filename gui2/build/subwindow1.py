@@ -6,7 +6,9 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, Spinbox
+from theme import *
+import customtkinter as ctk
 
 
 def close(window):
@@ -22,9 +24,19 @@ def subwindow1():
 
 
   subwindow = Toplevel()
-  subwindow.title("Advanced settings")
-  subwindow.geometry("355x515")
+  subwindow.title("Advanced Settings")
+  subwindow.geometry("355x520")
   subwindow.configure(bg = "#FBE3D6")
+
+  twig_size_var = IntVar()
+  med_filt_var = IntVar(value=0)
+  frangi_filt_var = IntVar(value=0)
+  frangi_min_var = IntVar()
+  frangi_max_var = IntVar()
+  large_vessels_var = IntVar(value=0)
+  small_vessels_var = IntVar(value=0)
+  artery_var = IntVar(value=0)
+  veins_var = IntVar(value=0)
 
 
   canvas = Canvas(
@@ -38,37 +50,13 @@ def subwindow1():
   )
 
   canvas.place(x = 0, y = 0)
-  canvas.create_text(
-      45.0,
-      27.0,
-      anchor="nw",
-      text="Advanced settings",
-      fill="#10203F",
-      font=("Roboto Bold", 16 * -1)
-  )
 
-  button_image_1 = PhotoImage(
-      file=relative_to_assets("button_1.png"))
-  button_1 = Button(
-      subwindow,
-      image=button_image_1,
-      borderwidth=0,
-      highlightthickness=0,
-      command=lambda: close(subwindow),
-      relief="flat"
-  )
-  button_1.place(
-      x=114.0,
-      y=448.0,
-      width=121.0,
-      height=37.0
-  )
 
   image_image_1 = PhotoImage(
       file=relative_to_assets("image_1.png"))
   image_1 = canvas.create_image(
       178.0,
-      132.0,
+      100.0,
       image=image_image_1
   )
 
@@ -81,109 +69,218 @@ def subwindow1():
   )
 
   canvas.create_text(
-      55.0,
-      82.0,
+      45.0,
+      50.0,
       anchor="nw",
       text="Filters",
       fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      font=("Roboto", 14 * -1, "bold")
   )
 
+  # med filt
+  med_filt_checkbox = Checkbutton(
+      subwindow,
+      text="Med filt",
+      variable=med_filt_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  med_filt_checkbox.place(
+      x=40.0,
+      y=70.0
+  )
+
+  # twig size Spinbox
   canvas.create_text(
-      55.0,
+      170.0,
+      75.0,
+      anchor="nw",
+      text="Twig size",
+      fill="#10203F",
+      font=("Roboto", 14 * -1)
+  )
+  twig_size_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=10,
+      width=2,
+      textvariable=twig_size_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 12 * -1),
+      bd=0.5,                # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+  )
+  twig_size_spinbox.place(
+      x=240.0,
+      y=75.0
+  )
+
+  # frangi filt
+  frangi_filt_checkbox = Checkbutton(
+      subwindow,
+      text="Frangi filt",
+      variable=frangi_filt_var,
+      bg=subwindow_bg_colour,
+      fg="#10203F",
+      font=("Roboto", 14 * -1)
+  )
+  frangi_filt_checkbox.place(
+      x=40.0,
+      y=100.0
+  )
+
+  # frangi min Spinbox
+  canvas.create_text(
+      170.0,
+      105.0,
+      anchor="nw",
+      text="Min",
+      fill="#10203F",
+      font=("Roboto", 14 * -1)
+  )
+  frangi_min_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=10,
+      width=2,
+      textvariable=frangi_min_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 12 * -1),
+      bd=0.5,                # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+  )
+  frangi_min_spinbox.place(
+      x=210.0,
+      y=105.0
+  )
+
+  # frangi max Spinbox
+  canvas.create_text(
+      170.0,
+      135.0,
+      anchor="nw",
+      text="Max",
+      fill="#10203F",
+      font=("Roboto", 14 * -1)
+  )
+  frangi_max_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=10,
+      width=2,
+      textvariable=frangi_max_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 12 * -1),
+      bd=0.5,                # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+  )
+  frangi_max_spinbox.place(
+      x=210.0,
+      y=135.0
+  )
+
+  button1 = ctk.CTkButton(subwindow, text="Image Subset",
+                          command=lambda: print("button clicked"),
+                          width=130,height=45,
+                          font=("Roboto Bold", 14 * -1),
+                          text_color=text_colour,
+                          fg_color=button_yellow_colour,
+                          corner_radius=8,border_width=1,
+                          hover_color=button_yellow_hover,
+      border_color=button_border_colour  )
+  button1.place(x=35, y=190)
+
+  button2 = ctk.CTkButton(subwindow, text="Image Resize",
+                          command=lambda: print("button clicked"),
+                          width=130,height=45,
+                          font=("Roboto Bold", 14 * -1),
+                          text_color=text_colour,
+                          fg_color=button_yellow_colour,
+                          corner_radius=8,border_width=1,
+                          hover_color=button_yellow_hover,
+      border_color=button_border_colour  )
+  button2.place(x=190, y=190)
+
+  canvas.create_text(
+      45.0,
       274.0,
       anchor="nw",
-      text="Additional segmentation settings",
+      text="Additional Segmentation Settings",
       fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      font=("Roboto", 14 * -1, "bold")
   )
 
-  canvas.create_text(
-      55.0,
-      110.0,
-      anchor="nw",
-      text="Med filt",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
-  )
-
-  canvas.create_text(
-      55.0,
-      302.0,
-      anchor="nw",
+  # large vessels checkbox
+  large_vessels_checkbox = Checkbutton(
+      subwindow,
       text="Large vessels (Retina, ONH only)",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      variable=large_vessels_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  large_vessels_checkbox.place(
+      x=40.0,
+      y=300.0
   )
 
-  canvas.create_text(
-      55.0,
-      331.0,
-      anchor="nw",
+  # small vessels checkbox
+  small_vessels_checkbox = Checkbutton(
+      subwindow,
       text="Small vessels (Retina, ONH only)",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      variable=small_vessels_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  small_vessels_checkbox.place(
+      x=40.0,
+      y=330.0
   )
 
-  canvas.create_text(
-      55.0,
-      360.0,
-      anchor="nw",
+  # artery checkbox
+  artery_checkbox = Checkbutton(
+      subwindow,
       text="Artery (Retina only, not yet available)",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      variable=artery_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  artery_checkbox.place(
+      x=40.0,
+      y=360.0
   )
 
-  canvas.create_text(
-      55.0,
-      389.0,
-      anchor="nw",
+  # veins checkbox
+  veins_checkbox = Checkbutton(
+      subwindow,
       text="Veins (Retina only, not yet available)",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
+      variable=veins_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  veins_checkbox.place(
+      x=40.0,
+      y=390.0
   )
 
-  canvas.create_text(
-      55.0,
-      138.0,
-      anchor="nw",
-      text="Frangi filt",
-      fill="#10203F",
-      font=("Roboto Bold", 14 * -1)
-  )
+  #close
+  button_close = ctk.CTkButton(subwindow, text="Close",
+                          command=lambda: close(subwindow),
+                          width=130,height=45,
+                          font=("Roboto", 14 * -1),
+                          text_color=text_colour,
+                          fg_color=button_blue_colour,
+                          corner_radius=8,border_width=1,
+                          hover_color=button_blue_hover,
+      border_color=button_border_colour  )
+  button_close.place(x=114, y=450)
 
-  button_image_2 = PhotoImage(
-      file=relative_to_assets("button_2.png"))
-  button_2 = Button(
-      subwindow,
-      image=button_image_2,
-      borderwidth=0,
-      highlightthickness=0,
-      command=lambda: print("button_2 clicked"),
-      relief="flat"
-  )
-  button_2.place(
-      x=47.0,
-      y=213.0,
-      width=121.0,
-      height=30.0
-  )
-
-  button_image_3 = PhotoImage(
-      file=relative_to_assets("button_3.png"))
-  button_3 = Button(
-      subwindow,
-      image=button_image_3,
-      borderwidth=0,
-      highlightthickness=0,
-      command=lambda: print("button_3 clicked"),
-      relief="flat"
-  )
-  button_3.place(
-      x=191.0,
-      y=213.0,
-      width=121.0,
-      height=30.0
-  )
   subwindow.resizable(False, False)
   subwindow.mainloop()
