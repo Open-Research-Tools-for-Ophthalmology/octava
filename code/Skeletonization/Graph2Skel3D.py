@@ -15,14 +15,14 @@ def graph2skel3d(nodes, links, w, l, h):
     skel = np.zeros((w, l, h), dtype=bool)
 
     # for all nodes
-    for n in node:
+    for n in nodes:
         if n['links']:  # if node has links
             skel.flat[n['idx']] = True  # node voxels
             # collect all points from its links
             pts = []
             for li in n['links']:
                 if li >= 0:
-                    pts.extend(link[li]['point'])
+                    pts.extend(links[li]['point'])
             if pts:
                 skel.flat[np.array(pts)] = True  # edge voxels
 

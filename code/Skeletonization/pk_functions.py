@@ -105,7 +105,7 @@ def pk_get_nh_idx(img, indices):
     return nhood
 
 
-def pk_follow_link(skel, node, k, j, idx, cans, c2n):
+def pk_follow_link(skel, node, curr_node_idx, curr_conn_voxel, idx, cans, c2n):
     """
     Follow a skeleton link from a starting voxel until a node is reached.
 
@@ -115,9 +115,9 @@ def pk_follow_link(skel, node, k, j, idx, cans, c2n):
         3D skeleton array (with node labels >1 and unvisited voxels = 1)
     node : list of dict
         Node metadata list.
-    k : int
+    curr_node_idx : int
         Index of starting node in node list.
-    j : int
+    curr_conn_voxel : int
         Index of starting voxel within node[k]['idx'].
     idx : int
         Linear index of the first candidate voxel to follow.
@@ -140,10 +140,10 @@ def pk_follow_link(skel, node, k, j, idx, cans, c2n):
     ep = 0
 
     # assign start node to first voxel
-    vox.append(node[k]['idx'][j])
+    vox.append(node[curr_node_idx]['idx'][curr_conn_voxel])
 
     i = 0
-    isdone = False
+    isdone = False # done when we reach an endpoint
     while not isdone:
         i += 1
         next_cand = c2n[idx]

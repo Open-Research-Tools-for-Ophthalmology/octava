@@ -153,18 +153,28 @@ def skel2graph3d(skel, THR):
             # all potential unvisited links emanating from this voxel
             link_cands = nhi[lli, np.where(nh[lli,:])[0]]
 
-            # short branches that only have an endpoint
+            # branches connected to the node that are endpoints
             ep_cands = np.intersect1d(link_cands, ep) # 1D IDs of all the actual endpoint nodes
             cond = (skel2.flat[link_cands] == 1)
             link_cands = link_cands[cond]
             link_cands = np.intersect1d(link_cands, cans_all[:,0]) if cans_all.shape[0] > 0 else []
 
             for cand in link_cands:
-                print("Entry")
+                print("Entry", i)
+                ''' 
+                params:
+                 - skel2: map with values 0 (background), 1 (foreground unvisited cannal voxels), <2 (labeled nodes)
+                 - node: list of clustered nodes (both ep and branch)
+                 - i: index of current visited node in list 'node'
+                 - j: not sure yet
+                 - cand: cannal voxel that is neighbor to the current node
+                 - cans_all: matrix with neighbors of each cannal voxel
+                 - c2n: some weird list for lienar index lookups of neighbors of cannal voxels I think
+                '''
                 vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n)
                 print("Exit?")
                 print("\n")
-                skel2.flat[np.array(vox)[1:-1]] = 0
+                skel2.flat[np.array(vox)[1:-1]] = 0 # set cannal voxels to 0 to indicate that they have been traversed
 
                 # create link structure (link metadata) respecting the THR branch size
                 if ((ept and len(vox) > THR) or (not ept and i != n_idx)):
@@ -172,7 +182,7 @@ def skel2graph3d(skel, THR):
                         'n1': i,
                         'n2': n_idx,
                         'point': vox,
-                        'label': int(lm.flat[vox[0]])
+                        'label': int(lm.flat[vox[0]]) # we label per the starting node label
                     })
                     n['links'].append(l_idx)
                     n['conn'].append(int(n_idx))
