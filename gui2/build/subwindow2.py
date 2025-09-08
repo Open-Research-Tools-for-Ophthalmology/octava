@@ -19,7 +19,7 @@ def subwindow2():
 
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
-  subwindow.geometry("349x380")
+  subwindow.geometry("349x370")
   subwindow.configure(bg = "#FBE3D6")
 
   eye_var = StringVar()
@@ -29,9 +29,10 @@ def subwindow2():
   extended_etdrs_var = IntVar(value=0)
   foveal_rings_var = IntVar(value=0)
   optic_nerve_head_var = IntVar(value=0)
+  apply_advanced_settings_var = IntVar(value=0)
 
 
-  canvas = Canvas(
+  subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
       height = 380,
@@ -41,9 +42,17 @@ def subwindow2():
       relief = "ridge"
   )
 
-  canvas.place(x = 0, y = 0)
+  subcanvas2.place(x = 0, y = 0)
 
   # eye type dropdown
+  subcanvas2.create_text(
+      45.0,
+      35.0,
+      anchor="nw",
+      text="Eye",
+      fill=text_colour,
+      font=("Roboto", 14 * -1)
+  )
   eye_list = ["Left Eye", "Right Eye"]
   eye_combobox = Combobox(
       subwindow,
@@ -52,9 +61,9 @@ def subwindow2():
       state="readonly"
   )
   eye_combobox.place(
-      x=40.0,
+      x=80.0,
       y=30.0,
-      width=140.0,
+      width=120.0,
       height=30.0
   )
 
@@ -149,6 +158,20 @@ def subwindow2():
       y=220.0
   )
 
+  # apply advanced settings checkbox
+  apply_advanced_settings_checkbox = Checkbutton(
+      subwindow,
+      text="Apply advanced settings",
+      variable=apply_advanced_settings_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  apply_advanced_settings_checkbox.place(
+      x=40.0,
+      y=250.0
+  )
+
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow),
@@ -159,7 +182,7 @@ def subwindow2():
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=100, y=300)
+  button_close.place(x=100, y=290)
 
 
   subwindow.resizable(False, False)

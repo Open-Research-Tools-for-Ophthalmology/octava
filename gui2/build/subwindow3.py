@@ -1,8 +1,11 @@
 from pathlib import Path
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar, Spinbox
 from tkinter.ttk import Combobox
 import customtkinter as ctk
 from theme import *
+from round_rectangle import *
+from select_folder import *
+
 
 def close(subwindow):
   subwindow.destroy()
@@ -18,12 +21,17 @@ def subwindow3():
 
   subwindow = Toplevel()
   subwindow.title("Batch Processing Settings")
-  subwindow.geometry("349x353")
+  subwindow.geometry("350x450")
   subwindow.configure(bg = "#FBE3D6")
 
   file_type_var = StringVar(value="tif")
+  batch_resize_var = IntVar(value=0) # true or false
+  batch_resize_value = IntVar()
+  variable_image_size_var = IntVar(value=0)
+  apply_advanced_settings_var = IntVar(value=0)
+  apply_regional_analysis_settings_var = IntVar(value=0)
 
-  canvas = Canvas(
+  subcanvas3 = Canvas(
       subwindow,
       bg = "#FBE3D6",
       height = 353,
@@ -33,19 +41,10 @@ def subwindow3():
       relief = "ridge"
   )
 
-  canvas.place(x = 0, y = 0)
-
-  canvas.create_text(
-      40.0,
-      100.0,
-      anchor="nw",
-      text="File type",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
-  )
+  subcanvas3.place(x = 0, y = 0)
 
   button1 = ctk.CTkButton(subwindow, text="Select Raw Data Folder",
-                          command=lambda: print("button clicked"),
+                          command=lambda: select_folder(subcanvas3, 60, 100),
                           width=260,height=40,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
@@ -53,8 +52,18 @@ def subwindow3():
                           corner_radius=8,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=40, y=30)
+  button1.place(x=45, y=30)
+  round_rectangle(subcanvas3, 45, 80, 260, 40, radius=8, fill=bg_colour, outline=bg_colour)
   
+  subcanvas3.create_text(
+      45.0,
+      135.0,
+      anchor="nw",
+      text="File type",
+      fill="#0F1F3F",
+      font=("Roboto SemiBold", 14 * -1)
+  )
+
   # file type dropdown
   file_type_list = ["tif", "png", "jpg", "bmp", "mat"]
   file_type = Combobox(
@@ -64,78 +73,105 @@ def subwindow3():
       state="readonly"
   )
   file_type.place(
-      x=105.0,
-      y=95.0,
+      x=110.0,
+      y=130.0,
       width=100.0,
       height=30.0
   )  
 
-  canvas.create_text(
-      48.0,
-      154.0,
-      anchor="nw",
+  # batch resize checkbox
+  batch_resize_checkbox = Checkbutton(
+      subwindow,
       text="Batch resize",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
+      variable=batch_resize_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  batch_resize_checkbox.place(
+      x=40.0,
+      y=185.0
+  )
+  twig_size_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=10,
+      width=3,
+      textvariable=batch_resize_value,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1),
+      bd=0.5,                # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+  )
+  twig_size_spinbox.place(
+      x=160.0,
+      y=187.0
   )
 
-  canvas.create_text(
-      48.0,
-      188.0,
-      anchor="nw",
+  # variable image size checkbox
+  variable_image_size_checkbox = Checkbutton(
+      subwindow,
       text="Variable image size",
-      fill="#0F1F3F",
-      font=("Roboto SemiBold", 14 * -1)
+      variable=variable_image_size_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+  )
+  variable_image_size_checkbox.place(
+      x=40.0,
+      y=223.0
   )
 
-  canvas.create_text(
-      70.0,
-      220.0,
+  subcanvas3.create_text(
+      66.0,
+      250.0,
       anchor="nw",
       text="No - Process from folder\nYes - Process from list",
       fill="#0F1F3F",
       font=("Roboto SemiBold", 14 * -1)
   )
 
-  button_image_1 = PhotoImage(
-      file=relative_to_assets("button_1.png"))
-  button_1 = Button(
+  # apply advanced settings checkbox
+  apply_advanced_settings_checkbox = Checkbutton(
       subwindow,
-      image=button_image_1,
-      borderwidth=0,
-      highlightthickness=0,
-      command=lambda: close(subwindow),
-      relief="flat"
+      text="Apply advanced settings",
+      variable=apply_advanced_settings_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
   )
-  button_1.place(
-      x=114.0,
-      y=286.0,
-      width=121.0,
-      height=37.0
+  apply_advanced_settings_checkbox.place(
+      x=40.0,
+      y=300.0
   )
 
-
-
-  entry_image_1 = PhotoImage(
-      file=relative_to_assets("entry_1.png"))
-  entry_bg_1 = canvas.create_image(
-      254.0,
-      162.0,
-      image=entry_image_1
-  )
-  entry_1 = Entry(
+  # apply regional analysis settings checkbox
+  apply_regional_analysis_settings_checkbox = Checkbutton(
       subwindow,
-      bd=0,
-      bg="#FEEFBB",
-      fg="#000716",
-      highlightthickness=0,
-      justify='center'
+      text="Apply regional analysis settings",
+      variable=apply_regional_analysis_settings_var,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
   )
-  entry_1.place(
-      x=211.0,
-      y=149.0,
-      width=86.0,
-      height=26.0
+  apply_regional_analysis_settings_checkbox.place(
+      x=40.0,
+      y=330.0
   )
+
+
+  #close
+  button_close = ctk.CTkButton(subwindow, text="Close",
+                          command=lambda: close(subwindow),
+                          width=130,height=45,
+                          font=("Roboto", 14 * -1),
+                          text_color=text_colour,
+                          fg_color=button_blue_colour,
+                          corner_radius=8,border_width=1,
+                          hover_color=button_blue_hover,
+      border_color=button_border_colour  )
+  button_close.place(x=110, y=380)
+
   subwindow.resizable(False, False)
   subwindow.mainloop()

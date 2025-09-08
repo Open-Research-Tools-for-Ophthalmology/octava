@@ -39,7 +39,7 @@ def subwindow1():
   veins_var = IntVar(value=0)
 
 
-  canvas = Canvas(
+  subcanvas1 = Canvas(
       subwindow,
       bg = "#FBE3D6",
       height = 515,
@@ -49,12 +49,12 @@ def subwindow1():
       relief = "ridge"
   )
 
-  canvas.place(x = 0, y = 0)
+  subcanvas1.place(x = 0, y = 0)
 
 
   image_image_1 = PhotoImage(
       file=relative_to_assets("image_1.png"))
-  image_1 = canvas.create_image(
+  image_1 = subcanvas1.create_image(
       178.0,
       100.0,
       image=image_image_1
@@ -62,13 +62,13 @@ def subwindow1():
 
   image_image_2 = PhotoImage(
       file=relative_to_assets("image_2.png"))
-  image_2 = canvas.create_image(
+  image_2 = subcanvas1.create_image(
       178.0,
       345.0,
       image=image_image_2
   )
 
-  canvas.create_text(
+  subcanvas1.create_text(
       45.0,
       50.0,
       anchor="nw",
@@ -77,10 +77,10 @@ def subwindow1():
       font=("Roboto", 14 * -1, "bold")
   )
 
-  # med filt
+  # med filter
   med_filt_checkbox = Checkbutton(
       subwindow,
-      text="Med filt",
+      text="Med filter",
       variable=med_filt_var,
       bg=subwindow_bg_colour,
       fg=text_colour,
@@ -92,7 +92,7 @@ def subwindow1():
   )
 
   # twig size Spinbox
-  canvas.create_text(
+  subcanvas1.create_text(
       170.0,
       75.0,
       anchor="nw",
@@ -117,10 +117,10 @@ def subwindow1():
       y=75.0
   )
 
-  # frangi filt
+  # frangi filter
   frangi_filt_checkbox = Checkbutton(
       subwindow,
-      text="Frangi filt",
+      text="Frangi filter",
       variable=frangi_filt_var,
       bg=subwindow_bg_colour,
       fg="#10203F",
@@ -132,7 +132,7 @@ def subwindow1():
   )
 
   # frangi min Spinbox
-  canvas.create_text(
+  subcanvas1.create_text(
       170.0,
       105.0,
       anchor="nw",
@@ -158,7 +158,7 @@ def subwindow1():
   )
 
   # frangi max Spinbox
-  canvas.create_text(
+  subcanvas1.create_text(
       170.0,
       135.0,
       anchor="nw",
@@ -205,7 +205,7 @@ def subwindow1():
       border_color=button_border_colour  )
   button2.place(x=190, y=190)
 
-  canvas.create_text(
+  subcanvas1.create_text(
       45.0,
       274.0,
       anchor="nw",
