@@ -1,1 +1,1 @@
-drop
+from tkinter.ttk import Combobox
