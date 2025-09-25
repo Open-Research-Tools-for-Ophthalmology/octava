@@ -32,9 +32,19 @@ def load_image(canvas, x, y, text_x, text_y):
         font=("Roboto", 12 * -1),
     )
 
-    # Keep references so image/text don’t vanish
+    # Keep references so image don’t vanish
     canvas.image_ref = img_tk
-    canvas.image_id = img_id
-    canvas.filename_text_id = text_id
 
-    return file_path
+
+
+
+
+
+
+
+
+
+    # canvas.image_id = img_id
+    # canvas.filename_text_id = text_id
+
+    # return file_path
