@@ -10,8 +10,9 @@ from subwindow3 import *
 import customtkinter as ctk
 from theme import *
 from load_image import *
-from select_folder import *
+from select_save_folder import *
 from round_rectangle import *
+from test import *
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui2/build/assets/frame0")
@@ -95,7 +96,7 @@ button04 = ctk.CTkButton(window, text="Feedback",
     border_color=button_border_colour)
 button04.place(x=365, y=35)
 
-button04 = ctk.CTkButton(window, text="Subscribe to Updates",
+button05 = ctk.CTkButton(window, text="Subscribe to Updates",
                         command=lambda: print("Update clicked"),
                         width=65,height=25,
                         font=("Roboto Bold", 12 * -1),
@@ -104,7 +105,7 @@ button04 = ctk.CTkButton(window, text="Subscribe to Updates",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
-button04.place(x=435, y=35)
+button05.place(x=435, y=35)
 
 canvas.create_text(
     950.0,
@@ -170,7 +171,7 @@ image_size_spinbox.place(
 )
 
 
-button1 = ctk.CTkButton(window, text="Load Image",
+button_loadimg = ctk.CTkButton(window, text="Load Image",
                         command=lambda: load_image(canvas, 550, 250, 200, 170),
                         width=120,height=40,
                         font=("Roboto Bold", 14 * -1),
@@ -179,12 +180,12 @@ button1 = ctk.CTkButton(window, text="Load Image",
                         corner_radius=8,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour  )
-button1.place(x=30, y=150)
+button_loadimg.place(x=30, y=150)
 round_rectangle(canvas, 160, 150, 250, 40, radius=8)
 
 
-button10 = ctk.CTkButton(window, text="Save Folder",
-                        command=lambda: select_folder(canvas, text_x=180, text_y=230),
+button_save_folder = ctk.CTkButton(window, text="Save Folder",
+                        command=lambda: select_save_folder(canvas, text_x=180, text_y=230),
                         width=120,height=40,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
@@ -192,11 +193,11 @@ button10 = ctk.CTkButton(window, text="Save Folder",
                         corner_radius=8,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour  )
-button10.place(x=30, y=210)
+button_save_folder.place(x=30, y=210)
 round_rectangle(canvas, 160, 210, 250, 40, radius=8)
 
 
-button4 = ctk.CTkButton(window, text="Optional Advanced Settings",
+button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
                         command=subwindow1,
                         width=380,height=65,
                         font=("Roboto Bold", 14 * -1),
@@ -205,20 +206,7 @@ button4 = ctk.CTkButton(window, text="Optional Advanced Settings",
                         corner_radius=8,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
-button4.place(x=30, y=270)
-
-
-#reserve space for faz
-# button7 = ctk.CTkButton(window, text="Free/Rapid FAZ",
-#                         command=lambda: print("Free FAZ clicked"),
-#                         width=130,height=40,
-#                         font=("Roboto Bold", 14 * -1),
-#                         text_color=text_colour,
-#                         fg_color=button_green_colour,
-#                         corner_radius=8,border_width=1,
-#                         hover_color=button_green_hover,
-#     border_color=button_border_colour  )
-# button7.place(x=30, y=325)
+button_advanced_settings.place(x=30, y=270)
 
 # faz type dropdown
 faz_type_list = ["Free FAZ", "Rapid FAZ"]
@@ -247,7 +235,7 @@ button8 = ctk.CTkButton(window, text="Measure FAZ",
 button8.place(x=180, y=355)
 
 
-button5 = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
+button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
                         command=subwindow2,
                         width=380,height=65,
                         font=("Roboto Bold", 14 * -1),
@@ -256,10 +244,10 @@ button5 = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
                         corner_radius=8,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
-button5.place(x=30, y=415)
+button_regional_analysis.place(x=30, y=415)
 
 
-button5 = ctk.CTkButton(window, text="Optional Batch Processing Settings",
+button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
                         command=subwindow3,
                         width=380,height=65,
                         font=("Roboto Bold", 14 * -1),
@@ -268,10 +256,10 @@ button5 = ctk.CTkButton(window, text="Optional Batch Processing Settings",
                         corner_radius=8,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
-button5.place(x=30, y=500)
+button_batch_processing.place(x=30, y=500)
 
 
-button3 = ctk.CTkButton(window, text="Process",
+button_process = ctk.CTkButton(window, text="Process",
                         command=lambda: print("Process clicked"),
                         width=380,height=80,
                         font=("Roboto Bold", 14 * -1),
@@ -280,7 +268,7 @@ button3 = ctk.CTkButton(window, text="Process",
                         corner_radius=8,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour  )
-button3.place(x=30, y=585)
+button_process.place(x=30, y=585)
 
 
 round_rectangle(canvas, 430, 100, 240, 275, radius=8)
