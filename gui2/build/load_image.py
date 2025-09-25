@@ -106,8 +106,7 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.imgShape = "rect"
-    canvas.imgOriginal = original_img.copy()
+    canvas.img_original = original_img.copy()
     canvas.FAZ_ctr = (orig_h / 2.0, orig_w / 2.0)
 
     # # Create a per-image save folder if base dir provided
