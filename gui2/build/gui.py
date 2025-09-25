@@ -31,6 +31,7 @@ image_size_var = IntVar()  # Variable for Image Size Spinbox
 img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 faz_type_var = StringVar(value="Rapid FAZ")  # Variable for FAZ Type dropdown
 
+
 canvas = Canvas(
     window,
     bg = bg_colour,
@@ -40,6 +41,12 @@ canvas = Canvas(
     highlightthickness = 0,
     relief = "ridge"
 )
+
+canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
+canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
+canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
+canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
+
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -198,7 +205,7 @@ round_rectangle(canvas, 160, 210, 250, 40, radius=8)
 
 
 button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
-                        command=subwindow1,
+                        command=lambda: subwindow1(canvas),
                         width=380,height=65,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
