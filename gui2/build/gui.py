@@ -172,7 +172,7 @@ image_size_spinbox.place(
 
 
 button_loadimg = ctk.CTkButton(window, text="Load Image",
-                        command=lambda: load_image(canvas, 550, 250, 200, 170),
+                        command=lambda: load_image(canvas, 550, 250, 180, 170),
                         width=120,height=40,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
