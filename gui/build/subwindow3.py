@@ -12,7 +12,7 @@ def close(subwindow):
   subwindow.update()
 
 def subwindow3():
-  ASSETS_PATH = Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui2/subwindow3/build/assets/frame0")
+  ASSETS_PATH = Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/subwindow3/build/assets/frame0")
 
 
   def relative_to_assets(path: str) -> Path:
