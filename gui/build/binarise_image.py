@@ -36,8 +36,8 @@ def binarize_image(canvas):
     else:
         Im = canvas.img_original
 
-    # --- Apply Frangi filter if selected (stub) ---
-    if getattr(canvas, "frangi_bool", False) and canvas.frangi_bool:
+    # --- Apply Frangi filter (default to true)---
+    if canvas.frangi_bool:
         print("Frangi filter selected — not yet implemented, using input image.")
         opts = {
             'sigmamin': 1,
