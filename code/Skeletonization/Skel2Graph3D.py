@@ -1,9 +1,29 @@
 from typing import Any
 import numpy as np
 from scipy import sparse
-from skimage.measure import label
-from scipy.ndimage import label as scp_label
+from scipy.ndimage import label
 from pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
+
+class node_cluster:
+    def __init__(self, nodes_idx: list[int], ep: int):
+        self.nodes_idx = nodes_idx
+        self.links = []
+        self.conn = []
+        self.ep = ep
+        self.comx = None
+        self.comy = None
+        self.comz = None
+        self.label = None
+
+    def find_center_mass(self, skel: np.ndarray):
+        x, y, z = np.unravel_index(self.nodes_idx, skel.shape)
+        self.comx = np.mean(x)
+        self.comy = np.mean(y)
+        self.comz = np.mean(z)
+    
+    def assign_label(self, lm: np.ndarray):
+        self.label = lm.ravel()[self.nodes_idx[0]]
+
 
 def skel2graph3d(skel, THR):
     """
@@ -34,13 +54,12 @@ def skel2graph3d(skel, THR):
     http://uk.mathworks.com/matlabcentral/fileexchange/43527-skel2graph-3d
     """
     # pad volume with zeros
+    skel = skel[:, :, np.newaxis]
     skel = np.pad(skel, pad_width=1, mode='constant')
     
     # label connected components 
-    lm = label(skel, connectivity=3)
+    lm, num_components= label(skel, structure=np.ones((3, 3, 3)))
     
-    # get image dimensions
-    w, l, h = skel.shape
     skel2 = skel.astype(np.uint16) # needed for labeling nodes etc.
     
     # all foreground (True) voxels, as flat indices
@@ -51,10 +70,10 @@ def skel2graph3d(skel, THR):
         raise ValueError("No skeletonized data: the input 3D mask contains no foreground voxels.")
     
     # 26-nh of all canal voxels
-    nh = pk_get_nh(skel, list_canal)       # shape: (N, 27)
+    nh = pk_get_nh(skel, list_canal)       # shape: (len(list_canal), 27)
 
     # 26-nh indices of all canal voxels
-    nhi = pk_get_nh_idx(skel, list_canal)  # shape: (N, 27)
+    nhi = pk_get_nh_idx(skel, list_canal)  # shape: (len(list_canal), 27)
 
     # num of 26-nb of each skel voxel + 1
     sum_nh = np.sum(nh.astype(bool), axis=1)
@@ -83,49 +102,42 @@ def skel2graph3d(skel, THR):
         cans_all = np.empty((0, 3), dtype=int)
     
     # group clusters of node voxels to nodes
-    node, link = [], []
+    node, link = [],[]
 
-    tmp = np.zeros((w, l, h), dtype=bool)
+    tmp = np.zeros(skel.shape, dtype=bool)
     tmp.ravel()[nodes] = True
-    labelimg, num_realnodes = scp_label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
+    labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
+    cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
 
-    # create node structure for branching points (node metadata)
-    for labelidx in range(1, num_realnodes+1):
-        idxs = np.flatnonzero(labelimg == labelidx)
-        x, y, z = np.unravel_index(idxs, (w,l,h))
-        node.append({
-            'idx': idxs.tolist(),
-            'links': [], # indices to access each link's metadata (defined below)
-            'conn': [],
-            'comx': float(np.mean(x)),
-            'comy': float(np.mean(y)),
-            'comz': float(np.mean(z)),
-            'ep': 0,
-            'label': int(lm.flat[idxs[0]]),
-        })
-        skel2.flat[idxs] = len(node)  # assign index to node voxels
+    # add node metadata
+    for i in range(num_clustered_nodes):
+        l = lm.flatten()[cluster_indices]
+        new_node = node_cluster(cluster_indices[i], 0)
+        new_node.find_center_mass(skel.shape)
+        new_node.assign_label(lm)
+        node.append(new_node)
 
-    # cluster endpoint voxels ('ep')
-    tmp = np.zeros((w, l, h), dtype=bool)
+        # assign index to node voxels in skel2
+        id = i + 2
+        skel2.flatten()[new_node.nodes_idx] = id
+
+    # add endpoint metadata
+    tmp = np.zeros(skel.shape, dtype=bool)
     tmp.ravel()[ep] = True
-    labelimg, num_endnodes = scp_label(tmp, structure=np.ones((3,3,3)))
-    for idx in range(1, num_endnodes+1):
-        idxs = np.flatnonzero(labelimg == idx)
-        ni = num_realnodes + idx - 1
-        x, y, z = np.unravel_index(idxs, (w, l, h))
+    labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
+    cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
 
-        # create node structure for endpoints (node metadata)
-        node.append({
-            'idx': idxs.tolist(),
-            'links': [], # indices to access each link's metadata (defined below)
-            'conn': [],
-            'comx': float(np.mean(x)),
-            'comy': float(np.mean(y)),
-            'comz': float(np.mean(z)),
-            'ep': 1,
-            'label': int(lm.flat[idxs[0]]),
-        })
-        skel2.flat[idxs] = len(node)
+    for i in range(num_clustered_nodes):
+        l = lm.flatten()[cluster_indices]
+        new_node = node_cluster(cluster_indices[i], 0)
+        new_node.find_center_mass(skel.shape)
+        new_node.assign_label(lm)
+        node.append(new_node)
+
+        # assign index to node voxels in skel2
+        id = i + 2
+        skel2.flatten()[new_node.nodes_idx] = id
+
         
     l_idx = 0
 
@@ -166,7 +178,7 @@ def skel2graph3d(skel, THR):
                  - skel2: map with values 0 (background), 1 (foreground unvisited cannal voxels), <2 (labeled nodes)
                  - node: list of clustered nodes (both ep and branch)
                  - i: index of current visited node in list 'node'
-                 - j: not sure yet
+                 - j: individual node that is part of the ith clustered node
                  - cand: cannal voxel that is neighbor to the current node
                  - cans_all: matrix with neighbors of each cannal voxel
                  - c2n: some weird list for lienar index lookups of neighbors of cannal voxels I think
