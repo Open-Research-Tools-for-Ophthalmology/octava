@@ -1,5 +1,6 @@
 from typing import Any
 import numpy as np
+from scipy import sparse
 from scipy.ndimage import label
 from pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
 
@@ -7,36 +8,21 @@ class node_cluster:
     def __init__(self, nodes_idx: list[int], ep: int):
         self.nodes_idx = nodes_idx
         self.links = []
-        self.conn = [] # list of indices (w respect to the node list) of all endpoint node voxels (connections)
+        self.conn = []
         self.ep = ep
         self.comx = None
         self.comy = None
         self.comz = None
         self.label = None
 
-    def find_center_mass(self, skel_dim: tuple[int, int, int]) -> None:
-        x, y, z = np.unravel_index(self.nodes_idx, skel_dim)
+    def find_center_mass(self, skel: np.ndarray):
+        x, y, z = np.unravel_index(self.nodes_idx, skel.shape)
         self.comx = np.mean(x)
         self.comy = np.mean(y)
         self.comz = np.mean(z)
     
     def assign_label(self, lm: np.ndarray):
         self.label = lm.ravel()[self.nodes_idx[0]]
-
-    def assign_links(self, l_idx: int) -> None:
-        self.links.append(l_idx)
-
-    def assign_conn(self, ep_idx: int) -> None:
-        self.conn.append(ep_idx)
-
-class Link:
-    def __init__(self, start: int, end: int, path: list[int], label: int) -> None:
-        self.start = start
-        self.end = end
-        self.path = path
-        self.label = None
-        self.links = None
-        self.conn = None
 
 
 def skel2graph3d(skel, THR):
@@ -70,19 +56,19 @@ def skel2graph3d(skel, THR):
     # pad volume with zeros
     skel = skel[:, :, np.newaxis]
     skel = np.pad(skel, pad_width=1, mode='constant')
-
+    
     # label connected components 
-    lm, num_components= label(skel, structure=np.ones((3, 3, 3)))
-
+    lm, _ = label(skel, structure=np.ones((3, 3, 3)))
+    
     skel2 = skel.astype(np.uint16) # needed for labeling nodes etc.
-
+    
     # all foreground (True) voxels, as flat indices
     list_canal = np.flatnonzero(skel)
 
     # if image contains no skeletonized data, return empty elements
     if len(list_canal) == 0:
         raise ValueError("No skeletonized data: the input 3D mask contains no foreground voxels.")
-
+    
     # 26-nh of all canal voxels
     nh = pk_get_nh(skel, list_canal)       # shape: (len(list_canal), 27)
 
@@ -91,12 +77,12 @@ def skel2graph3d(skel, THR):
 
     # num of 26-nb of each skel voxel + 1
     sum_nh = np.sum(nh.astype(bool), axis=1)
-
+    
     # node/endpoint/canal assignment
     nodes = list_canal[sum_nh > 3] # all canal voxels with >2 nb are nodes -> branching points
     ep    = list_canal[sum_nh == 2] # all canal voxels with exactly one nb are end nodes -> endpoints
     cans  = list_canal[sum_nh == 3] # all canal voxels with exactly 2 nb -> segments
-
+    
     # Nx3 matrix with the 2 neighbors of each canal voxel
     if cans.size > 0:
         can_nh_idx = pk_get_nh_idx(skel, cans)
@@ -111,16 +97,34 @@ def skel2graph3d(skel, THR):
         can_nb = can_nb[:, -2:]  # keep last two columns
 
         # add neighbours to canalicular voxel list (this might include nodes)
-        cans = np.column_stack([cans, can_nb])
+        cans_all = np.column_stack([cans, can_nb])
     else:
-        cans = np.empty((0, 3), dtype=int)
-
+        cans_all = np.empty((0, 3), dtype=int)
+    
     # group clusters of node voxels to nodes
     node, link = [],[]
 
-    # add node metadata
     tmp = np.zeros(skel.shape, dtype=bool)
     tmp.ravel()[nodes] = True
+    labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
+    cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
+
+    # add node metadata
+    for i in range(num_clustered_nodes):
+        print(cluster_indices)
+        l = lm.flatten()[cluster_indices]
+        new_node = node_cluster(cluster_indices[i], 0)
+        new_node.find_center_mass(skel.shape)
+        new_node.assign_label(lm)
+        node.append(new_node)
+
+        # assign index to node voxels in skel2
+        id = i + 2
+        skel2.flatten()[new_node.nodes_idx] = id
+
+    # add endpoint metadata
+    tmp = np.zeros(skel.shape, dtype=bool)
+    tmp.ravel()[ep] = True
     labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
     cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
 
@@ -133,98 +137,151 @@ def skel2graph3d(skel, THR):
 
         # assign index to node voxels in skel2
         id = i + 2
-        skel2.ravel()[new_node.nodes_idx] = id
+        skel2.flatten()[new_node.nodes_idx] = id
 
-    # add endpoint metadata
-    tmp = np.zeros(skel.shape, dtype=bool)
-    tmp.ravel()[ep] = True
-    labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
-    cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
-
-
-    for i in range(num_clustered_nodes):
-        l = lm.flatten()[cluster_indices]
-        new_node = node_cluster(cluster_indices[i], 0)
-        new_node.find_center_mass(skel.shape)
-        new_node.assign_label(lm)
-        node.append(new_node)
-
-        # assign index to node voxels in skel2
-        id = len(node) + 1
-        skel2.ravel()[new_node.nodes_idx] = id
-
+        
     l_idx = 0
 
-    c2n = np.zeros(skel.shape, dtype=int)
-    c2n_flat = c2n.ravel()
-    c2n_flat[cans[:, 0]] = np.arange(1, cans.shape[0] + 1)
-    c2n = c2n_flat
+    c2n = np.zeros(w*l*h, dtype=int)
+    if cans_all.shape[0] > 0:
+        c2n[cans_all[:,0]] = np.arange(cans_all.shape[0])
+    s2n = np.zeros(w*l*h, dtype=int)
+    if nhi.shape[0] > 0:
+        s2n[nhi[:,13]] = np.arange(nhi.shape[0])
 
-    s2n = np.zeros(skel.shape, dtype=int)
-    s2n[nhi[:, 13]] = np.arange(1, nhi.shape[0] + 1)
+    # visit all nodes
+    for i, n in enumerate(node):
 
-    for curr_cluster_node_idx in range(len(node)):
-        link_indices = s2n[node[curr_cluster_node_idx].nodes_idx] - 1
+        # find all canal vox connected to curr node
+        this_idxs = n['idx']
+        link_idx = s2n[this_idxs]
 
-        for link_idx in range(len(link_indices)):
-            link_cands = nhi[link_indices[link_idx], nh[link_indices[link_idx], :] == 1]
+        # visit all voxels of this node
+        for j in range(len(link_idx)):
 
-            # short branches with 1 endpoint
-            ep_cands = np.intersect1d(link_cands, ep)
-            link_cands = link_cands[skel2.ravel()[link_cands] == 1]
-            link_cands = np.intersect1d(link_cands, cans[:, 0])
+            lli = link_idx[j]
+            if lli == 0:
+                continue
 
-        for can_idx in range(len(link_cands)):
-            path, end_cluster_node_idx, ept = pk_follow_link(
-                skel2, node, curr_cluster_node_idx, link_idx, link_cands[can_idx], cans, c2n
-            )
-            # mark seen path 
-            skel2.ravel()[path[1:-1]] = 0
+            # all potential unvisited links emanating from this voxel
+            link_cands = nhi[lli, np.where(nh[lli,:])[0]]
 
-            # remove threshold branches
-            if (ept and len(path) > THR) or (not ept and curr_cluster_node_idx != end_cluster_node_idx):
-                
-                # create link structure
-                new_link = Link(curr_cluster_node_idx, 
-                                end_cluster_node_idx, 
-                                path, 
-                                lm.ravel()[path[1:-1]])
-                
-                link.append(new_link)
+            # branches connected to the node that are endpoints
+            ep_cands = np.intersect1d(link_cands, ep) # 1D IDs of all the actual endpoint nodes
+            cond = (skel2.flat[link_cands] == 1)
+            link_cands = link_cands[cond]
+            link_cands = np.intersect1d(link_cands, cans_all[:,0]) if cans_all.shape[0] > 0 else []
 
-                # udpate linkage in curr_node  
-                curr_node = node[curr_cluster_node_idx]
-                curr_node.links.append(l_idx)
-                curr_node.conn.append(end_cluster_node_idx)
+            for cand in link_cands:
+                print("Entry", i)
+                ''' 
+                params:
+                 - skel2: map with values 0 (background), 1 (foreground unvisited cannal voxels), <2 (labeled nodes)
+                 - node: list of clustered nodes (both ep and branch)
+                 - i: index of current visited node in list 'node'
+                 - j: individual node that is part of the ith clustered node
+                 - cand: cannal voxel that is neighbor to the current node
+                 - cans_all: matrix with neighbors of each cannal voxel
+                 - c2n: some weird list for lienar index lookups of neighbors of cannal voxels I think
+                '''
+                vox, n_idx, ept = pk_follow_link(skel2, node, i, j, cand, cans_all, c2n)
+                print("Exit?")
+                print("\n")
+                skel2.flat[np.array(vox)[1:-1]] = 0 # set cannal voxels to 0 to indicate that they have been traversed
 
-                # update linkage in end_node
-                end_node = node[end_cluster_node_idx]
-                end_node.links.append(l_idx)
-                end_node.conn.append(curr_cluster_node_idx)
-
-                l_idx += 1
-        
-        # if short branches are allowed
-        if THR == 0:
-            for ep_cand_idx in range(len(ep_cands)):
-                val = skel2.ravel()[ep_cands[ep_cand_idx]].astype(np.int64) # avoid overflow
-                ep_idx = val - 2
-
-                if ep_idx and ep_idx != curr_cluster_node_idx:
-                    skel2.ravel()[ep_cands[ep_cand_idx]] = 0
-                    new_link = Link(curr_cluster_node_idx,
-                                    end_cluster_node_idx,
-                                    path,
-                                    lm.ravel()[ep_cands[ep_cand_idx]])
-                    
-                    curr_node = node[curr_cluster_node_idx]
-                    curr_node.links.append(l_idx)
-                    curr_node.conn.append(end_cluster_node_idx)
-
-                    end_node = node[end_cluster_node_idx]
-                    end_node.links.append(l_idx)
-                    end_node.conn.append(curr_cluster_node_idx)
-
+                # create link structure (link metadata) respecting the THR branch size
+                if ((ept and len(vox) > THR) or (not ept and i != n_idx)):
+                    link.append({
+                        'n1': i,
+                        'n2': n_idx,
+                        'point': vox,
+                        'label': int(lm.flat[vox[0]]) # we label per the starting node label
+                    })
+                    n['links'].append(l_idx)
+                    n['conn'].append(int(n_idx))
+                    node[n_idx]['links'].append(l_idx)
+                    node[n_idx]['conn'].append(int(i))
                     l_idx += 1
                     
-        return node, link
+
+            #######################################################
+            # GIVING ISSUES DUE TO INCORRECT INDEXING INTO NODE   #
+            # LIST. I BELIEVE THE CODE ASSUMES THAT EP_CAND HAS   #
+            # BEEN ADDED TO THE NODE LIST ALREADY, BUT NOT ALWAYS #
+            # THAT'S THE CASE                                     #
+            ####################################################### 
+
+            # If short branches allowed (2 connected pixels)      
+            if THR == 0:
+                for ep_cand in ep_cands:
+                    n_idx = int(skel2.flat[ep_cand]) - 1
+                    if n_idx > 0 and n_idx != i:
+                        skel2.flat[ep_cand] = 0
+                        link.append({
+                            'n1': i,
+                            'n2': int(n_idx),
+                            'point': [int(ep_cand)],
+                            'label': int(lm.flat[ep_cand])
+                        })
+                        n['links'].append(l_idx)
+                        n['conn'].append(n_idx)
+                        node[n_idx]['links'].append(l_idx)
+                        node[n_idx]['conn'].append(i)
+                        l_idx += 1
+
+    # Mark single-link nodes as endpoints
+    if node:
+        ep_idx = [idx for idx, nd in enumerate(node) if len(nd['links']) == 1]
+        for idx in ep_idx:
+            node[idx]['ep'] = 1
+
+    # number of nodes
+    n_nodes = len(node)
+
+    ###############################################################
+    # ======== UNTESTED CODE SINCE MATRIX IS NOT UTILIZED ======= #
+    ###############################################################
+
+    # initialize matrix
+    A = np.zeros((n_nodes, n_nodes), dtype=int)
+
+    # for all nodes, make according entries into matrix for all its links
+    for i, nd in enumerate(node):
+        idx1 = [jj for jj,jjv in enumerate(nd['conn']) if jjv>0]
+        idx2 = [jj for jj,jjv in enumerate(nd['links']) if jjv>=0]
+        idx = np.intersect1d(idx1, idx2)
+        for j in idx: # for all its links
+            link_idx = nd['links'][j]
+            if i == link[link_idx]['n1']: # if we are the starting point
+                ln = link[link_idx]['n2']
+                L = len(link[link_idx]['point'])
+                A[i, ln] = L
+                A[ln, i] = L
+            if i == link[link_idx]['n2']: # if we are the end point
+                ln = link[link_idx]['n1']
+                L = len(link[link_idx]['point'])
+                A[i, ln] = L
+                A[ln, i] = L
+
+    # Convert adjacency matrix to sparse
+    A = sparse.csr_matrix(A)
+
+    # transform all voxel and position indices back to non-padded coordinates
+    if node:
+        for nd in node:
+            x, y, z = np.unravel_index(nd['idx'], (w, l, h))
+            # -1 for the pad
+            x, y, z = np.array(x)-1, np.array(y)-1, np.array(z)-1
+            nd['idx'] = np.ravel_multi_index((x, y, z), (w-2, l-2, h-2))
+            nd['comx'] -= 1
+            nd['comy'] -= 1
+            nd['comz'] -= 1
+
+    # transform all link voxel indices back to non-padded coordinates
+    for lk in link:
+        x, y, z = np.unravel_index(lk['point'], (w, l, h))
+        # -1 for the pad
+        x, y, z = np.array(x)-1, np.array(y)-1, np.array(z)-1
+        lk['point'] = np.ravel_multi_index((x, y, z), (w-2, l-2, h-2))
+    
+    return skel2, node, link

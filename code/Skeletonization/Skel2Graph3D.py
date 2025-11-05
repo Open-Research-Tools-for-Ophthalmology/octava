@@ -53,8 +53,10 @@ def skel2graph3d(skel, THR):
     Exchange:
     http://uk.mathworks.com/matlabcentral/fileexchange/43527-skel2graph-3d
     """
+    print("Helo???")
     # pad volume with zeros
     skel = skel[:, :, np.newaxis]
+    print(skel.shape)
     skel = np.pad(skel, pad_width=1, mode='constant')
     
     # label connected components 
