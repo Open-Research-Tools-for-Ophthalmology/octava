@@ -390,6 +390,7 @@ tmp.ravel()[nodes] = True
 labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
 cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
 
+# create cluster nodes 
 for i in range(num_clustered_nodes):
     l = lm.flatten()[cluster_indices[i]] # I want to know the lin_idx of the voxels that constitute this cluster node!
     new_node = node_cluster(cluster_indices[i], 0)
@@ -404,13 +405,13 @@ for i in range(num_clustered_nodes):
 # add endpoint metadata
 tmp = np.zeros(skel.shape, dtype=bool)
 tmp.ravel()[ep] = True
-labelimg, num_clustered_nodes = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
-cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_clustered_nodes+1)]
+labelimg, num_endpoints = label(tmp, structure=np.ones((3,3,3))) # number of unique nodes
+cluster_indices = [np.flatnonzero(labelimg == i) for i in range(1, num_endpoints+1)]
 
 
-for i in range(num_clustered_nodes):
+for i in range(num_endpoints):
     l = lm.flatten()[cluster_indices[i]]
-    new_node = node_cluster(cluster_indices[i], 0)
+    new_node = node_cluster(cluster_indices[i], 1)
     new_node.find_center_mass(skel.shape)
     new_node.assign_label(lm)
     node.append(new_node)
@@ -430,6 +431,8 @@ s2n = np.zeros(skel.shape, dtype=int)
 s2n_flat = s2n.ravel()
 s2n_flat[nhi[:, 13]] = np.arange(1, nhi.shape[0] + 1)
 s2n = s2n_flat
+
+d_skel2 = np.copy(skel2)
 
 for curr_cluster_node_idx in range(len(node)):
     link_indices = s2n[node[curr_cluster_node_idx].nodes_idx] - 1
@@ -478,27 +481,29 @@ for curr_cluster_node_idx in range(len(node)):
                 l_idx += 1
         print("\n")
     
-    # if short branches are allowed
-    if thr == 0:
-        for ep_cand_idx in range(len(ep_cands)):
-            val = skel2.ravel()[ep_cands[ep_cand_idx]].astype(np.int64) # avoid overflow
-            ep_idx = val - 2
+        # if short branches are allowed
+        if thr == 0:
+            print('are you even running?')
+            for ep_cand_idx in range(len(ep_cands)):
+                val = skel2.ravel()[ep_cands[ep_cand_idx]].astype(np.int64) # avoid overflow
+                ep_idx = val - 2
+                print(ep_idx)
 
-            if ep_idx and ep_idx != curr_cluster_node_idx:
-                skel2.ravel()[ep_cands[ep_cand_idx]] = 0
-                new_link = Link(curr_cluster_node_idx,
-                                ep_idx,
-                                ep_cands[ep_cand_idx],
-                                lm.ravel()[ep_cands[ep_cand_idx]])
-                print(lm.ravel()[ep_cands[ep_cand_idx]])
-                link.append(new_link)
-                
-                curr_node = node[curr_cluster_node_idx]
-                curr_node.links.append(l_idx)
-                curr_node.conn.append(end_cluster_node_idx)
+                if ep_idx and ep_idx != curr_cluster_node_idx:
+                    skel2.ravel()[ep_cands[ep_cand_idx]] = 0
+                    new_link = Link(curr_cluster_node_idx,
+                                    ep_idx,
+                                    ep_cands[ep_cand_idx],
+                                    lm.ravel()[ep_cands[ep_cand_idx]])
+                    print(lm.ravel()[ep_cands[ep_cand_idx]])
+                    link.append(new_link)
+                    
+                    curr_node = node[curr_cluster_node_idx]
+                    curr_node.links.append(l_idx)
+                    curr_node.conn.append(end_cluster_node_idx)
 
-                end_node = node[end_cluster_node_idx]
-                end_node.links.append(l_idx)
-                end_node.conn.append(curr_cluster_node_idx)
+                    end_node = node[end_cluster_node_idx]
+                    end_node.links.append(l_idx)
+                    end_node.conn.append(curr_cluster_node_idx)
 
-                l_idx += 1
+                    l_idx += 1
