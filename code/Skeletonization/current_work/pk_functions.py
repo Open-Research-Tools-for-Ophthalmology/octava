@@ -103,7 +103,7 @@ def pk_follow_link(skel2, nodes, curr_node_cluster_idx, curr_node_idx, can_idx, 
             done = True
 
         else:
-            path.append(int(curr_node_idx))
-            curr_node_idx = int(cand)
+            path.append(int(can_idx))
+            can_idx = int(cand)
 
     return (path, n_idx, ep)
