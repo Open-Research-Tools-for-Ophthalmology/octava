@@ -32,6 +32,7 @@ def binarize_image(canvas):
     # --- Apply median filter if selected ---
     if getattr(canvas, "MedfiltCheckBox", False) and canvas.MedfiltCheckBox:
         ksize = int(canvas.kernelSize)  # assuming scalar
+        #todo4: apply the same medianfilter
         Im = median_filter(canvas.img_original, size=(ksize, ksize))
     else:
         Im = canvas.img_original
@@ -40,17 +41,18 @@ def binarize_image(canvas):
     if canvas.frangi_bool:
         print("Frangi filter selected — not yet implemented, using input image.")
         opts = {
-            'sigmamin': 1,
-            'sigmamax': int(canvas.sigma_max),
+            'sigmamin': int(canvas.frangi_min),
+            'sigmamax': int(canvas.frangi_max),
             'sigmastepsize': 2,
             'correctionconst1': 0.8,
             'correctionconst2': 15
         }
-        #todo: Im = frangi_2Dfilter(Im, opts)
+        #todo3: Im = frangi_2Dfilter(Im, opts)
 
     # --- Always use Fuzzy Means ---
     nth = 2
-    BinaryImage = fuzzy_thresholding(Im, nth, 3)
+    #todo1: check fuzzy thresholding function
+    BinaryImage = fuzzy_thresholding(Im, nth, 3)-1
 
     # --- Convert to 255 (white vessels) and 0 (black background) ---
     ref_value = BinaryImage[rr, cc]
@@ -59,4 +61,4 @@ def binarize_image(canvas):
     # --- Store result back to canvas ---
     canvas.BinaryImage = BinaryImage
 
-    #todo: display the binarized image on the canvas
+    #todo2: display the binarized image on the canvas

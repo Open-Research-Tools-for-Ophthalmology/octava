@@ -72,37 +72,30 @@ def iexpansion(X:np.ndarray, nx:int, ny:int) -> np.ndarray:
     return np.vstack((top, mid, bot))
 
 
-def trapezoid_fuzzy_membership(x: np.ndarray, a: float, b: float, c: float, d: float) -> np.ndarray:
-    """
-    Compute the trapezoidal fuzzy membership values for input x, robust to division by zero.
-
-    Parameters:
-    - x: Input NumPy array
-    - a, b, c, d: Float parameters defining the shape of the trapezoid.
-
-    Returns:
-    - y: NumPy array of membership values in [0, 1], same shape as x
-    """
+def trapezoid_fuzzy_membership(x, a, b, c, d):
     x = x.astype(np.float64)
-    y = np.zeros_like(x)
-    epsilon = 1e-8
-
     if (b < a) or (c < b) or (d < c):
         raise ValueError('Bad params')
 
-    # Robust denominators
-    denom_ab = b - a if abs(b - a) > epsilon else epsilon
-    denom_cd = d - c if abs(d - c) > epsilon else epsilon
+    y = np.zeros_like(x, dtype=np.float64)
+    eps = 1e-12
 
-    # Standard trapezoid (handles degenerate cases robustly)
-    y += ((x - a) / denom_ab) * ((x > a) & (x < b))                # rising edge
-    y += ((x >= b) & (x <= c))                                     # flat top
-    y += ((x - c) * (-1) / denom_cd + 1) * ((x > c) & (x < d))     # falling edge
+    if a == b:
+        y += ((x - c) * (-1) / max(d - c, eps) + 1) * ((x > c) & (x < d))
+        y += (x <= c)
+    elif b == c:
+        y += (x - a) / max(b - a, eps) * ((x > a) & (x <= b))
+        y += ((x - c) * (-1) / max(d - c, eps) + 1) * ((x > c) & (x < d))
+    elif c == d:
+        y += (x - a) / max(b - a, eps) * ((x > a) & (x < b))
+        y += (x >= b)
+    else:
+        y += (x - a) / max(b - a, eps) * ((x > a) & (x < b))
+        y += ((x >= b) & (x <= c))
+        y += ((x - c) * (-1) / max(d - c, eps) + 1) * ((x > c) & (x < d))
 
-    # Clip to [0, 1] just in case
-    y = np.clip(y, 0, 1)
+    return np.clip(y, 0, 1)
 
-    return y
 
 def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
     """
@@ -146,7 +139,8 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
             a4 = Xfcm[1]
         elif imax == nth - 1: # last cluster
             a1 = Xfcm[-2]
-            a2 = a3 = a4 = max_gX
+            a2 = Xfcm[-1]
+            a3 = a4 = max_gX
         else:
             a1 = Xfcm[imax - 1]
             a2 = a3 = Xfcm[imax]
@@ -157,9 +151,12 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
 
     medXtrap3 = np.zeros_like(Xtrap3)
     for ii in range(nth):
-        medXtrap3[:, :, ii] = median_filter(Xtrap3[:, :, ii], size=(w, w))
+        medXtrap3[:, :, ii] = median_filter(Xtrap3[:, :, ii], size=(w, w),
+                                    mode='constant', cval=0.0)
 
     Y = np.argmax(medXtrap3, axis=2) + 1 #! Axis 2 is the third dimension; +1 to match the index as in Matlab. May need to change the +1 based on the context
     Y = Y * (Y > 0) + (Y == 0)
 
     return Y
+
+
