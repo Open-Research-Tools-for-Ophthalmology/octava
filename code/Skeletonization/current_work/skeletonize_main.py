@@ -67,9 +67,6 @@ def BinarizeImage(Im:np.ndarray, frangi_sigma = 8, frangi_enabled = True, method
 
 
 def skeletonize_main(octa: np.ndarray, THR: int = 0):
-    '''
-    iluguykfujgl
-    '''
     # generate skeletonized iamge
     y, x = octa.shape
     L = octa.astype(bool)
@@ -96,24 +93,30 @@ def skeletonize_main(octa: np.ndarray, THR: int = 0):
     wl = sum([len(n.links) for n in nodes])
 
     # iterate to clean up network and get rid of excess nodes
-    print(y, x)
-    skel2 = graph2skel3d(nodes, links, y, y, 1) # not sure about y... 
-    nodes, links = skel2graph3d(skel2, 0)
+    skel2 = graph2skel3d(nodes, links, y, x, 1)  
+    nodes, links = skel2graph3d(skel2, 0) # passing 304x304x1
     wl_new = sum([len(n.links) for n in nodes])
 
-    # iterate the same steps until network lenght changed by less than 0.5%
+    # iterate the same steps until network length changed by less than 0.5%
     while (wl_new != wl):
         wl = wl_new
 
-        skel2 = graph2skel3d(nodes, links, y + 2, y + 2, 1)
+        skel2 = graph2skel3d(nodes, links, y, x, 1)
         nodes, links = skel2graph3d(skel2, 0)
 
         wl_new = sum([len(n.links) for n in nodes])
 
+    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+    axs[0].imshow(sk2, cmap = 'gray')
+    axs[1].imshow(skel2[:, :, 0], cmap = 'gray')
+
+    plt.tight_layout()
+    plt.show()
+
     return nodes, links
 
 if __name__ == "__main__":
-    octa = imread("../../../assets/MIPs/10301.bmp")
+    octa = imread("../../../assets/MIPs/10310.bmp")
 
     # Frangi vessel enhancement
     vessels = frangi(
@@ -133,4 +136,4 @@ if __name__ == "__main__":
         method="Adaptive Thresholding"
     )
 
-    nodes, links = skeletonize_main(adpt_mask, 0)
+    nodes, links = skeletonize_main(adpt_mask, 1)

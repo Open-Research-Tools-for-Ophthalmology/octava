@@ -153,7 +153,8 @@ def skel2graph3d(skel, thr = 0):
     # Add third dimension if missing and pad array
     if skel.ndim == 2:
         skel = skel[:, :, np.newaxis]
-        skel = np.pad(skel, pad_width=1, mode='constant')
+    
+    skel = np.pad(skel, pad_width=1, mode='constant')
 
     # label connected components 
     lm, num_components= label(skel, structure=np.ones((3, 3, 3)))
