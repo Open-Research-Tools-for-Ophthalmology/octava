@@ -60,6 +60,54 @@ class Link:
             f"  label: {self.label}\n"
             f")"
         )
+    
+
+#############################
+##### Helper functions  #####
+#############################
+
+def unpad_indices(indices, padded_shape):
+    ''' 
+    Convert linear indices defined with respect to a padded 3D skeletonized image 
+    into equivalent indices for the original unpadded 2D skeletonized image.
+
+    This function is useful when the skeleton was padded (e.g., by 1 voxel on all sides)
+    during processing — such as when using `skel2graph3d` — and you need to map voxel 
+    indices back to the original unpadded image coordinates.
+
+    Inputs
+    indices : array_like of int
+        Linear indices corresponding to voxels in the padded 3D skeleton array.
+    padded_shape : tuple of int
+        Shape of the padded 3D skeleton array (e.g., `(w, l, h)`).
+
+    Returns
+    np.ndarray of int
+        Linear indices corresponding to the same voxels, but expressed with respect 
+        to the unpadded skeleton array (i.e., with 1 voxel border removed along each axis).
+    '''
+    unpadded_shape = (padded_shape[0] - 2, padded_shape[1] - 2, padded_shape[2] - 2)
+    x, y, z = np.unravel_index(indices, padded_shape) # get all x, y, z coordinates of all linear indices that are wrt 3D skel
+    x, y, z = x - 1, y - 1, z - 1
+    valid = (
+        (x >= 0) & (x < unpadded_shape[0]) &
+        (y >= 0) & (y < unpadded_shape[1]) &
+        (z >= 0) & (z < unpadded_shape[2])
+    )
+
+    # check if any of the linear indices that are wrt to the 3D space are for some reason 
+    # out of bound for when moved to the 2D space (they shouldn't because 3D is just padding, no info should be lost!)
+    if not np.all(valid):
+        invalid_coords = np.column_stack([x[~valid], y[~valid], z[~valid]])
+        raise ValueError(
+            f"Some coordinates are out of bounds after unpadding:\n"
+            f"{invalid_coords[:10]}...\n"
+            f"Unpadded shape: {unpadded_shape}\n"
+            f"Total invalid: {np.sum(~valid)}"
+        )
+
+    x, y, z = x[valid], y[valid], z[valid]
+    return np.ravel_multi_index((x, y, z), unpadded_shape)
 
 def skel2graph3d(skel, thr = 0):
     """
@@ -279,5 +327,13 @@ def skel2graph3d(skel, thr = 0):
                         end_node.conn.append(curr_cluster_node_idx)
 
                         l_idx += 1
+        
+    # transform linear indices s.t they are represented wrt the 2D skeletonized image as 
+    # opposed to the 3D skeletonized padded image
+    for n in node:
+        n.nodes_idx = unpad_indices(np.array(n.nodes_idx), skel.shape)
+
+    for lnk in link:
+        lnk.path = unpad_indices(np.array(lnk.path), skel.shape)
 
     return node, link
