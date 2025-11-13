@@ -96,6 +96,7 @@ def skeletonize_main(octa: np.ndarray, THR: int = 0):
     wl = sum([len(n.links) for n in nodes])
 
     # iterate to clean up network and get rid of excess nodes
+    print(y, x)
     skel2 = graph2skel3d(nodes, links, y, y, 1) # not sure about y... 
     nodes, links = skel2graph3d(skel2, 0)
     wl_new = sum([len(n.links) for n in nodes])
@@ -104,7 +105,7 @@ def skeletonize_main(octa: np.ndarray, THR: int = 0):
     while (wl_new != wl):
         wl = wl_new
 
-        skel2 = graph2skel3d(nodes, links, y, y, 1)
+        skel2 = graph2skel3d(nodes, links, y + 2, y + 2, 1)
         nodes, links = skel2graph3d(skel2, 0)
 
         wl_new = sum([len(n.links) for n in nodes])

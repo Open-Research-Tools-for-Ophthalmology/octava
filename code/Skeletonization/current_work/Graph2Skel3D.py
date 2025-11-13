@@ -12,7 +12,11 @@ def graph2skel3d(nodes, links, w, l, h):
 
     Return [np.ndarray]: 3D boolean array representing the reconstructed skeleton.
     """
-    skel = np.zeros((w, l, h), dtype=bool)
+    # I will create the 3D skel exaclty as we do in skel2graph
+    # I will create the 2D np.ndarray, then add the additional dimension, then pad
+    skel = np.zeros((w, l), dtype=bool)
+    skel = skel[:, :, np.newaxis]
+    skel = np.pad(skel, pad_width=1, mode='constant')
 
     # for all nodes
     for n in nodes:
@@ -22,12 +26,9 @@ def graph2skel3d(nodes, links, w, l, h):
             pts = []
             for li in n.links:
                 if li >= 0:
-                    print(li)
-                    print(links[li])
-                    print(links[li].path)
-                    print()
                     pts.extend(links[li].path)
             if pts:
                 skel.flat[np.array(pts)] = True  # edge voxels
+                # how do we know that the points are going to be set in the z = 1 dimension though?
 
     return skel

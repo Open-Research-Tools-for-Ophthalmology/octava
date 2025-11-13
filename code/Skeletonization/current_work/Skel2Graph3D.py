@@ -102,8 +102,10 @@ def skel2graph3d(skel, thr = 0):
     Raises:
         - ValueError: if the input skeleton contains no foreground voxels.
     """
-    skel = skel[:, :, np.newaxis]
-    skel = np.pad(skel, pad_width=1, mode='constant')
+    # Add third dimension if missing and pad array
+    if skel.ndim == 2:
+        skel = skel[:, :, np.newaxis]
+        skel = np.pad(skel, pad_width=1, mode='constant')
 
     # label connected components 
     lm, num_components= label(skel, structure=np.ones((3, 3, 3)))
