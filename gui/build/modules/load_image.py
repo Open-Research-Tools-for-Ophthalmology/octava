@@ -1,7 +1,9 @@
 # load_image.py
 from tkinter import filedialog
 from PIL import Image, ImageTk, UnidentifiedImageError
+from modules.resize_image import *
 from pathlib import Path
+import numpy as np
 import os
 
 def load_image(canvas, x, y, text_x, text_y):
@@ -30,11 +32,12 @@ def load_image(canvas, x, y, text_x, text_y):
         return None
 
     # Store the full-resolution grayscale image
-    canvas.original_img = original_img
+    canvas.original_img = np.array(original_img)
+    canvas.original_img = canvas.original_img.astype(np.int16).astype(np.float64)
     orig_w, orig_h = original_img.size
 
     # Create a 200x200 resized version for display
-    preview = original_img.resize((200, 200), Image.LANCZOS)
+    preview = resize_image(original_img)
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
@@ -67,7 +70,6 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.img_original = original_img.copy()
     canvas.FAZ_ctr = (orig_h / 2.0, orig_w / 2.0)
 
     # # Create a per-image save folder if base dir provided

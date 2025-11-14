@@ -1,4 +1,3 @@
-import tkinter as tk
 
 def round_rectangle(canvas, x1, y1, width, height, radius=16, fill="#EFEFEF", outline="#EFEFEF"):
     """
