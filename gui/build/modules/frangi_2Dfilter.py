@@ -95,7 +95,7 @@ def frangi_2Dfilter(X: np.ndarray, opts: dict) -> np.ndarray:
     """
     # Generate sigmas inclusive of the upper bound, like MATLAB's a:b:c
     sigmas = np.arange(opts['sigmarange'][0],
-                       opts['sigmarange'][1] + opts['sigmastepsize'],
+                       opts['sigmarange'][1] + 1,
                        opts['sigmastepsize'])
     sigmas = np.sort(sigmas)
 
