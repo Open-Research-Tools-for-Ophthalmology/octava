@@ -4,43 +4,6 @@ from fuzzy_thresholding import *
 from frangi_2Dfilter import *
 from PIL import Image, ImageTk
 
-
-# def basic_binarise(X: np.ndarray):
-#     """
-#     binarise canvas.original_img using fuzzy thresholding.
-#     - Ensures vessels are white (255) and background black (0).
-#     - Optionally applies median filter.
-#     - Optionally applies Frangi filter (stub).
-#     Stores result in canvas.binary_image.
-#     """
-
-#     # --- Locate brightest vessel pixel ---
-#     y = X[1:, 1:].max(axis=0)
-#     cc = y.argmax()
-#     rr = X[1:, cc].argmax()
-
-#     cc += 1
-#     rr += 1
-
-#     # --- Apply Frangi filter (default to true)---
-#     opts = {
-#         'sigmarange' : (1, 4),
-#         'sigmastepsize': 2,
-#         'correctionconst1': 0.8,
-#         'correctionconst2': 15
-#     }
-#     img = frangi_2Dfilter(X, opts)
-
-#     # --- Always use Fuzzy Means ---
-#     nth = 2
-#     binary_image = fuzzy_thresholding(img, nth, 3)-1
-
-#     # --- Convert to 255 (white vessels) and 0 (black background) ---
-#     ref_value = binary_image[rr, cc]
-#     binary_image = np.where(binary_image == ref_value, 255, 0).astype(np.uint8)
-#     return binary_image
-
-
 def basic_binarise(X: np.ndarray) -> np.ndarray:
     """
     Perform basic binarisation identical to the MATLAB basic_binarise.m.
