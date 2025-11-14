@@ -41,7 +41,7 @@ def load_image(canvas, x, y, text_x, text_y):
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
-    for attr in ("last_img_id", "last_text_id"):
+    for attr in ("last_original_img_id", "last_filename_text_id"):
         prev_id = getattr(canvas, attr, None)
         if prev_id:
             try:
@@ -81,8 +81,8 @@ def load_image(canvas, x, y, text_x, text_y):
     #     canvas.SaveFolder = None
 
     # Remember last drawn items
-    canvas.last_img_id = img_id
-    canvas.last_text_id = text_id
+    canvas.last_original_img_id = img_id
+    canvas.last_filename_text_id = text_id
 
     return {
         "path": path,

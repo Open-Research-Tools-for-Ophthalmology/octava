@@ -14,15 +14,12 @@ def binarise_image(canvas):
     - Optionally applies Frangi filter (stub).
     Stores result in canvas.binary_image.
     """
-    #todo4: test basic binarisation (excluding median filter)
+    #todo4: (Done!) test basic binarisation (excluding median filter) 
 
     # --- Locate brightest vessel pixel ---
-    y = canvas.original_img[1:, 1:].max(axis=0)
-    cc = y.argmax()
-    rr = canvas.original_img[1:, cc].argmax()
-
-    cc += 1
-    rr += 1
+    y = canvas.original_img.max(axis=0)
+    cc = int(y.argmax())
+    rr = int(canvas.original_img[:, cc].argmax())
 
     # --- Apply median filter if selected ---
     if canvas.med_filt_bool.get():
