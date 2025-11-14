@@ -14,6 +14,7 @@ def binarise_image(canvas):
     - Optionally applies Frangi filter (stub).
     Stores result in canvas.binary_image.
     """
+    #todo4: test basic binarisation (excluding median filter)
 
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img[1:, 1:].max(axis=0)
@@ -26,8 +27,8 @@ def binarise_image(canvas):
     # --- Apply median filter if selected ---
     if canvas.med_filt_bool.get():
         print("Median filter selected.")
-        ksize = canvas.twig_size.get()  # assuming scalar #todo: is this twig size?
-        #todo4: apply the same medianfilter
+        ksize = canvas.twig_size.get()  # assuming scalar #todo: confirm - is this twig size?
+        #todo5: apply the same medianfilter (leave for advanced processing)
         img = median_filter(canvas.original_img, size=(ksize, ksize))
     else:
         img = canvas.original_img
@@ -41,7 +42,8 @@ def binarise_image(canvas):
             'correctionconst1': 0.8,
             'correctionconst2': 15
         }
-        # img = frangi_2Dfilter(img, opts)
+        #todo3: implement frangi function (done)
+        img = frangi_2Dfilter(img, opts)
 
     # --- Always use Fuzzy Means ---
     nth = 2

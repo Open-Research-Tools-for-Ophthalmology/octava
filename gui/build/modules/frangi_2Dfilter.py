@@ -88,34 +88,17 @@ def eig2im(Dxx: np.ndarray, Dxy: np.ndarray, Dyy: np.ndarray) -> tuple[np.ndarra
     return X, Y, m2, m1
 
 
+
 def frangi_2Dfilter(X: np.ndarray, opts: dict) -> np.ndarray:
     """
-    Apply the Frangi vesselness filter to a 2D grayscale image across multiple scales.
-    This version mirrors the MATLAB implementation of frangi_2Dfilter.m exactly.
-
-    Parameters
-    ----------
-    X : np.ndarray
-        2D grayscale input image (float64).
-    opts : dict
-        Parameters:
-        - 'sigmarange': (start, end) inclusive
-        - 'sigmastepsize': step size for sigma
-        - 'correctionconst1': float (beta parameter)
-        - 'correctionconst2': float (c parameter)
-
-    Returns
-    -------
-    np.ndarray
-        Vesselness response image with the same shape as X.
+    Exact Python translation of frangi_2Dfilter.m.
     """
-    # Generate sigma values exactly as in MATLAB: opts.sigmarange(1):opts.sigmastepsize:opts.sigmarange(2)
+    # Generate sigmas inclusive of the upper bound, like MATLAB's a:b:c
     sigmas = np.arange(opts['sigmarange'][0],
                        opts['sigmarange'][1] + opts['sigmastepsize'],
                        opts['sigmastepsize'])
     sigmas = np.sort(sigmas)
 
-    # Precompute constants
     beta = 2.0 * (opts['correctionconst1'] ** 2)
     c    = 2.0 * (opts['correctionconst2'] ** 2)
 
@@ -123,38 +106,38 @@ def frangi_2Dfilter(X: np.ndarray, opts: dict) -> np.ndarray:
     filtX_persigma = np.zeros((h, w, len(sigmas)))
     angles_persigma = np.zeros((h, w, len(sigmas)))
 
-    # Loop over each sigma
     for i, sigma in enumerate(sigmas):
-        # 1. Compute Hessian derivatives
+        # 1. Hessian derivatives
         Dxx, Dxy, Dyy = hessian_filter(X, sigma)
 
-        # 2. Scale-space normalization by sigma^2
+        # 2. Normalize by sigma^2
         var = sigma**2
         Dxx *= var
         Dxy *= var
         Dyy *= var
 
-        # 3. Compute eigenvalues and eigenvectors of the Hessian
-        Xi, Yi, m2, m1 = eig2im(Dxx, Dxy, Dyy)
+        # 3. Eigen decomposition
+        # eig2im returns (Xdir, Ydir, m2, m1) where m2=major, m1=minor
+        Xi, Yi, m_major, m_minor = eig2im(Dxx, Dxy, Dyy)
 
-        # 4. Angle of the minor eigenvector (for completeness; not used in final result)
+        # Swap names to match MATLAB's usage: m1=major, m2=minor
+        m1 = m_major
+        m2 = m_minor
+
+        # 4. Direction of the minor eigenvector (stored but unused)
         angles = np.arctan2(Xi, Yi)
 
-        # 5. Compute vesselness measure
-        #    Guard against division by zero
+        # 5. Vesselness measure
         m1[m1 == 0] = np.finfo(np.float64).eps
-        mratio = (m2 / m1)**2
+        mratio = (m2 / m1)**2  # minor / major as in MATLAB
 
-        #    Vesselness formula: exp( -mratio/beta ) * (1 - exp( -(m1**2 + m2**2)/c ))
         Xfiltered = np.exp(-mratio / beta) * (1.0 - np.exp(-(m1**2 + m2**2) / c))
 
-        #    Suppress responses where the minor eigenvalue is positive (bright ridges)
+        # Suppress bright ridges: zero response where major eigenvalue > 0
         Xfiltered[m1 > 0] = 0.0
 
-        # 6. Store results
         filtX_persigma[:, :, i] = Xfiltered
         angles_persigma[:, :, i] = angles
 
-    # 7. Take maximum response across scales (same size as X)
     Y = np.max(filtX_persigma, axis=2)
     return Y
