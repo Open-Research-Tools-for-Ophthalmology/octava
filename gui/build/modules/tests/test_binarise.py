@@ -92,5 +92,5 @@ plt.title('Difference mask')
 plt.axis('off')
 
 plt.tight_layout()
-plt.savefig(os.path.join(target_dir, 'binarise_comparison.png'))
+plt.savefig(os.path.join(target_dir, 'binarise_comparison.png'), dpi=300)
 plt.show()
