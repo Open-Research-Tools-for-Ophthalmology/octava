@@ -101,4 +101,5 @@ plt.title('Difference mask')
 plt.axis('off')
 
 plt.tight_layout()
+plt.savefig(os.path.join(target_dir, 'frangi_comparison.png'))
 plt.show()
