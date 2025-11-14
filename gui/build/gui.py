@@ -267,7 +267,7 @@ button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing 
 button_batch_processing.place(x=30, y=500)
 
 
-button_process = ctk.CTkButton(window, text="Process",
+button_process = ctk.CTkButton(window, text="Start Processing",
                         command=lambda: start_processing(canvas),
                         width=380,height=80,
                         font=("Roboto Bold", 14 * -1),

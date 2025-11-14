@@ -32,7 +32,7 @@ I = I.astype(np.float64)
 
 # 3. Define the same Frangi options as MATLAB
 opts = {
-    'sigmarange': (1, 3),
+    'sigmarange': (1, 4),
     'sigmastepsize': 2,  # yields [1, 3]
     'correctionconst1': 0.8,
     'correctionconst2': 15
@@ -46,7 +46,6 @@ Y_py = frangi_2Dfilter(I, opts)
 savemat(os.path.join(target_dir, 'frangi_python_result.mat'), {'Y_py': Y_py})
 np.save(os.path.join(target_dir, 'frangi_python_result.npy'), Y_py)
 print(f"Saved Python Frangi output to {target_dir}")
-
 
 # compare_frangi_results.py
 import os

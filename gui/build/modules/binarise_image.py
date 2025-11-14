@@ -35,7 +35,6 @@ def binarise_image(canvas):
 
     # --- Apply Frangi filter (default to true)---
     if canvas.frangi_bool.get():
-        print("Frangi filter selected — not yet implemented, using input image.")
         opts = {
             'sigmarange' : (canvas.frangi_min.get(), canvas.frangi_max.get()),
             'sigmastepsize': 2,

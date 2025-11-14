@@ -56,7 +56,7 @@ def load_image(canvas, x, y, text_x, text_y):
         text_y,
         text=path.name,
         fill="#333333",
-        font=("Roboto", -12),
+        font=("Roboto", -13),
         anchor="w",
     )
 

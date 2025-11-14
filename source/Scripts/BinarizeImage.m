@@ -1,5 +1,3 @@
-% Mila is working on this
-
 %Function for binarizing image in apptest 2
 function [Im]= BinarizeImage(app,Im)
 %%Load info 

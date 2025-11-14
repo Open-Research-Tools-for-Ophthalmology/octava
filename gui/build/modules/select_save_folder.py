@@ -32,7 +32,7 @@ def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: 
     if not dir_path:
         return None  # user cancelled
 
-    font_spec = ("Roboto", 12 * -1)
+    font_spec = ("Roboto", 13 * -1)
     display_text = fit_path_to_canvas(dir_path, canvas=canvas, font=font_spec, max_width=text_width)
 
     # Remove any previously drawn label at that spot
