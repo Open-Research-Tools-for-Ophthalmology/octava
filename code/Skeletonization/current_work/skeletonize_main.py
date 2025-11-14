@@ -8,10 +8,12 @@ from Skel2Graph3D import skel2graph3d
 from Graph2Skel3D import graph2skel3d
 
 import sys
-sys.path.append("../../")
+sys.path.append("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/code")
 from frangi_2dfilter import frangi_2Dfilter
 from fuzzy_thresholding import fuzzy_thresholding
 from adaptive_thresholding import adaptive_thresholding
+
+
 
 
 # HELPERS 
@@ -66,10 +68,10 @@ def BinarizeImage(Im:np.ndarray, frangi_sigma = 8, frangi_enabled = True, method
 
 
 
-def skeletonize_main(octa: np.ndarray, THR: int = 0):
+def skeletonize_main(bin: np.ndarray, THR: int = 0):
     # generate skeletonized iamge
-    y, x = octa.shape
-    L = octa.astype(bool)
+    y, x = bin.shape
+    L = bin.astype(bool)
     sk2 = skeletonize(L)
 
     # removes branches smaller than twig size
@@ -87,17 +89,27 @@ def skeletonize_main(octa: np.ndarray, THR: int = 0):
         links = []
 
     else:
+        start_skel2graph = time.time()
         nodes, links = skel2graph3d(sk2, THR)
+        end_skel2graph = time.time()
+    
+    print("Time for skel2graph:", end_skel2graph - start_skel2graph)
 
     # calculate total length of network
     wl = sum([len(n.links) for n in nodes])
 
     # iterate to clean up network and get rid of excess nodes
+    start_graph2skel = time.time()
     skel2 = graph2skel3d(nodes, links, y, x, 1)  
+    end_graph2skel = time.time()
+
     nodes, links = skel2graph3d(skel2, 0) # passing 304x304x1
     wl_new = sum([len(n.links) for n in nodes])
 
+    print("Time for graph2skel:", end_graph2skel - start_graph2skel)
+
     # iterate the same steps until network length changed by less than 0.5%
+    start_loop = time.time()
     while (wl_new != wl):
         wl = wl_new
 
@@ -106,19 +118,18 @@ def skeletonize_main(octa: np.ndarray, THR: int = 0):
 
         wl_new = sum([len(n.links) for n in nodes])
 
-    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-    axs[0].imshow(sk2, cmap = 'gray')
-    axs[1].imshow(skel2[:, :, 0], cmap = 'gray')
+    end_loop = time.time()
 
-    plt.tight_layout()
-    plt.show()
+    print("Time in cleaning loop:", end_loop - start_loop)
 
     return nodes, links
 
+
 if __name__ == "__main__":
-    octa = imread("../../../assets/MIPs/10310.bmp")
+    octa = imread("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/assets/MIPs/10301.bmp")
 
     # Frangi vessel enhancement
+    start_bin = time.time()
     vessels = frangi(
         octa,
         scale_range=(0.5, 4),
@@ -135,5 +146,13 @@ if __name__ == "__main__":
         frangi_enabled=False,
         method="Adaptive Thresholding"
     )
+    end_bin = time.time()
 
+    start_skel = time.time()
     nodes, links = skeletonize_main(adpt_mask, 1)
+    end_skel = time.time()
+
+    print("Num nodes:", len(nodes))
+    print("Num links:", len(links))
+    print("Time for binarization:", end_bin - start_bin)
+    print("Time for skeletonization:", end_skel - start_skel)
