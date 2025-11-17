@@ -4,9 +4,9 @@ from pathlib import Path
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk
 from tkinter.ttk import Combobox
-from subwindow1 import *
-from subwindow2 import *
-from subwindow3 import *
+from window_advanced_settings import *
+from window_regional_analysis_settings import *
+from window_batch_processing_settings import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -14,6 +14,7 @@ from modules.select_save_folder import *
 from modules.process import *
 from modules.round_rectangle import *
 from modules.change_status import *
+from modules.binarise_image import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -117,7 +118,7 @@ button05 = ctk.CTkButton(window, text="Subscribe to Updates",
 button05.place(x=435, y=35)
 
 canvas.status_id = canvas.create_text(
-    950.0,
+    1000.0,
     35.0,
     anchor="nw",
     text="🟢 Ready",
@@ -306,7 +307,7 @@ canvas.create_text(
 )
 
 button41 = ctk.CTkButton(window, text="Invert",
-                        command=lambda: print("Invert clicked"),
+                        command=lambda: invert_binarised_image(canvas),
                         width=60,height=25,
                         font=("Roboto Bold", 12 * -1),
                         text_color=text_colour,

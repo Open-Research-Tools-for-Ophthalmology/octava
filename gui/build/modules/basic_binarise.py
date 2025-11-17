@@ -1,3 +1,5 @@
+# This was created for testing purposes only.
+
 import numpy as np
 from scipy.ndimage import median_filter
 from fuzzy_thresholding import *
