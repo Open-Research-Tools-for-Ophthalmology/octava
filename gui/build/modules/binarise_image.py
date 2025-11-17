@@ -1,9 +1,11 @@
+from tkinter import messagebox
 import numpy as np
 from scipy.ndimage import median_filter
 from modules.resize_image import *
 from modules.fuzzy_thresholding import *
 from modules.frangi_2Dfilter import *
 from PIL import Image, ImageTk
+from modules.change_status import *
 
 
 def binarise_image(canvas):
@@ -65,3 +67,44 @@ def binarise_image(canvas):
     if not hasattr(canvas, "_image_refs"):
         canvas._image_refs = []
     canvas._image_refs.append(img_tk)
+
+
+
+def display_binarised_image(canvas):
+    
+    pass
+
+
+
+def invert_binarised_image(canvas):
+    if not hasattr(canvas, "binary_image"):
+      messagebox.showwarning(
+          "No Binarised Image", 
+          "Please load another image and try to process it again."
+      )
+      return
+
+    change_status_to_waiting(canvas)
+
+    print ("Inverting binarised image...")
+
+    # Invert binary image
+    canvas.binary_image = 255 - canvas.binary_image
+
+    # Update display of binarised image
+    binary_pil = Image.fromarray(canvas.binary_image)  # now a grayscale PIL image
+    resized_img = resize_image(binary_pil)     # if resize is needed
+    img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
+
+    # Draw on canvas
+    img_id = canvas.create_image(805, 255, image=img_tk)
+    # Prevent garbage collection. Without this, the image will not display.
+    if not hasattr(canvas, "_image_refs"):
+        canvas._image_refs = []
+    canvas._image_refs.append(img_tk)
+
+    print ("Inverted binarised image.")
+
+    change_status_to_ready(canvas)
+    
+    print(len(canvas._image_refs))

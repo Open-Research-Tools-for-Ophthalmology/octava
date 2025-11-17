@@ -6,7 +6,7 @@ def change_status(canvas: Canvas, status: str):
 
 
 def change_status_to_waiting(canvas):
-  change_status(canvas, status="🟡 Waiting...")
+  change_status(canvas, status="🔴 Wait")
 
 
 def change_status_to_ready(canvas):
