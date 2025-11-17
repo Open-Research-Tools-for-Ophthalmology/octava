@@ -56,8 +56,12 @@ def binarise_image(canvas):
     canvas.binary_image = binary_image
 
     #todo2: display the binarised image on the canvas (done)
+    display_binarised_image(canvas, binary_image)
+
+
+def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Convert NumPy → PIL → ImageTk
-    binary_pil = Image.fromarray(binary_image)  # now a grayscale PIL image
+    binary_pil = Image.fromarray(image)  # now a grayscale PIL image
     resized_img = resize_image(binary_pil)     # if resize is needed
     img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
 
@@ -69,14 +73,7 @@ def binarise_image(canvas):
     canvas._image_refs.append(img_tk)
 
 
-
-def display_binarised_image(canvas):
-    
-    pass
-
-
-
-def invert_binarised_image(canvas):
+def invert_binarised_image(canvas: Canvas):
     if not hasattr(canvas, "binary_image"):
       messagebox.showwarning(
           "No Binarised Image", 
@@ -92,19 +89,8 @@ def invert_binarised_image(canvas):
     canvas.binary_image = 255 - canvas.binary_image
 
     # Update display of binarised image
-    binary_pil = Image.fromarray(canvas.binary_image)  # now a grayscale PIL image
-    resized_img = resize_image(binary_pil)     # if resize is needed
-    img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
-
-    # Draw on canvas
-    img_id = canvas.create_image(805, 255, image=img_tk)
-    # Prevent garbage collection. Without this, the image will not display.
-    if not hasattr(canvas, "_image_refs"):
-        canvas._image_refs = []
-    canvas._image_refs.append(img_tk)
+    display_binarised_image(canvas, canvas.binary_image)
 
     print ("Inverted binarised image.")
 
     change_status_to_ready(canvas)
-    
-    print(len(canvas._image_refs))
