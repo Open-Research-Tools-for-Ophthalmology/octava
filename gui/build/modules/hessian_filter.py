@@ -1,3 +1,4 @@
+#This was created for testing purposes only.
 import numpy as np
 from scipy.ndimage import correlate
 
