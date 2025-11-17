@@ -1,165 +1,109 @@
 import numpy as np
 
-def pk_get_nh(img, indices):
-    """
-    Compute the 3x3x3 neighborhood for each voxel in indices.
-    
-    Parameters
-    ----------
-    img : ndarray
-        3D binary image (bool or 0/1)
-    indices : 1D array-like
-        Flattened voxel indices (0-based) into img
-    
-    Returns
-    -------
-    nhood : ndarray
-        Boolean array of shape (len(indices), 27)
-        Each row corresponds to the 3x3x3 neighborhood of a voxel
-    """
-    img = np.asarray(img)
-    indices = np.asarray(indices)
-    
-    width, height, depth = img.shape  # MATLAB: size(img,1), size(img,2), size(img,3)
-    
-    # Convert linear indices to 3D coordinates
-    x, y, z = np.unravel_index(indices, img.shape)  # 0-based
-    
-    nvox = len(indices)
-    nhood = np.zeros((nvox, 27), dtype=bool)
-    
-    # Iterate over 3x3x3 neighborhood
-    w_idx = 0
-    for xx in range(3):
-        for yy in range(3):
-            for zz in range(3):
-                # Compute neighbor coordinates
-                nx = x + xx - 1  # MATLAB: x + xx - 2 (MATLAB is 1-based)
-                ny = y + yy - 1
-                nz = z + zz - 1
-                
-                # Handle out-of-bounds by clipping
-                nx = np.clip(nx, 0, width-1)
-                ny = np.clip(ny, 0, height-1)
-                nz = np.clip(nz, 0, depth-1)
-                
-                # Convert back to linear indices
-                neighbor_idx = np.ravel_multi_index((nx, ny, nz), img.shape)
-                
-                # Fill neighborhood
-                nhood[:, w_idx] = img.flat[neighbor_idx]
-                
-                w_idx += 1
-    
-    return nhood
-
-
 def pk_get_nh_idx(img, indices):
     """
-    Compute the 3x3x3 neighborhood indices for each voxel in `indices`.
-
-    Parameters
-    ----------
-    img : ndarray
-        3D image (used only to get shape)
-    indices : array-like
-        1D flattened voxel indices (0-based)
-
-    Returns
-    -------
-    nhood : ndarray
-        Array of shape (len(indices), 27)
-        Each row contains the flattened indices of the 3x3x3 neighborhood
+    Python translation of MATLAB pk_get_nh_idx.
+    - img: 3D numpy array (shape (W,H,D)). Should be padded externally (like MATLAB padarray).
+    - indices: 1D array-like of linear indices (numpy 0-based indices into img.ravel()).
+    Returns:
+      nhood: (N,27) int64 array. Each row contains 27 0-based linear indices for that voxel's 3x3x3 neighborhood.
     """
-    img = np.asarray(img)
-    indices = np.asarray(indices)
+    indices = np.asarray(indices, dtype=np.int64)
+    if indices.ndim != 1:
+        indices = indices.ravel()
 
-    width, height, depth = img.shape
+    w, h, d = img.shape
+    # unravel to coordinates (0-based)
+    x, y, z = np.unravel_index(indices, (w, h, d))
+    # prepare output
+    n = len(indices)
+    nhood = np.empty((n, 27), dtype=np.int64)
 
-    # Convert linear indices to 3D coordinates
-    x, y, z = np.unravel_index(indices, img.shape)  # 0-based
-
-    nvox = len(indices)
-    nhood = np.zeros((nvox, 27), dtype=int)
-
-    w_idx = 0
-    for xx in range(3):
-        for yy in range(3):
-            for zz in range(3):
-                # Neighbor coordinates (Python 0-based)
-                nx = x + xx - 1  # MATLAB: x + xx - 2
-                ny = y + yy - 1
-                nz = z + zz - 1
-
-                # Optional: clip to stay in bounds
-                nx = np.clip(nx, 0, width-1)
-                ny = np.clip(ny, 0, height-1)
-                nz = np.clip(nz, 0, depth-1)
-
-                # Convert back to linear index
-                neighbor_idx = np.ravel_multi_index((nx, ny, nz), img.shape)
-
-                nhood[:, w_idx] = neighbor_idx
-                w_idx += 1
+    col = 0
+    # MATLAB loops xx=1:3,yy=1:3,zz=1:3 and uses x+xx-2 etc.
+    # We loop offsets (-1,0,+1) which corresponds to xx-2 in MATLAB.
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                # neighbor coordinates
+                nx = x + dx
+                ny = y + dy
+                nz = z + dz
+                # convert to linear index (0-based)
+                nhood[:, col] = np.ravel_multi_index((nx, ny, nz), (w, h, d))
+                col += 1
 
     return nhood
 
-
-def pk_follow_link(skel, node, curr_node_idx, curr_conn_voxel, idx, cans, c2n):
+def pk_get_nh(img, indices):
     """
-    Follow a skeleton link from a starting voxel until a node is reached.
-
-    Parameters
-    ----------
-    skel : ndarray
-        3D skeleton array (with node labels >1 and unvisited voxels = 1)
-    node : list of dict
-        Node metadata list.
-    curr_node_idx : int
-        Index of starting node in node list.
-    curr_conn_voxel : int
-        Index of starting voxel within node[k]['idx'].
-    idx : int
-        Linear index of the first candidate voxel to follow.
-    cans : ndarray
-        Array of canal voxels and their two neighbors, shape (N, 3)
-    c2n : ndarray
-        Map from linear voxel index to row index in `cans`.
-
-    Returns
-    -------
-    vox : list
-        List of linear indices for the voxels along the link.
-    n_idx : int or None
-        Index of the node reached at the other end of the link.
-    ep : int
-        1 if the node reached is an endpoint, 0 otherwise.
+    Python translation of MATLAB pk_get_nh.
+    - img: 3D numpy array (dtype can be bool or int). Should be padded externally.
+    - indices: 1D array-like of linear indices (0-based).
+    Returns:
+      nhood: (N,27) boolean numpy array; True if voxel is foreground/non-zero.
     """
-    vox = []
-    n_idx = None
+    indices = np.asarray(indices, dtype=np.int64).ravel()
+    w, h, d = img.shape
+    x, y, z = np.unravel_index(indices, (w, h, d))
+
+    n = len(indices)
+    nhood = np.empty((n, 27), dtype=bool)
+
+    col = 0
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                nx = x + dx
+                ny = y + dy
+                nz = z + dz
+                linear_idx = np.ravel_multi_index((nx, ny, nz), (w, h, d))
+                # pick values from img by flat indexing
+                nhood[:, col] = img.ravel()[linear_idx].astype(bool)
+                col += 1
+
+    return nhood
+
+def pk_follow_link(skel2, nodes, curr_node_cluster_idx, curr_node_idx, can_idx, cans, c2n):
+    """
+    Returns the path from the current node and its current canal voxel neighbor to another node
+    (endpoint or not).
+
+    Inputs: 
+        - skel2 [np.ndarray]: skeletonized image with identified node clusters (clusters have unique id [2, inf],
+          all 1s are canal voxels, and all 0s are background voxels)
+        - nodes [list[node_cluster]]: list of all node_clusters in the network
+        - curr_node_cluster_idx [int]: index of the current node cluster
+        - curr_node_idx [int]: index of the current voxel in the current node cluster
+        - can_idx [int]: current canal voxel index
+        - cans [np.ndarray or list]: canal voxel connections
+        - c2n [np.ndarray or list]: mapping from canal voxel index to neighbor canal index
+    """
+    path = []
     ep = 0
 
-    # assign start node to first voxel
-    vox.append(node[curr_node_idx]['idx'][curr_conn_voxel])
+    # ensure int
+    path.append(int(nodes[curr_node_cluster_idx].nodes_idx[curr_node_idx]))
 
-    i = 0
-    isdone = False # done when we reach an endpoint
-    while not isdone:
-        i += 1
-        next_cand = c2n[idx]
-        cand = cans[next_cand, 1]  # second column (neighbor 1)
-        if cand == vox[i-1]:
-            cand = cans[next_cand, 2]  # switch to neighbor 2
+    done = False
+    while not done:
+        next_cand = int(c2n[can_idx] - 1)
+        cand = int(cans[next_cand][1])
 
-        if skel.flat[cand] > 1:  # node found
-            vox.append(idx)
-            vox.append(cand)
-            n_idx = int(skel.flat[cand]) -1  # node number (MATLAB 1-index to Python 0-index)
-            if node[n_idx]['ep']:
-                ep = 1
-            isdone = True
+        # switch to other canal voxel neighbor
+        if cand == path[-1]:
+            cand = int(cans[next_cand][2])
+
+        if skel2.flat[cand] > 1:
+            path.append(int(can_idx))
+            path.append(int(cand))
+            n_idx = int(skel2.flat[cand] - 2)
+
+            ep = int(nodes[n_idx].ep)
+            done = True
+
         else:
-            vox.append(idx)
-            idx = cand
+            path.append(int(can_idx))
+            can_idx = int(cand)
 
-    return vox, n_idx, ep
+    return (path, n_idx, ep)
