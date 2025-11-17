@@ -5,6 +5,7 @@ from modules.resize_image import *
 from pathlib import Path
 import numpy as np
 import os
+from modules.change_status import *
 
 def load_image(canvas, x, y, text_x, text_y):
     """
@@ -15,12 +16,14 @@ def load_image(canvas, x, y, text_x, text_y):
     - Stores original grayscale PIL image in canvas.original_img
     - Displays a 200x200 resized preview (not aspect preserved)
     """
+    change_status_to_waiting(canvas)
 
     file_path = filedialog.askopenfilename(
         title="Select an image",
         filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
     )
     if not file_path:
+        change_status_to_ready(canvas)
         return None  # user cancelled
 
     path = Path(file_path)
@@ -29,6 +32,7 @@ def load_image(canvas, x, y, text_x, text_y):
         original_img = Image.open(path).convert("L")
     except (UnidentifiedImageError, OSError) as e:
         print(f"Failed to load image: {e}")
+        change_status_to_ready(canvas)
         return None
 
     # Store the full-resolution grayscale image
@@ -83,6 +87,8 @@ def load_image(canvas, x, y, text_x, text_y):
     # Remember last drawn items
     canvas.last_original_img_id = img_id
     canvas.last_filename_text_id = text_id
+
+    change_status_to_ready(canvas)
 
     return {
         "path": path,
