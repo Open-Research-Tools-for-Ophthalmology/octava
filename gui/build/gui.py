@@ -13,6 +13,7 @@ from modules.load_image import *
 from modules.select_save_folder import *
 from modules.process import *
 from modules.round_rectangle import *
+from modules.change_status import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -115,7 +116,7 @@ button05 = ctk.CTkButton(window, text="Subscribe to Updates",
     border_color=button_border_colour)
 button05.place(x=435, y=35)
 
-canvas.create_text(
+canvas.status_id = canvas.create_text(
     950.0,
     35.0,
     anchor="nw",
@@ -275,7 +276,7 @@ button_process = ctk.CTkButton(window, text="Start Processing",
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour  )
+                        border_color=button_border_colour)
 button_process.place(x=30, y=585)
 
 

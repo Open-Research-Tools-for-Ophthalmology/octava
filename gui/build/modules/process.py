@@ -1,8 +1,11 @@
 import tkinter as tk
+from tkinter import Canvas
 from tkinter import messagebox
+from modules.change_status import *
 from modules.binarise_image import *
+import threading
 
-def start_processing(canvas):
+def start_processing(canvas: Canvas):
     """
     Start the image processing pipeline on the loaded image in the canvas.
     This includes binarisation and any other processing steps.
@@ -14,9 +17,20 @@ def start_processing(canvas):
         )
         return
 
-    print("\nStarting image processing...")
 
-    # Binarise the image using fuzzy thresholding
-    binarise_image(canvas)
+    # Indicate that processing is starting
+    change_status_to_waiting(canvas)
+
+    thread = threading.Thread(target=lambda: start_processing_threaded(canvas))
+    thread.start()
+
+
+def start_processing_threaded(canvas: Canvas):
+    print("Starting image processing...")
+
+    binarise_image(canvas)  # long-running
 
     print("Image processing completed.")
+
+    # Switch back to READY (must be done on main thread)
+    canvas.after(0, lambda: change_status_to_ready(canvas))
