@@ -3,8 +3,8 @@ from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Check
 from tkinter.ttk import Combobox
 import customtkinter as ctk
 from theme import *
-from round_rectangle import *
-from select_folder import *
+from modules.round_rectangle import *
+from modules.select_folder import *
 
 
 def close(subwindow):

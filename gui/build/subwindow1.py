@@ -27,7 +27,6 @@ def subwindow1(canvas):
   subwindow.geometry("355x520")
   subwindow.configure(bg = "#FBE3D6")
 
-  med_filt_var = IntVar(value=0)
   large_vessels_var = IntVar(value=0)
   small_vessels_var = IntVar(value=0)
   artery_var = IntVar(value=0)
@@ -76,7 +75,7 @@ def subwindow1(canvas):
   med_filt_checkbox = Checkbutton(
       subwindow,
       text="Med filter",
-      variable=med_filt_var,
+      variable=canvas.med_filt_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)

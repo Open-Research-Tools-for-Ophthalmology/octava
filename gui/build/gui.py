@@ -9,9 +9,10 @@ from subwindow2 import *
 from subwindow3 import *
 import customtkinter as ctk
 from theme import *
-from load_image import *
-from select_save_folder import *
-from round_rectangle import *
+from modules.load_image import *
+from modules.select_save_folder import *
+from modules.process import *
+from modules.round_rectangle import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -46,7 +47,7 @@ canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
-
+canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -179,7 +180,7 @@ image_size_spinbox.place(
 
 
 button_loadimg = ctk.CTkButton(window, text="Load Image",
-                        command=lambda: load_image(canvas, 550, 250, 180, 170),
+                        command=lambda: load_image(canvas, 550, 255, 180, 170),
                         width=120,height=40,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
@@ -266,8 +267,8 @@ button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing 
 button_batch_processing.place(x=30, y=500)
 
 
-button_process = ctk.CTkButton(window, text="Process",
-                        command=lambda: print("Process clicked"),
+button_process = ctk.CTkButton(window, text="Start Processing",
+                        command=lambda: start_processing(canvas),
                         width=380,height=80,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
