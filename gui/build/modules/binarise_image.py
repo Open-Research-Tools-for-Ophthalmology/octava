@@ -24,10 +24,10 @@ def binarise_image(canvas):
     rr = int(canvas.original_img[:, cc].argmax())
 
     # --- Apply median filter if selected ---
+    #todo5: apply the same medianfilter (leave for advanced processing)
     if canvas.med_filt_bool.get():
         print("Median filter selected.")
-        ksize = canvas.twig_size.get()  # assuming scalar #todo: confirm - is this twig size?
-        #todo5: apply the same medianfilter (leave for advanced processing)
+        ksize = canvas.kernel_size.get()  # assuming scalar
         img = median_filter(canvas.original_img, size=(ksize, ksize))
     else:
         img = canvas.original_img
