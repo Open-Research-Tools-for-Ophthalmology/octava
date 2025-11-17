@@ -11,7 +11,7 @@ import customtkinter as ctk
 from theme import *
 from modules.load_image import *
 from modules.select_save_folder import *
-from modules.process import *
+from modules.start_processing import *
 from modules.round_rectangle import *
 from modules.change_status import *
 from modules.binarise_image import *
