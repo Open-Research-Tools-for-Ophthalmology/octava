@@ -75,7 +75,7 @@ print(f"Agreement:           {float_agreement:.6f}")
 print(f"Different pixels:    {np.sum(~float_close)}")
 
 # 3. Visualize the outputs and differences
-plt.figure(figsize=(12, 4))
+plt.figure(figsize=(12, 5))
 plt.subplot(1, 3, 1)
 plt.imshow(Y_mat, cmap='gray')
 plt.title('MATLAB output')
