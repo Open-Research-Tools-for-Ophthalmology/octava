@@ -4,9 +4,9 @@ from pathlib import Path
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk
 from tkinter.ttk import Combobox
-from subwindow1 import *
-from subwindow2 import *
-from subwindow3 import *
+from window_advanced_settings import *
+from window_regional_analysis_settings import *
+from window_batch_processing_settings import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
