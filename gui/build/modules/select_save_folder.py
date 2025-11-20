@@ -43,7 +43,7 @@ def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: 
     canvas.delete(TAG_SAVE_FOLDER_TEXT)
 
     # Draw new text and tag it
-    text_id = canvas.create_text(
+    canvas.save_folder_text_id = canvas.create_text(
         text_x, text_y,
         text=display_text,
         fill="#333333",
@@ -54,8 +54,6 @@ def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: 
 
     # Keep the real path for later use
     canvas.save_folder_path = dir_path
-    # (optional) keep the id if you want
-    canvas.save_folder_text_id = text_id
 
     change_status_to_ready(canvas)
     
