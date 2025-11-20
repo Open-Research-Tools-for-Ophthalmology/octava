@@ -1,4 +1,3 @@
-import tkinter as tk
 from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
