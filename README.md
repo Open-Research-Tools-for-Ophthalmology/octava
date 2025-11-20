@@ -22,10 +22,13 @@ The slicing differences between Python and Matlab:
 - In Python, 0:m includes up to m-1; index starts at 0.
 
 
-
+## Meetings
+### 17 Nov
 1. automatic faz: (Laura's code)
 2. image resize (upscaling the image so kernel sizes of filters will work) (if hard coded, no need to do batch resize in batch processing settings)
 3. add kernel size field to median filter
 4. (optional) for regional analysis, identify if the centre has shifted
 5. point faz: Use raw image not the binarised image to draw the contour.
 6. use the circle movement for optic nerve head
+
+
