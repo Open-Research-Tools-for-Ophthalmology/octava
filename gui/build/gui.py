@@ -5,6 +5,7 @@ from window_advanced_settings import *
 from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
 from window_help import *
+from window_feedback import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -96,7 +97,7 @@ button03 = ctk.CTkButton(window, text="Help",
 button03.place(x=295, y=35)
 
 button04 = ctk.CTkButton(window, text="Feedback",
-                        command=lambda: print("Feedback clicked"),
+                        command=lambda: open_feedback_window(canvas),
                         width=65,height=25,
                         font=("Roboto Bold", 12 * -1),
                         text_color=text_colour,
