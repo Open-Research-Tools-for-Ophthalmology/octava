@@ -17,7 +17,6 @@ def binarise_image(canvas):
     Stores result in canvas.binary_image.
     """
     #todo4: (Done!) test basic binarisation (excluding median filter) 
-
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img.max(axis=0)
     cc = int(y.argmax())
@@ -67,7 +66,7 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
     img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
 
     # Draw on canvas
-    img_id = canvas.create_image(805, 255, image=img_tk)
+    canvas.binary_img_id = canvas.create_image(805, 255, image=img_tk)
     # Prevent garbage collection. Without this, the image will not display.
     if not hasattr(canvas, "_image_refs"):
         canvas._image_refs = []

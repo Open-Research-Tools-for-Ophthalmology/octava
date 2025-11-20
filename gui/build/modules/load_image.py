@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import os
 from modules.change_status import *
+from modules.clear import remove_items_from_canvas
 
 def load_image(canvas, x, y, text_x, text_y):
     """
@@ -45,13 +46,7 @@ def load_image(canvas, x, y, text_x, text_y):
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
-    for attr in ("last_original_img_id", "last_filename_text_id"):
-        prev_id = getattr(canvas, attr, None)
-        if prev_id:
-            try:
-                canvas.delete(prev_id)
-            except Exception:
-                pass
+    remove_items_from_canvas(canvas, ["original_img_id", "filename_text_id"])
 
     # Draw the preview and filename on the canvas
     img_id = canvas.create_image(x, y, image=img_tk)
@@ -70,7 +65,6 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas._image_refs.append(img_tk)
 
     # Store metadata similar to MATLAB version
-    canvas.image_ref = img_tk
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
@@ -85,8 +79,8 @@ def load_image(canvas, x, y, text_x, text_y):
     #     canvas.SaveFolder = None
 
     # Remember last drawn items
-    canvas.last_original_img_id = img_id
-    canvas.last_filename_text_id = text_id
+    canvas.original_img_id = img_id
+    canvas.filename_text_id = text_id
 
     change_status_to_ready(canvas)
 

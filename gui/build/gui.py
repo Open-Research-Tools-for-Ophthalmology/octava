@@ -12,6 +12,7 @@ from modules.start_processing import *
 from modules.round_rectangle import *
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.clear import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -25,22 +26,16 @@ window.title("OCTAVA")
 window.geometry("1210x750")
 window.configure(bg = "#F9F9F9")
 
-prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
-bin_size_var = IntVar()  # Variable for Bin Size Spinbox
-image_size_var = IntVar()  # Variable for Image Size Spinbox
-img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
-faz_type_var = StringVar(value="Automatic FAZ")  # Variable for FAZ Type dropdown
-
-
 canvas = Canvas(
     window,
     bg = bg_colour,
-    height = 820,
-    width = 1250,
+    height = 750,
+    width = 1210,
     bd = 0,
     highlightthickness = 0,
     relief = "ridge"
 )
+
 
 canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
@@ -48,6 +43,12 @@ canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=70)  # Variable for Kernel Size Spinbox
+canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
+canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
+canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
+canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
+canvas.faz_type_var = StringVar(value="Automatic FAZ")  # Variable for FAZ Type dropdown
+
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -72,7 +73,7 @@ button01 = ctk.CTkButton(window, text="Save",
 button01.place(x=155, y=35)
 
 button02 = ctk.CTkButton(window, text="Clear",
-                        command=lambda: print("Clear clicked"),
+                        command=lambda: clear_screen(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -128,7 +129,7 @@ canvas.status_id = canvas.create_text(
 # image type dropdown
 img_type_list = ["Retina", "ONH", "Skin"]
 img_type = Combobox(
-    textvariable=img_type_var,
+    textvariable=canvas.img_type_var,
     values=img_type_list,
     state="readonly"
 )
@@ -142,7 +143,7 @@ img_type.place(
 # prebinary
 prebinary_checkbox = Checkbutton(
     text="Prebinary",
-    variable=prebinary_var,
+    variable=canvas.prebinary_var,
     bg=bg_colour,
     fg="#10203F",
     font=("Roboto", 14 * -1)
@@ -166,7 +167,7 @@ image_size_spinbox = Spinbox(
     from_=1,
     to=10,
     width=3,
-    textvariable=image_size_var,
+    textvariable=canvas.image_size_var,
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 14 * -1),
@@ -219,7 +220,7 @@ button_advanced_settings.place(x=30, y=270)
 # faz type dropdown
 faz_type_list = ["Point FAZ", "Automatic FAZ"]
 faz_type = ttk.Combobox(
-    textvariable=faz_type_var,
+    textvariable=canvas.faz_type_var,
     values=faz_type_list,
     state="readonly",
     style="CustomCombobox.TCombobox" 
@@ -360,7 +361,7 @@ binsize_spinbox = Spinbox(
     from_=1,
     to=10,
     width=2,
-    textvariable=bin_size_var,
+    textvariable=canvas.bin_size_var,
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 12 * -1),
