@@ -12,13 +12,6 @@ def close(subwindow):
   subwindow.update()
 
 def subwindow3():
-  ASSETS_PATH = Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/subwindow3/build/assets/frame0")
-
-
-  def relative_to_assets(path: str) -> Path:
-      return ASSETS_PATH / path
-
-
   subwindow = Toplevel()
   subwindow.title("Batch Processing Settings")
   subwindow.geometry("350x450")
