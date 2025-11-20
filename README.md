@@ -4,7 +4,6 @@ Hi everyone, welcome to the repository, please clone the repository to your devi
 
 Source code is placed under the folder `source` for the ease of development (please try not to change the source files), please place our Python code in the folder `code`.
 
-
 One example:
 If you’re working on a new feature or fix:
 - You should base your work on main.
@@ -15,6 +14,9 @@ git checkout main
 git pull origin main   # updates your local main
 git checkout -b feature/your-feature-name
 ```
+
+## Environment
+If you use Conda, you can recreate the coding environment for this repository by using `conda env create -f environment.yml -n myenv`.
 
 ## Note
 The slicing differences between Python and Matlab:
