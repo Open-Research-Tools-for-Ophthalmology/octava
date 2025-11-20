@@ -12,6 +12,7 @@ from modules.start_processing import *
 from modules.round_rectangle import *
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.clear import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -72,7 +73,7 @@ button01 = ctk.CTkButton(window, text="Save",
 button01.place(x=155, y=35)
 
 button02 = ctk.CTkButton(window, text="Clear",
-                        command=lambda: print("Clear clicked"),
+                        command=lambda: clear_screen(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
