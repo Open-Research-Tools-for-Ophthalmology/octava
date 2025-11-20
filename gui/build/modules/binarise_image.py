@@ -17,7 +17,6 @@ def binarise_image(canvas):
     Stores result in canvas.binary_image.
     """
     #todo4: (Done!) test basic binarisation (excluding median filter) 
-
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img.max(axis=0)
     cc = int(y.argmax())
