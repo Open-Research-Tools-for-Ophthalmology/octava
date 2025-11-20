@@ -85,6 +85,32 @@ def subwindow1(canvas):
       y=70.0
   )
 
+  # kernel size Spinbox
+  subcanvas1.create_text(
+      170.0,
+      50.0,
+      anchor="nw",
+      text="Kernel size",
+      fill="#10203F",
+      font=("Roboto", 14 * -1)
+  )
+  kernel_size_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=100,
+      width=3,
+      textvariable=canvas.kernel_size,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 12 * -1),
+      bd=0.5,                # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+  )
+  kernel_size_spinbox.place(
+      x=250.0,
+      y=50.0
+  )
+
   # twig size Spinbox
   subcanvas1.create_text(
       170.0,
@@ -98,7 +124,7 @@ def subwindow1(canvas):
       subwindow,
       from_=1,
       to=10,
-      width=2,
+      width=3,
       textvariable=canvas.twig_size,
       bg=subwindow_bg_colour,
       fg=text_colour,
@@ -107,7 +133,7 @@ def subwindow1(canvas):
       highlightthickness=0,  # removes the focus highlight border
   )
   twig_size_spinbox.place(
-      x=240.0,
+      x=250.0,
       y=75.0
   )
 
@@ -154,7 +180,7 @@ def subwindow1(canvas):
   # frangi max Spinbox
   subcanvas1.create_text(
       170.0,
-      135.0,
+      130.0,
       anchor="nw",
       text="Max",
       fill="#10203F",
@@ -174,7 +200,7 @@ def subwindow1(canvas):
   )
   frangi_max_spinbox.place(
       x=210.0,
-      y=135.0
+      y=130.0
   )
 
   button1 = ctk.CTkButton(subwindow, text="Image Subset",

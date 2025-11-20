@@ -30,6 +30,7 @@ def binarise_image(canvas):
         ksize = canvas.kernel_size.get()  # assuming scalar
         img = median_filter(canvas.original_img, size=(ksize, ksize))
     else:
+        print("Median filter not selected.")
         img = canvas.original_img
 
     # --- Apply Frangi filter (default to true)---
