@@ -14,14 +14,10 @@ def close(window):
   window.destroy()
   window.update()
 
+def relative_to_assets(path: str) -> Path:
+  return ADVANCED_SETTINGS_ASSETS_PATH / path
+
 def subwindow1(canvas):
-  ADVANCED_SETTINGS_ASSETS_PATH = Path("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/subwindow1/build/assets/frame0")
-
-
-  def relative_to_assets(path: str) -> Path:
-      return ADVANCED_SETTINGS_ASSETS_PATH / path
-
-
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
   subwindow.geometry("355x520")

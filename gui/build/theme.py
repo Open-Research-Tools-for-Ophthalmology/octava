@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # Main level - Layer 1
 bg_colour = "#F9F9F9"
 text_colour = "#10203F"
@@ -12,3 +14,4 @@ theme_blue = "#4483FF"
 
 # Top level subwindows
 subwindow_bg_colour = "#FBE3D6"
+ADVANCED_SETTINGS_ASSETS_PATH = Path("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/assets")
