@@ -1,7 +1,4 @@
 from pathlib import Path
-
-# from tkinter import *
-# Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk
 from tkinter.ttk import Combobox
 from window_advanced_settings import *
@@ -11,7 +8,7 @@ import customtkinter as ctk
 from theme import *
 from modules.load_image import *
 from modules.select_save_folder import *
-from modules.process import *
+from modules.start_processing import *
 from modules.round_rectangle import *
 from modules.change_status import *
 from modules.binarise_image import *
@@ -32,7 +29,7 @@ prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 bin_size_var = IntVar()  # Variable for Bin Size Spinbox
 image_size_var = IntVar()  # Variable for Image Size Spinbox
 img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
-faz_type_var = StringVar(value="Rapid FAZ")  # Variable for FAZ Type dropdown
+faz_type_var = StringVar(value="Automatic FAZ")  # Variable for FAZ Type dropdown
 
 
 canvas = Canvas(
@@ -48,8 +45,9 @@ canvas = Canvas(
 canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
-canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
+canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
+canvas.kernel_size = IntVar(value=70)  # Variable for Kernel Size Spinbox
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -219,7 +217,7 @@ button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Setting
 button_advanced_settings.place(x=30, y=270)
 
 # faz type dropdown
-faz_type_list = ["Free FAZ", "Rapid FAZ"]
+faz_type_list = ["Point FAZ", "Automatic FAZ"]
 faz_type = ttk.Combobox(
     textvariable=faz_type_var,
     values=faz_type_list,
