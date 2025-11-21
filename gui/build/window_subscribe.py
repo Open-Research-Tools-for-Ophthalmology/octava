@@ -13,14 +13,14 @@ def close(window):
 def open_subscribe_window(canvas: Canvas):
   subwindow = Toplevel()
   subwindow.title("Subscribe to Updates")
-  subwindow.geometry("700x520")
+  subwindow.geometry("500x250")
   subwindow.configure(bg = bg_colour)
 
   subcanvas = Canvas(
       subwindow,
       bg = bg_colour,
-      width = 700,
-      height = 520,
+      width = 500,
+      height = 250,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
@@ -33,16 +33,16 @@ def open_subscribe_window(canvas: Canvas):
       50.0,
       30.0,
       anchor="nw",
-      text="Please enter your contact email address:",
+      text="We'll notify you when new updates are available. You won't need to subscribe again. Please enter your contact email address:",
       fill="#10203F",
       font=("Roboto", 16),
-      width=600,
+      width=400,
       justify="left"
   )
 
   # input box
   address_box = ctk.CTkTextbox(subwindow,
-                                width=600,
+                                width=400,
                                 height=40,
                                 font=("Roboto", 14),
                                 fg_color=button_blue_colour,
@@ -50,20 +50,35 @@ def open_subscribe_window(canvas: Canvas):
                                 border_width=1,
                                 border_color=text_colour,
                                 corner_radius=10)
-  address_box.place(x=50, y=60)
+  address_box.place(x=50, y=100)
 
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Cancel",
                           command=lambda: close(subwindow),
-                          width=150,height=45,
+                          width=100,height=40,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=bg_colour,
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour)
-  button_close.place(x=330, y=430)
+  button_close.place(x=240, y=160)
+
+
+  #submit
+  button_submit = ctk.CTkButton(
+        subwindow, text="Submit",
+        command=lambda: print("button clicked"),
+        width=100, height=40,
+        font=("Roboto", 14 * -1),
+        text_color=text_colour,
+        fg_color=button_yellow_colour,
+        corner_radius=8, border_width=1,
+        hover_color=button_yellow_hover,
+        border_color=button_border_colour
+  )
+  button_submit.place(x=350, y=160)
 
 
   subwindow.resizable(False, False)
