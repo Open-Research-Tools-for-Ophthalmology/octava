@@ -23,8 +23,8 @@ def send_email(feedback_text: str):
     - Replace APP_PASSWORD with your Gmail app password
       (generate this in your Google Account > Security > App passwords).
     """
-    SENDER_EMAIL = "your_gmail_address@gmail.com"          # <- change this
-    APP_PASSWORD = "YOUR_APP_PASSWORD_HERE"                # <- change this
+    SENDER_EMAIL = "mila.meteor2020@gmail.com"          # <- change this
+    APP_PASSWORD = "flxq gzgx ybvo aeho"                # <- change this
     RECEIVER_EMAIL = "mila.zhang2019@gmail.com"
 
     # Build the email
@@ -43,14 +43,14 @@ def send_email(feedback_text: str):
 def open_feedback_window(canvas):
   subwindow = Toplevel()
   subwindow.title("Feedback")
-  subwindow.geometry("800x600")
+  subwindow.geometry("700x520")
   subwindow.configure(bg = bg_colour)
 
   subcanvas = Canvas(
       subwindow,
       bg = bg_colour,
-      width = 800,
-      height = 600,
+      width = 700,
+      height = 520,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
@@ -59,11 +59,37 @@ def open_feedback_window(canvas):
   subcanvas.place(x = 0, y = 0)
 
 
+  #contact email address
   subcanvas.create_text(
-      100.0,
-      70.0,
+      50.0,
+      30.0,
       anchor="nw",
-      text="Send us your feedback:",
+      text="Please enter your contact email address:",
+      fill="#10203F",
+      font=("Roboto", 16),
+      width=600,
+      justify="left"
+  )
+
+  # input box
+  feedback_box = ctk.CTkTextbox(subwindow,
+                                width=600,
+                                height=40,
+                                font=("Roboto", 14),
+                                fg_color=button_blue_colour,
+                                text_color=text_colour,
+                                border_width=1,
+                                border_color=text_colour,
+                                corner_radius=10)
+  feedback_box.place(x=50, y=60)
+
+
+  #Feedback text
+  subcanvas.create_text(
+      50.0,
+      130.0,
+      anchor="nw",
+      text="Please write down your feedback:",
       fill="#10203F",
       font=("Roboto", 16),
       width=600,
@@ -80,7 +106,7 @@ def open_feedback_window(canvas):
                                 border_width=1,
                                 border_color=text_colour,
                                 corner_radius=10)
-  feedback_box.place(x=100, y=110)
+  feedback_box.place(x=50, y=160)
 
   def on_submit():
       feedback_text = feedback_box.get("1.0", tk.END).strip()
@@ -102,11 +128,11 @@ def open_feedback_window(canvas):
                           width=150,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
-                          fg_color=button_blue_colour,
+                          fg_color=bg_colour,
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=200, y=450)
+  button_close.place(x=330, y=430)
 
   #close
   button_submit = ctk.CTkButton(
@@ -115,12 +141,12 @@ def open_feedback_window(canvas):
         width=150, height=45,
         font=("Roboto", 14 * -1),
         text_color=text_colour,
-        fg_color=button_blue_colour,
+        fg_color=button_yellow_colour,
         corner_radius=8, border_width=1,
-        hover_color=button_blue_hover,
+        hover_color=button_yellow_hover,
         border_color=button_border_colour
     )
-  button_submit.place(x=400, y=450)
+  button_submit.place(x=500, y=430)
 
   subwindow.resizable(False, False)
   subwindow.mainloop()
