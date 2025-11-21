@@ -108,7 +108,7 @@ button04 = ctk.CTkButton(window, text="Feedback",
 button04.place(x=365, y=35)
 
 button05 = ctk.CTkButton(window, text="Subscribe to Updates",
-                        command=lambda: print("Update clicked"),
+                        command=lambda: open_subscribe_window(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,

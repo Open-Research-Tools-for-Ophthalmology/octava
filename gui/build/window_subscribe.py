@@ -12,7 +12,7 @@ def close(window):
 
 def open_subscribe_window(canvas: Canvas):
   subwindow = Toplevel()
-  subwindow.title("Feedback")
+  subwindow.title("Subscribe to Updates")
   subwindow.geometry("700x520")
   subwindow.configure(bg = bg_colour)
 
