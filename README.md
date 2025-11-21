@@ -32,5 +32,3 @@ The slicing differences between Python and Matlab:
 4. (optional) for regional analysis, identify if the centre has shifted
 5. point faz: Use raw image not the binarised image to draw the contour.
 6. use the circle movement for optic nerve head
-
-
