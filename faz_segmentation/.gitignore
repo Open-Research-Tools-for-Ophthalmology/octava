@@ -1,6 +1,0 @@
-datasets/
-.*
-!.gitignore
-__pycache__
-config.yml
-notes.md

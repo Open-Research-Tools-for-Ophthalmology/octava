@@ -16,6 +16,7 @@ class Context:
     filename: str = ""
     steps: bool = False
     candidate: bool = False
+    batch: bool = False
 
     def show(self, img, msg=None, final=False):
         """

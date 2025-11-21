@@ -35,31 +35,29 @@ def load_dataset_file(filepath, crop_bottom):
     return load_image(img_path, crop_bottom)
 
 
-def sanity_check(gt, pr):
+def sanity_check(gt, pr, ctx):
     """
     Quickly check GT and predicted FAZ mask are the same size
     Show FAZ overlay comparison
     """
-    print(f"GT shape:{gt.shape}, data type:{gt.dtype}, unique values:{np.unique(gt)}")
-    print(f"PR shape:{pr.shape}, data type:{pr.dtype}, unique values:{np.unique(pr)}")
+    if ctx.steps:
+        print(f"GT shape:{gt.shape}, data type:{gt.dtype}")
+        print(f"PR shape:{pr.shape}, data type:{pr.dtype}")
 
     if pr.shape != gt.shape:
-        pr = cv2.resize(pr, (gt.shape[1], gt.shape[0]), interpolation=cv2.INTER_NEAREST)
-        print("Resized PR ->", pr.shape)
+        gt = cv2.resize(gt, (pr.shape[1], pr.shape[0]), interpolation=cv2.INTER_NEAREST)
+        if ctx.steps:
+            print(f"Resized GT to fit PR ({pr.shape})")
 
-    # areas (in pixels)
-    gt_area = (gt>0).sum()
-    pr_area = (pr>0).sum()
-    print(f"GT area:{gt_area}, PR area:{pr_area}")
-
-    plt.figure(figsize=(9,3))
-    plt.subplot(1,3,1); plt.imshow(gt, cmap='gray'); plt.title("GT"); plt.axis('off')
-    plt.subplot(1,3,2); plt.imshow(pr, cmap='gray'); plt.title("Pred"); plt.axis('off')
-    plt.subplot(1,3,3); 
-    plt.imshow(gt, cmap='gray'); 
-    plt.imshow(pr, cmap='jet', alpha=0.4); 
-    plt.title("Overlay"); plt.axis('off')
-    plt.tight_layout(); plt.show()
+    if ctx.steps or not ctx.batch:
+        plt.figure(figsize=(9,3))
+        plt.subplot(1,3,1); plt.imshow(gt, cmap='gray'); plt.title("GT"); plt.axis('off')
+        plt.subplot(1,3,2); plt.imshow(pr, cmap='gray'); plt.title("Pred"); plt.axis('off')
+        plt.subplot(1,3,3); 
+        plt.imshow(gt, cmap='gray'); 
+        plt.imshow(pr, cmap='jet', alpha=0.4); 
+        plt.title("Overlay"); plt.axis('off')
+        plt.tight_layout(); plt.show()
 
     return gt, pr
 
@@ -146,15 +144,11 @@ def process_batch(pairs, job_name, ctx):
     skipped = 0
     for idx, (img, gt, image_id) in enumerate(pairs):
         display = Display(img)
-        new_ctx = Context(ctx.config, display, filename=image_id, steps=False, candidate=False)
+        new_ctx = Context(ctx.config, display, filename=image_id, steps=ctx.steps, candidate=ctx.candidate, batch=True)
         pred = process_image(img, new_ctx)
-        pred_resized = cv2.resize(pred, (gt.shape[1], gt.shape[0]),
-                        interpolation=cv2.INTER_NEAREST)
-        # ensure masks are uint8 binary (0/255)
-        gt_bin   = (gt > 0).astype(np.uint8) * 255
-        pred_bin = (pred_resized > 0).astype(np.uint8) * 255
+        gt_mask, pred_mask = sanity_check(gt, pred, new_ctx)
 
-        m = mask_metrics(gt_bin, pred_bin, new_ctx)
+        m = mask_metrics(gt_mask, pred_mask, new_ctx)
 
         if np.isnan(m["area_difference_pct"]):
             skipped += 1
@@ -167,7 +161,7 @@ def process_batch(pairs, job_name, ctx):
     precision_map = {
     "dice": 4, "iou": 4, "precision": 4, "recall": 4,
     "acircularity": 4, "circularity": 4,
-    "area": 1, "perimeter": 1,
+    "area": 4, "perimeter": 4,
 }
 
     # write output to `batch/job_name/out.csv`
@@ -248,7 +242,7 @@ def main():
         original_img = img.copy()
 
         step_displayer = Display(original_img)
-        ctx = Context(config, display=step_displayer, steps=args.steps, candidate=args.candidate)
+        ctx = Context(config, display=step_displayer, steps=args.steps, candidate=args.candidate, batch=args.batch)
 
         # expects FAZ mask to be binary with 0 background, 255 FAZ
         # if GT is not already binarised, can use/adapt `extract_faz_gt_mask` or batch version
@@ -264,9 +258,9 @@ def main():
             plt.imshow(gt_mask)
             plt.title('GT Mask')
             plt.show()
-            sanity_check(gt_mask, processed_img)
-            # ensure pred and gt mask the same size so metrics can be calculated
-            processed_img = cv2.resize(processed_img, (gt_mask.shape[1], gt_mask.shape[0]), interpolation=cv2.INTER_NEAREST)
+            # ensure pred and gt mask the same size so metrics can be calculated,
+            # upsize gt mask if needed
+            gt_mask, processed_img = sanity_check(gt_mask, processed_img, ctx)
             print(mask_metrics(gt_mask, processed_img, ctx))
 
 if __name__ == '__main__':
