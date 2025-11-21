@@ -81,8 +81,6 @@ def open_feedback_window(canvas: Canvas):
                                 border_color=text_colour,
                                 corner_radius=10)
   address_box.place(x=50, y=60)
-  address_text = address_box.get("1.0", tk.END).strip()
-
 
   #Feedback text
   subcanvas.create_text(
@@ -109,13 +107,26 @@ def open_feedback_window(canvas: Canvas):
   feedback_box.place(x=50, y=160)
 
   def on_submit():
+      address_text = address_box.get("1.0", tk.END).strip()
       feedback_text = feedback_box.get("1.0", tk.END).strip()
+
+      if not address_text:
+          messagebox.showwarning("Empty email address",
+                                  "Please enter your email address before sending.")
+          return
       if not feedback_text:
           messagebox.showwarning("Empty feedback",
                                   "Please enter some feedback before sending.")
           return
+
+      # Combine both into one message
+      combined_message = (
+          f"Feedback from: {address_text}\n\n"
+          f"Feedback content:\n{feedback_text}"
+      )
+
       try:
-          send_email(feedback_text)
+          send_email(combined_message)
           messagebox.showinfo("Thank you!", "Your feedback has been sent.")
           feedback_box.delete("1.0", tk.END)
           close(subwindow)
