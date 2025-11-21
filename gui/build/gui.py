@@ -6,6 +6,7 @@ from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
 from window_help import *
 from window_feedback import *
+from window_subscribe import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -18,10 +19,6 @@ from modules.clear import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui2/build/assets/frame0")
-
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
 
 window = Tk()
 window.title("OCTAVA")
@@ -70,8 +67,7 @@ button01 = ctk.CTkButton(window, text="Save",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour
-    )
+                        border_color=button_border_colour)
 button01.place(x=155, y=35)
 
 button02 = ctk.CTkButton(window, text="Clear",
@@ -82,7 +78,7 @@ button02 = ctk.CTkButton(window, text="Clear",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour)
+                        border_color=button_border_colour)
 button02.place(x=225, y=35)
 
 button03 = ctk.CTkButton(window, text="Help",
@@ -108,7 +104,7 @@ button04 = ctk.CTkButton(window, text="Feedback",
 button04.place(x=365, y=35)
 
 button05 = ctk.CTkButton(window, text="Subscribe to Updates",
-                        command=lambda: print("Update clicked"),
+                        command=lambda: open_subscribe_window(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -399,7 +395,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel area density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -408,7 +404,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel length density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -417,7 +413,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean diameter = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -426,7 +422,7 @@ canvas.create_text(
     anchor="nw",
     text="Branchpoint density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -435,7 +431,7 @@ canvas.create_text(
     anchor="nw",
     text="Fractal dimension = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -444,7 +440,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean tortuosity = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 
