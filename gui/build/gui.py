@@ -6,6 +6,7 @@ from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
 from window_help import *
 from window_feedback import *
+from window_subscribe import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -70,8 +71,7 @@ button01 = ctk.CTkButton(window, text="Save",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour
-    )
+                        border_color=button_border_colour)
 button01.place(x=155, y=35)
 
 button02 = ctk.CTkButton(window, text="Clear",
@@ -82,7 +82,7 @@ button02 = ctk.CTkButton(window, text="Clear",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour)
+                        border_color=button_border_colour)
 button02.place(x=225, y=35)
 
 button03 = ctk.CTkButton(window, text="Help",
