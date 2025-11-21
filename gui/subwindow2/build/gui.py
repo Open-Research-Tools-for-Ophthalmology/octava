@@ -41,7 +41,7 @@ canvas.create_text(
     anchor="nw",
     text="Regional analysis settings",
     fill="#10203F",
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
