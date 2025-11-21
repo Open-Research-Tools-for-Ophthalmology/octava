@@ -395,7 +395,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel area density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -404,7 +404,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel length density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -413,7 +413,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean diameter = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -422,7 +422,7 @@ canvas.create_text(
     anchor="nw",
     text="Branchpoint density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -431,7 +431,7 @@ canvas.create_text(
     anchor="nw",
     text="Fractal dimension = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -440,7 +440,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean tortuosity = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 
