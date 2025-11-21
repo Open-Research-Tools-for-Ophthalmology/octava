@@ -84,7 +84,7 @@ button02.place(x=225, y=35)
 button03 = ctk.CTkButton(window, text="Help",
                         command=lambda: open_help_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -95,7 +95,7 @@ button03.place(x=295, y=35)
 button04 = ctk.CTkButton(window, text="Feedback",
                         command=lambda: open_feedback_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -106,7 +106,7 @@ button04.place(x=365, y=35)
 button05 = ctk.CTkButton(window, text="Subscribe to Updates",
                         command=lambda: open_subscribe_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -181,7 +181,7 @@ image_size_spinbox.place(
 button_loadimg = ctk.CTkButton(window, text="Load Image",
                         command=lambda: load_image(canvas, 550, 255, 180, 170),
                         width=120,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -194,7 +194,7 @@ round_rectangle(canvas, 160, 150, 250, 40, radius=8)
 button_save_folder = ctk.CTkButton(window, text="Save Folder",
                         command=lambda: select_save_folder(canvas, text_x=180, text_y=230),
                         width=120,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -207,7 +207,7 @@ round_rectangle(canvas, 160, 210, 250, 40, radius=8)
 button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
                         command=lambda: subwindow1(canvas),
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -233,7 +233,7 @@ faz_type.place(
 button8 = ctk.CTkButton(window, text="Measure FAZ",
                         command=lambda: print("Measure FAZ clicked"),
                         width=230,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_green_colour,
                         corner_radius=8,border_width=1,
@@ -245,7 +245,7 @@ button8.place(x=180, y=355)
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
                         command=subwindow2,
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -257,7 +257,7 @@ button_regional_analysis.place(x=30, y=415)
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
                         command=subwindow3,
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -269,7 +269,7 @@ button_batch_processing.place(x=30, y=500)
 button_process = ctk.CTkButton(window, text="Start Processing",
                         command=lambda: start_processing(canvas),
                         width=380,height=80,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -291,7 +291,7 @@ canvas.create_text(
     anchor="nw",
     text="Original",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
@@ -300,13 +300,13 @@ canvas.create_text(
     anchor="nw",
     text="Binarised",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 button41 = ctk.CTkButton(window, text="Invert",
                         command=lambda: invert_binarised_image(canvas),
                         width=60,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=4,border_width=1,
@@ -320,7 +320,7 @@ canvas.create_text(
     anchor="nw",
     text="Skeletonised",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 round_rectangle(canvas, 430, 395, 240, 270, radius=8)
@@ -333,7 +333,7 @@ canvas.create_text(
     anchor="nw",
     text="FAZ Segmentation",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
@@ -342,7 +342,7 @@ canvas.create_text(
     anchor="nw",
     text="Results",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
