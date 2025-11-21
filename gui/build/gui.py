@@ -4,6 +4,8 @@ from tkinter.ttk import Combobox
 from window_advanced_settings import *
 from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
+from window_help import *
+from window_feedback import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -24,13 +26,13 @@ def relative_to_assets(path: str) -> Path:
 window = Tk()
 window.title("OCTAVA")
 window.geometry("1210x750")
-window.configure(bg = "#F9F9F9")
+window.configure(bg = bg_colour)
 
 canvas = Canvas(
     window,
     bg = bg_colour,
-    height = 750,
     width = 1210,
+    height = 750,
     bd = 0,
     highlightthickness = 0,
     relief = "ridge"
@@ -84,7 +86,7 @@ button02 = ctk.CTkButton(window, text="Clear",
 button02.place(x=225, y=35)
 
 button03 = ctk.CTkButton(window, text="Help",
-                        command=lambda: print("Help clicked"),
+                        command=lambda: open_help_window(canvas),
                         width=65,height=25,
                         font=("Roboto Bold", 12 * -1),
                         text_color=text_colour,
@@ -95,7 +97,7 @@ button03 = ctk.CTkButton(window, text="Help",
 button03.place(x=295, y=35)
 
 button04 = ctk.CTkButton(window, text="Feedback",
-                        command=lambda: print("Feedback clicked"),
+                        command=lambda: open_feedback_window(canvas),
                         width=65,height=25,
                         font=("Roboto Bold", 12 * -1),
                         text_color=text_colour,
