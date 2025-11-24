@@ -32,6 +32,10 @@ def basic_binarise(X: np.ndarray) -> np.ndarray:
     cc = int(y.argmax())         # column index of global max
     rr = int(X[:, cc].argmax())  # row index of that max
 
+    ksize = 3  # assuming scalar
+    X = median_filter(X, size=(ksize, ksize),
+                                    mode='constant', cval=0.0)
+
     # 2. Apply the Frangi filter (using the same options)
     opts = {
         'sigmarange': (1, 4),     # matches [1 4] in MATLAB
