@@ -2,20 +2,17 @@ import tkinter as tk
 from tkinter import Canvas, Toplevel, messagebox
 from theme import *
 import customtkinter as ctk
+import requests
 from dotenv import load_dotenv
 load_dotenv()
 
-import requests
-import json
-
-GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxwGsLwvIOKctimULdzLS6C3bLrS2WSEy3z4UMGcboo47jq0hx9LLiWFSa4FZ24/exec"
+GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzuCLevrhGx8NCQk_W2KlfPjAVWJc7f-EoLG2UVYSTDQCWN0qi98XklVPOn9ANmlJo/exec"
 
 def send_email_to_google_sheet(email: str):
     try:
         r = requests.post(GOOGLE_WEBAPP_URL, json={"email": email})
-        print("Status Code:", r.status_code)
-        print("Response from Google Web App:", r.text)
-        return r.status_code == 200
+        # print("Response from Google Web App:", r.text)
+        return r.text == '{"status":"OK"}'
     except Exception as e:
         print("Error:", e)
         return False
@@ -78,7 +75,7 @@ def open_subscribe_window(canvas: Canvas):
 
         ok = send_email_to_google_sheet(email)
         if ok:
-            messagebox.showinfo("Subscribed!", "Thank you for subscribing.")
+            messagebox.showinfo("Subscribed!", f"Thank you for subscribing via {email}.")
             close(subwindow)
         else:
             messagebox.showerror("Error", "Subscription failed.")
