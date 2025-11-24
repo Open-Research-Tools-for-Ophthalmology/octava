@@ -17,6 +17,7 @@ from modules.change_status import *
 from modules.binarise_image import *
 from modules.clear import *
 from test import *
+from modules.histogram import HistogramPlotter
 
 OUTPUT_PATH = Path(__file__).parent
 
@@ -354,12 +355,25 @@ canvas.create_text(
     font=("Roboto Medium", 12 * -1)
 )
 
+hist_frame = ctk.CTkFrame(window, fg_color=bg_colour, width=230, height=180)
+hist_frame.place(x=945, y=455)
+
+canvas.hist_plotter = HistogramPlotter(
+    master_frame=hist_frame,
+    bg_color=bg_colour,
+    bar_color=theme_blue,
+    axis_color=text_colour
+)
+
+update_hist = lambda *args: canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+
 # bin size Spinbox
 binsize_spinbox = Spinbox(
     from_=1,
     to=10,
     width=2,
     textvariable=canvas.bin_size_var,
+    command=update_hist,
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 12 * -1),
@@ -370,6 +384,10 @@ binsize_spinbox.place(
     x=1121.0,
     y=408.0
 )
+
+binsize_spinbox.bind("<KeyRelease>", update_hist)
+canvas.bin_size_var.set(5)
+update_hist()
 
 canvas.create_text(
     710.0,
@@ -442,6 +460,7 @@ canvas.create_text(
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
+
 
 
 window.resizable(False, False)
