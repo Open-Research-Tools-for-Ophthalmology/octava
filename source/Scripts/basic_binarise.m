@@ -8,6 +8,10 @@ function [Im]= basic_binarise(Im)
 [~,cc] = max(y);
 [~,rr] = max(Im(:,cc));
 
+%% median filter
+Im = medfilt2(Im,[3 3]);
+
+
 %% Binarize 
 
 opts.sigmarange = [1 4];

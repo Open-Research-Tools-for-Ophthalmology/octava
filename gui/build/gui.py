@@ -41,7 +41,7 @@ canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
-canvas.kernel_size = IntVar(value=70)  # Variable for Kernel Size Spinbox
+canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox

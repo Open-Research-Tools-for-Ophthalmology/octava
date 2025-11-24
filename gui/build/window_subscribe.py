@@ -46,7 +46,7 @@ def open_subscribe_window(canvas: Canvas):
       50.0,
       30.0,
       anchor="nw",
-      text="We'll notify you when new updates are available. You won't need to subscribe repetitively. Please enter your preferred name:",
+      text="We'll notify you when new updates are available. You only need to subscribe once. Please enter your contact email address:",
       fill="#10203F",
       font=("Roboto", 16),
       width=400,
