@@ -27,7 +27,8 @@ def binarise_image(canvas):
     if canvas.med_filt_bool.get():
         print("Median filter selected.")
         ksize = canvas.kernel_size.get()  # assuming scalar
-        img = median_filter(canvas.original_img, size=(ksize, ksize))
+        img = median_filter(canvas.original_img, size=(ksize, ksize),
+                                    mode='constant', cval=0.0)
     else:
         print("Median filter not selected.")
         img = canvas.original_img
