@@ -16,7 +16,7 @@ git checkout -b feature/your-feature-name
 ```
 
 ## Environment
-If you use Conda, you can recreate the coding environment for this repository by using `conda env create -f environment.yml -n myenv`.
+If you use Conda, you can recreate the coding environment for this repository by using `conda env create -f environment.yml -n octava`.
 
 ## Note
 The slicing differences between Python and Matlab:
