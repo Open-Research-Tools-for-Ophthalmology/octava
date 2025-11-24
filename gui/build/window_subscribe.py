@@ -1,8 +1,21 @@
-from tkinter import Canvas, Toplevel
+import tkinter as tk
+from tkinter import Canvas, Toplevel, messagebox
 from theme import *
 import customtkinter as ctk
+import requests
 from dotenv import load_dotenv
 load_dotenv()
+
+GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzuCLevrhGx8NCQk_W2KlfPjAVWJc7f-EoLG2UVYSTDQCWN0qi98XklVPOn9ANmlJo/exec"
+
+def send_email_to_google_sheet(email: str):
+    try:
+        r = requests.post(GOOGLE_WEBAPP_URL, json={"email": email})
+        # print("Response from Google Web App:", r.text)
+        return r.text == '{"status":"OK"}'
+    except Exception as e:
+        print("Error:", e)
+        return False
 
 
 def close(window):
@@ -12,7 +25,7 @@ def close(window):
 
 def open_subscribe_window(canvas: Canvas):
   subwindow = Toplevel()
-  subwindow.title("Subscribe to Updates")
+  subwindow.title("Subscribe for Updates")
   subwindow.geometry("500x250")
   subwindow.configure(bg = bg_colour)
 
@@ -33,12 +46,13 @@ def open_subscribe_window(canvas: Canvas):
       50.0,
       30.0,
       anchor="nw",
-      text="We'll notify you when new updates are available. You won't need to subscribe again. Please enter your contact email address:",
+      text="We'll notify you when new updates are available. You won't need to subscribe repetitively. Please enter your contact email address:",
       fill="#10203F",
       font=("Roboto", 16),
       width=400,
       justify="left"
   )
+
 
   # input box
   address_box = ctk.CTkTextbox(subwindow,
@@ -52,6 +66,19 @@ def open_subscribe_window(canvas: Canvas):
                                 corner_radius=10)
   address_box.place(x=50, y=100)
 
+  def on_submit():
+        email = address_box.get("1.0", tk.END).strip()
+
+        if not email:
+            messagebox.showwarning("Empty email address", "Please enter an email address.")
+            return
+
+        ok = send_email_to_google_sheet(email)
+        if ok:
+            messagebox.showinfo("Subscribed!", f"Thank you for subscribing via {email}.")
+            close(subwindow)
+        else:
+            messagebox.showerror("Error", "Subscription failed.")
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Cancel",
@@ -69,7 +96,7 @@ def open_subscribe_window(canvas: Canvas):
   #submit
   button_submit = ctk.CTkButton(
         subwindow, text="Submit",
-        command=lambda: print("button clicked"),
+        command=lambda: on_submit(),
         width=100, height=40,
         font=("Roboto", 14 * -1),
         text_color=text_colour,
