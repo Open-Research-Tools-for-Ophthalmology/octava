@@ -43,25 +43,50 @@ def send_email(feedback_text: str):
 def open_feedback_window(canvas: Canvas):
   subwindow = Toplevel()
   subwindow.title("Feedback")
-  subwindow.geometry("700x520")
+  subwindow.geometry("700x620")
   subwindow.configure(bg = bg_colour)
 
   subcanvas = Canvas(
       subwindow,
       bg = bg_colour,
       width = 700,
-      height = 520,
+      height = 620,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
   )
 
   subcanvas.place(x = 0, y = 0)
+  
+  #preferred name
+  subcanvas.create_text(
+      50.0,
+      30.0,
+      anchor="nw",
+      text="Please enter your preferred name:",
+      fill="#10203F",
+      font=("Roboto", 16),
+      width=600,
+      justify="left"
+  )
+
+  # input box
+  name_box = ctk.CTkTextbox(subwindow,
+                                width=300,
+                                height=40,
+                                font=("Roboto", 14),
+                                fg_color=button_blue_colour,
+                                text_color=text_colour,
+                                border_width=1,
+                                border_color=text_colour,
+                                corner_radius=10)
+  name_box.place(x=50, y=60)
+
 
   #contact email address
   subcanvas.create_text(
       50.0,
-      30.0,
+      130.0,
       anchor="nw",
       text="Please enter your contact email address:",
       fill="#10203F",
@@ -80,12 +105,13 @@ def open_feedback_window(canvas: Canvas):
                                 border_width=1,
                                 border_color=text_colour,
                                 corner_radius=10)
-  address_box.place(x=50, y=60)
+  address_box.place(x=50, y=160)
+
 
   #Feedback text
   subcanvas.create_text(
       50.0,
-      130.0,
+      230.0,
       anchor="nw",
       text="Please write down your feedback:",
       fill="#10203F",
@@ -104,16 +130,23 @@ def open_feedback_window(canvas: Canvas):
                                 border_width=1,
                                 border_color=text_colour,
                                 corner_radius=10)
-  feedback_box.place(x=50, y=160)
+  feedback_box.place(x=50, y=260)
 
   def on_submit():
+      name_text = name_box.get("1.0", tk.END).strip()
       address_text = address_box.get("1.0", tk.END).strip()
       feedback_text = feedback_box.get("1.0", tk.END).strip()
+
+      if not name_text:
+          messagebox.showwarning("Empty name",
+                                  "Please enter your name before sending.")
+          return
 
       if not address_text:
           messagebox.showwarning("Empty email address",
                                   "Please enter your email address before sending.")
           return
+      
       if not feedback_text:
           messagebox.showwarning("Empty feedback",
                                   "Please enter some feedback before sending.")
@@ -121,7 +154,8 @@ def open_feedback_window(canvas: Canvas):
 
       # Combine both into one message
       combined_message = (
-          f"Feedback from: {address_text}\n\n"
+          f"Feedback from: {name_text}\n"
+          f"Contact email address: {address_text}\n\n"
           f"Feedback content:\n{feedback_text}"
       )
 
@@ -143,7 +177,7 @@ def open_feedback_window(canvas: Canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour)
-  button_close.place(x=330, y=430)
+  button_close.place(x=330, y=530)
 
   #close
   button_submit = ctk.CTkButton(
@@ -157,7 +191,7 @@ def open_feedback_window(canvas: Canvas):
         hover_color=button_yellow_hover,
         border_color=button_border_colour
   )
-  button_submit.place(x=500, y=430)
+  button_submit.place(x=500, y=530)
 
   subwindow.resizable(False, False)
   subwindow.mainloop()

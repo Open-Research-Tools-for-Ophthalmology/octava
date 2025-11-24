@@ -33,7 +33,7 @@ def open_subscribe_window(canvas: Canvas):
       subwindow,
       bg = bg_colour,
       width = 500,
-      height = 250,
+      height = 350,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
