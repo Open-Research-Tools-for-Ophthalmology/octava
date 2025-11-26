@@ -6,6 +6,7 @@ from skimage.morphology import skeletonize, remove_small_objects
 from scipy.ndimage import distance_transform_edt
 from Skel2Graph3D import skel2graph3d
 from Graph2Skel3D import graph2skel3d
+import time
 
 import sys
 sys.path.append("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/code")
@@ -67,7 +68,6 @@ def BinarizeImage(Im:np.ndarray, frangi_sigma = 8, frangi_enabled = True, method
     return Im
 
 
-
 def skeletonize_main(bin: np.ndarray, THR: int = 0):
     # generate skeletonized iamge
     y, x = bin.shape
@@ -122,7 +122,7 @@ def skeletonize_main(bin: np.ndarray, THR: int = 0):
 
     print("Time in cleaning loop:", end_loop - start_loop)
 
-    return nodes, links
+    return skel2, nodes, links
 
 
 if __name__ == "__main__":
@@ -149,7 +149,8 @@ if __name__ == "__main__":
     end_bin = time.time()
 
     start_skel = time.time()
-    nodes, links = skeletonize_main(adpt_mask, 1)
+    THR = 1
+    skel, nodes, links = skeletonize_main(adpt_mask, THR)
     end_skel = time.time()
 
     print("Num nodes:", len(nodes))

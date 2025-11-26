@@ -155,7 +155,6 @@ def skel2graph3d(skel, thr = 0):
         skel = skel[:, :, np.newaxis]
     
     skel = np.pad(skel, pad_width=1, mode='constant')
-
     # label connected components 
     lm, num_components= label(skel, structure=np.ones((3, 3, 3)))
 
@@ -199,6 +198,7 @@ def skel2graph3d(skel, thr = 0):
         cans = np.column_stack([cans, can_nb])
     else:
         cans = np.empty((0, 3), dtype=int)
+
 
     # group clusters of node voxels to nodes
     node, link = [],[]
@@ -328,6 +328,15 @@ def skel2graph3d(skel, thr = 0):
                         end_node.conn.append(curr_cluster_node_idx)
 
                         l_idx += 1
+
+    if len(nodes) > 0:
+    # indices of nodes that have exactly one link
+    ep_idx = [i for i, n in enumerate(nodes) if len(n.links) == 1]
+
+    # mark them as endpoints
+    for i in ep_idx:
+        nodes[i].ep = 1
+
         
     # transform linear indices s.t they are represented wrt the 2D skeletonized image as 
     # opposed to the 3D skeletonized padded image
