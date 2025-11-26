@@ -3,6 +3,7 @@ import numpy as np
 from scipy import sparse
 from scipy.ndimage import label
 from pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
+import math
 
 class node_cluster:
     def __init__(self, nodes_idx: list[int], ep: int):
@@ -51,6 +52,54 @@ class Link:
         self.path = path
         self.label = label
 
+        # geometry along skeleton
+        self.x = None               
+        self.y = None               
+        self.dir_vectors = None
+            
+        # lengths
+        self.pixlength = None       
+        self.end2end_length = None
+
+        # measurements
+        self.tortuosity = None
+        self.diameter_measurements = None
+        self.diameter = None
+
+    def compute_dir_vectors(self, img_y: list[int], img_x: list[int]) -> None:
+        ''' 
+        Assign x and y coordinates for each point in the link
+        '''
+        x, y = np.unravel_index(self.path, (img_y, img_x))
+        self.x = x
+        self.y = y
+
+        coords = np.vstack((y, x))  # (2, N)
+        d = np.diff(coords, axis=1).T  # (N-1, 2) → [dy, dx]
+        self.dir_vectors = d
+
+    def compute_pixlength(self):
+        # Length of branch in pixels
+        pixLength = np.linalg.norm(self.dir_vectors, axis=1).sum()
+        self.pixlength = pixLength
+    
+    def compute_end2endlength(self):
+        self.end2end_length = np.sqrt(
+            (self.x[-1] - self.x[0])**2 + (self.y[-1] - self.y[0])**2
+        )
+    
+    def compute_tortuosity(self):
+        if self.end2end_length == 0:
+            self.tortuosity = np.inf  # same behavior as MATLAB
+        else:
+            self.tortuosity = self.pixlength / self.end2end_length
+
+    def compute_diameter_measurements(self, D: np.ndarray):
+        self.diameter_measurements = D.flat[self.path]
+
+    def compute_diameter(self):
+        self.diameter = float(np.mean(self.diameter_measurements))
+
     def __str__(self):
         return (
             f"Link(\n"
@@ -60,7 +109,7 @@ class Link:
             f"  label: {self.label}\n"
             f")"
         )
-    
+
 
 #############################
 ##### Helper functions  #####
@@ -108,6 +157,80 @@ def unpad_indices(indices, padded_shape):
 
     x, y, z = x[valid], y[valid], z[valid]
     return np.ravel_multi_index((x, y, z), unpadded_shape)
+
+
+def compute_link_metrics(links, D, skel_shape):
+    """
+    Replicates the MATLAB code:
+
+        [x, y, ~] = ind2sub([Nx,Nx,1], point)
+        d = diff([y', x'])
+        pixLength = sum(sqrt(sum(d.*d,2)))
+        end2endLength = sqrt((x(end)-x(1))^2 + (y(end)-y(1))^2)
+        tortuosity = pixLength / end2endLength
+        diameterMeasurements = D(point)
+        diameter = mean(diameterMeasurements)
+
+    Parameters
+    ----------
+    links : list of Link objects
+    D : ndarray
+        Diameter / distance transform image (same size as skeleton).
+    skel_shape : tuple
+        Shape of the skeleton (e.g. (Nx, Ny, Nz) or (Nx, Ny)).
+    """
+
+    for link in links:
+
+        # -----------------------------------------
+        # 1. Convert linear indices → (x, y) coords
+        # -----------------------------------------
+        coords = np.unravel_index(link.path, skel_shape)  
+        # coords = (x, y) or (x, y, z)
+        x = coords[0]
+        y = coords[1]
+
+        link.x = x
+        link.y = y
+
+        # -----------------------------------------
+        # 2. Compute pixel-by-pixel differences
+        # MATLAB: d = diff([y', x'])
+        # -----------------------------------------
+        # Stack as rows then diff down the columns:
+        #   [y0, y1, y2 ...]
+        #   [x0, x1, x2 ...]
+        mat = np.vstack((y, x))            # shape = (2, N)
+        d = np.diff(mat, axis=1).T         # shape = (N-1, 2), rows = [dy dx]
+
+        # -----------------------------------------
+        # 3. Pixel length (sum of Euclidean distances)
+        # -----------------------------------------
+        link.pixLength = np.linalg.norm(d, axis=1).sum()
+
+        # -----------------------------------------
+        # 4. End-to-end ("arc") length
+        # -----------------------------------------
+        dx = x[-1] - x[0]
+        dy = y[-1] - y[0]
+        link.end2endLength = np.sqrt(dx * dx + dy * dy)
+
+        # -----------------------------------------
+        # 5. Tortuosity
+        # -----------------------------------------
+        if link.end2endLength == 0:
+            link.tortuosity = np.inf  # avoid divide-by-zero
+        else:
+            link.tortuosity = link.pixLength / link.end2endLength
+
+        # -----------------------------------------
+        # 6. Diameter measurements at each voxel
+        # MATLAB: D(link(i).point)
+        # -----------------------------------------
+        link.diameterMeasurements = D.ravel()[link.path]
+        link.diameter = float(np.mean(link.diameterMeasurements))
+
+
 
 def skel2graph3d(skel, thr = 0):
     """
@@ -329,13 +452,13 @@ def skel2graph3d(skel, thr = 0):
 
                         l_idx += 1
 
-    if len(nodes) > 0:
-    # indices of nodes that have exactly one link
-    ep_idx = [i for i, n in enumerate(nodes) if len(n.links) == 1]
+    if len(node) > 0:
+        # indices of nodes that have exactly one link
+        ep_idx = [i for i, n in enumerate(node) if len(n.links) == 1]
 
-    # mark them as endpoints
-    for i in ep_idx:
-        nodes[i].ep = 1
+        # mark them as endpoints
+        for i in ep_idx:
+            node[i].ep = 1
 
         
     # transform linear indices s.t they are represented wrt the 2D skeletonized image as 
