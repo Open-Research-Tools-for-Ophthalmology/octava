@@ -10,6 +10,7 @@ button_blue_hover = "#DBF2FF"
 button_green_hover = "#EAFCE3"
 button_blue_colour = "#CDEDFF"
 button_border_colour = "#4D4D4D"
+point_blue_colour = "#05ADF6"
 theme_blue = "#4483FF"
 theme_red = "#FF4444"
 

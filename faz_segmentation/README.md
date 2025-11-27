@@ -95,7 +95,7 @@ python main.py --candidate
 ```
 
 
-# Clean Up
+# Pack down
 Once you are done running the pipeline, deactivate the virtual environment to return to your original settings
 ### venv:
 ```sh
@@ -106,6 +106,3 @@ deactivate
 ```
 pyenv local --unset
 ```
-
-# License
-License pending. This repository is part of an academic research project at The University of Western Australia. Please do not reuse or redistribute without permission.
