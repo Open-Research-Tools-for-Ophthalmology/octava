@@ -120,6 +120,8 @@ s2n=zeros(w*l*h,1);
 s2n(nhi(:,14))=1:size(nhi,1);
 
 % visit all nodes
+% i = number of clustered node
+% j = number of individual node that belongs to the current cluster
 for i=1:length(node)
 
     % find all canal vox in nb of all node idx
