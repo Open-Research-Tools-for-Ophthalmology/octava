@@ -44,7 +44,7 @@ canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=70)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
-canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
+canvas.bin_size_var = IntVar(value=5)  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 canvas.faz_type_var = StringVar(value="Automatic FAZ")  # Variable for FAZ Type dropdown
@@ -360,12 +360,11 @@ hist_frame.place(x=945, y=455)
 
 canvas.hist_plotter = HistogramPlotter(
     master_frame=hist_frame,
-    bg_color=bg_colour,
+    bg_color=theme_grey,
     bar_color=theme_blue,
     axis_color=text_colour
 )
 
-update_hist = lambda *args: canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
 
 # bin size Spinbox
 binsize_spinbox = Spinbox(
@@ -373,7 +372,7 @@ binsize_spinbox = Spinbox(
     to=10,
     width=2,
     textvariable=canvas.bin_size_var,
-    command=update_hist,
+    command=lambda: canvas.hist_plotter.update_plot(canvas.bin_size_var.get()),
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 12 * -1),
@@ -385,9 +384,6 @@ binsize_spinbox.place(
     y=408.0
 )
 
-binsize_spinbox.bind("<KeyRelease>", update_hist)
-canvas.bin_size_var.set(5)
-update_hist()
 
 canvas.create_text(
     710.0,

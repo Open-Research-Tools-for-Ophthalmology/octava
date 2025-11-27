@@ -11,6 +11,7 @@ button_green_hover = "#EAFCE3"
 button_blue_colour = "#CDEDFF"
 button_border_colour = "#4D4D4D"
 theme_blue = "#4483FF"
+theme_grey = "#EFEFEF"
 
 # Top level subwindows
 subwindow_bg_colour = "#FBE3D6"

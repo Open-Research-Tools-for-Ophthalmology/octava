@@ -26,8 +26,6 @@ class HistogramPlotter:
         self.canvas = FigureCanvasTkAgg(self.fig, master=master_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
-        # Initial draw
-        self.update_plot(bin_size=5)
 
     def update_plot(self, bin_size):
         """
@@ -35,12 +33,7 @@ class HistogramPlotter:
         """
         self.ax.clear()
         
-        # Validation
-        try:
-            size = int(bin_size)
-            if size < 1: size = 1
-        except ValueError:
-            size = 1
+        size = int(bin_size)
 
         # Calculate bins
         if len(self.data) > 0:
