@@ -61,7 +61,7 @@ canvas.create_text(
 )
 
 button01 = ctk.CTkButton(window, text="Save",
-                        command=lambda: print("Save clicked"),
+                        command=lambda: canvas.hist_plotter.save_plot(),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
