@@ -328,8 +328,8 @@ def subwindow4(canvas, editable=False):
                 # Zoom out
                 subwindow4.zoom_level /= 1.1
 
-            # Clamp zoom level from 0.2x to 5x
-            subwindow4.zoom_level = max(0.2, min(subwindow4.zoom_level, 5))
+            # Clamp zoom level from 0.5x to 5x (when zooming out too much, points cant be assigned)
+            subwindow4.zoom_level = max(0.5, min(subwindow4.zoom_level, 5))
             update_image_display()
 
     # Handle drag motion and end
@@ -366,7 +366,7 @@ def subwindow4(canvas, editable=False):
             # Create a mask from the polygon points
             poly_arr = np.array(subwindow4.polygon_points, dtype=np.int32)
             # Refit to original image size
-            poly_arr = (poly_arr * canvas.original_img.shape[0] / subwindow4.img_display_size[1]).astype(np.int32)
+            poly_arr = (poly_arr * canvas.original_img.shape[0] / subwindow4.img_display_size[1] * subwindow4.zoom_level).astype(np.int32)
             grayscale_arr = cv2.fillPoly(grayscale_arr, [poly_arr], color=255)
             grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
             print("grayscale_arr type/shape:", type(grayscale_arr), grayscale_arr.shape, "grayscale_img type:", type(grayscale_img))
