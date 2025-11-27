@@ -2,4 +2,7 @@
 /source/5001/*
 /source/5002/*
 
-/source/OCTAVA_2p0.mlapp
+.env
+
+__pycache__/
+tempCodeRunnerFile.py
