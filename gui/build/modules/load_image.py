@@ -65,6 +65,7 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas._image_refs.append(img_tk)
 
     # Store metadata similar to MATLAB version
+    canvas.filePath = str(path)
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
