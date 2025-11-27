@@ -16,7 +16,7 @@ git checkout -b feature/your-feature-name
 ```
 
 ## Environment
-If you use Conda, you can recreate the coding environment for this repository by using `conda env create -f environment.yml -n myenv`.
+If you use Conda, you can recreate the coding environment for this repository by using `conda env create -f environment.yml -n octava`.
 
 ## Note
 The slicing differences between Python and Matlab:
@@ -32,5 +32,3 @@ The slicing differences between Python and Matlab:
 4. (optional) for regional analysis, identify if the centre has shifted
 5. point faz: Use raw image not the binarised image to draw the contour.
 6. use the circle movement for optic nerve head
-
-

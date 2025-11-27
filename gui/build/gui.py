@@ -7,6 +7,7 @@ from window_batch_processing_settings import *
 from window_help import *
 from window_feedback import *
 from window_faz_viewer import *
+from window_subscribe import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -20,10 +21,6 @@ from modules.faz_utils import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui2/build/assets/frame0")
-
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
 
 window = Tk()
 window.title("OCTAVA")
@@ -46,7 +43,7 @@ canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
-canvas.kernel_size = IntVar(value=70)  # Variable for Kernel Size Spinbox
+canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
@@ -71,8 +68,7 @@ button01 = ctk.CTkButton(window, text="Save",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour
-    )
+                        border_color=button_border_colour)
 button01.place(x=155, y=35)
 
 button02 = ctk.CTkButton(window, text="Clear",
@@ -83,13 +79,13 @@ button02 = ctk.CTkButton(window, text="Clear",
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-    border_color=button_border_colour)
+                        border_color=button_border_colour)
 button02.place(x=225, y=35)
 
 button03 = ctk.CTkButton(window, text="Help",
                         command=lambda: open_help_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -100,7 +96,7 @@ button03.place(x=295, y=35)
 button04 = ctk.CTkButton(window, text="Feedback",
                         command=lambda: open_feedback_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -109,9 +105,9 @@ button04 = ctk.CTkButton(window, text="Feedback",
 button04.place(x=365, y=35)
 
 button05 = ctk.CTkButton(window, text="Subscribe to Updates",
-                        command=lambda: print("Update clicked"),
+                        command=lambda: open_subscribe_window(canvas),
                         width=65,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
@@ -186,7 +182,7 @@ image_size_spinbox.place(
 button_loadimg = ctk.CTkButton(window, text="Load Image",
                         command=lambda: load_image(canvas, 550, 255, 180, 170),
                         width=120,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -199,7 +195,7 @@ round_rectangle(canvas, 160, 150, 250, 40, radius=8)
 button_save_folder = ctk.CTkButton(window, text="Save Folder",
                         command=lambda: select_save_folder(canvas, text_x=180, text_y=230),
                         width=120,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -212,7 +208,7 @@ round_rectangle(canvas, 160, 210, 250, 40, radius=8)
 button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
                         command=lambda: subwindow1(canvas),
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -245,7 +241,7 @@ button_auto_faz.place(x=125, y=355)
 button8 = ctk.CTkButton(window, text="Measure FAZ",
                         command=lambda: measure_faz(canvas),
                         width=190,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_green_colour,
                         corner_radius=8,border_width=1,
@@ -257,7 +253,7 @@ button8.place(x=220, y=355)
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
                         command=subwindow2,
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -269,7 +265,7 @@ button_regional_analysis.place(x=30, y=415)
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
                         command=subwindow3,
                         width=380,height=65,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
                         corner_radius=8,border_width=1,
@@ -281,7 +277,7 @@ button_batch_processing.place(x=30, y=500)
 button_process = ctk.CTkButton(window, text="Start Processing",
                         command=lambda: start_processing(canvas),
                         width=380,height=80,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=8,border_width=1,
@@ -303,7 +299,7 @@ canvas.create_text(
     anchor="nw",
     text="Original",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
@@ -312,13 +308,13 @@ canvas.create_text(
     anchor="nw",
     text="Binarised",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 button41 = ctk.CTkButton(window, text="Invert",
                         command=lambda: invert_binarised_image(canvas),
                         width=60,height=25,
-                        font=("Roboto Bold", 12 * -1),
+                        font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=4,border_width=1,
@@ -332,7 +328,7 @@ canvas.create_text(
     anchor="nw",
     text="Skeletonised",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 round_rectangle(canvas, 430, 395, 240, 270, radius=8)
@@ -345,7 +341,7 @@ canvas.create_text(
     anchor="nw",
     text="FAZ Segmentation",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
@@ -354,7 +350,7 @@ canvas.create_text(
     anchor="nw",
     text="Results",
     fill=theme_blue,
-    font=("Roboto Bold", 16 * -1)
+    font=("Roboto", 16 * -1)
 )
 
 canvas.create_text(
@@ -407,7 +403,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel area density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -416,7 +412,7 @@ canvas.create_text(
     anchor="nw",
     text="Vessel length density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -425,7 +421,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean diameter = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -434,7 +430,7 @@ canvas.create_text(
     anchor="nw",
     text="Branchpoint density = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -443,7 +439,7 @@ canvas.create_text(
     anchor="nw",
     text="Fractal dimension = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 canvas.create_text(
@@ -452,7 +448,7 @@ canvas.create_text(
     anchor="nw",
     text="Mean tortuosity = ",
     fill="#0F1F3F",
-    font=("Roboto SemiBold", 14 * -1)
+    font=("Roboto", 14 * -1)
 )
 
 
