@@ -6,6 +6,7 @@ from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
 from window_help import *
 from window_feedback import *
+from window_faz_viewer import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -15,6 +16,7 @@ from modules.round_rectangle import *
 from modules.change_status import *
 from modules.binarise_image import *
 from modules.clear import *
+from modules.faz_utils import *
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -49,7 +51,6 @@ canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
-canvas.faz_type_var = StringVar(value="Automatic FAZ")  # Variable for FAZ Type dropdown
 
 
 canvas.place(x = 0, y = 0)
@@ -219,31 +220,38 @@ button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Setting
     border_color=button_border_colour  )
 button_advanced_settings.place(x=30, y=270)
 
-# faz type dropdown
-faz_type_list = ["Point FAZ", "Automatic FAZ"]
-faz_type = ttk.Combobox(
-    textvariable=canvas.faz_type_var,
-    values=faz_type_list,
-    state="readonly",
-    style="CustomCombobox.TCombobox" 
-)
-faz_type.place(
-    x=30.0,
-    y=355.0,
-    width=135.0,
-    height=35.0
-)
+button_point_faz = ctk.CTkButton(window, text="Point FAZ",
+                                command=lambda: subwindow4(canvas, editable=True),
+                                width=80,height=40,
+                                font=("Roboto Bold", 12 * -1),
+                                text_color=text_colour,
+                                fg_color=button_green_colour,
+                                corner_radius=8,border_width=1,
+                                hover_color=button_green_hover,
+    border_color=button_border_colour  )
+button_point_faz.place(x=30, y=355)
+
+
+button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindow4(canvas, editable=False),
+                                width=80,height=40,
+                                font=("Roboto Bold", 12 * -1),
+                                text_color=text_colour,
+                                fg_color=button_green_colour,
+                                corner_radius=8,border_width=1,
+                                hover_color=button_green_hover,
+    border_color=button_border_colour  )
+button_auto_faz.place(x=125, y=355)
 
 button8 = ctk.CTkButton(window, text="Measure FAZ",
-                        command=lambda: print("Measure FAZ clicked"),
-                        width=230,height=40,
+                        command=lambda: measure_faz(canvas),
+                        width=190,height=40,
                         font=("Roboto Bold", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_green_colour,
                         corner_radius=8,border_width=1,
                         hover_color=button_green_hover,
     border_color=button_border_colour  )
-button8.place(x=180, y=355)
+button8.place(x=220, y=355)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
