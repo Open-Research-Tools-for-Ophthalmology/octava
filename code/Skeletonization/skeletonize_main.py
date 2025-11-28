@@ -10,12 +10,6 @@ import math
 import scipy.io as sio
 import time
 
-import sys
-sys.path.append("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/code")
-from frangi_2dfilter import frangi_2Dfilter
-from fuzzy_thresholding import fuzzy_thresholding
-from adaptive_thresholding import adaptive_thresholding
-
 
 def skeletonize_main(bin: np.ndarray, THR: int = 0):
     # generate skeletonized iamge
@@ -73,13 +67,16 @@ def skeletonize_main(bin: np.ndarray, THR: int = 0):
 
     # Add parameters to links structure that are required for
     # calculating metrics
+    # Note: these methods are built-in the Link datastructure defined in skel2graph3d
     for i in range(len(links)):
-        links[i].compute_dir_vectors(y, x)
-        links[i].compute_pixlength()
-        links[i].compute_end2endlengths()
+        links[i].compute_dir_vectors(y, x) # adds the x and y coordinates for each point on the link
+        links[i].compute_pixlength() # length of branch in pixels
+        links[i].compute_end2endlength() # arc length
         links[i].compute_tortuosity() 
-        links[i].compute_diameter_measurements()
-        links[i].compute_diameter() 
+        links[i].compute_diameter_measurements(D) # diameter measurement at each point within the link
+        links[i].compute_diameter() # mean diameter for a given link
+
+    return skel2, nodes, links
 
 
 if __name__ == "__main__":

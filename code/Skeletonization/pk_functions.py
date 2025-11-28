@@ -2,7 +2,10 @@ import numpy as np
 
 def pk_get_nh_idx(img, indices):
     """
-    Python translation of MATLAB pk_get_nh_idx.
+    Creates an (N, 27) np.ndarray that represents the pixel neighborhood around a given linear index (voxel)
+    Each row has 27 columns because we include 26 neighbors + the voxel of interest. 
+    Each entry has the 0-based linear index of each neighbor (not the value, just it's index wrt the flat skeletonized img)
+
     - img: 3D numpy array (shape (W,H,D)). Should be padded externally (like MATLAB padarray).
     - indices: 1D array-like of linear indices (numpy 0-based indices into img.ravel()).
     Returns:
@@ -37,7 +40,10 @@ def pk_get_nh_idx(img, indices):
 
 def pk_get_nh(img, indices):
     """
-    Python translation of MATLAB pk_get_nh.
+    Creates a (N, 27) matrix representing the neighborhood around a given linear index
+    Each entry simply indicates whether the neighbor is a foreground pixel (1)
+    or not (0)
+    
     - img: 3D numpy array (dtype can be bool or int). Should be padded externally.
     - indices: 1D array-like of linear indices (0-based).
     Returns:
