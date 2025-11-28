@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 from modules.resize_image import *
 from PIL import Image, ImageTk
-from modules.faz_utils import display_faz_image
+from modules.faz_utils import display_faz_image, load_faz_grayscale_arr
 from modules.auto_faz.auto_faz import auto_faz
 
 
@@ -35,10 +35,23 @@ def subwindow4(canvas, editable=False):
         canvas.original_img.astype(np.uint8), mode="L"
     )
     subwindow4.zoom_level = 1.0
-    subwindow4.active_tool = "draw"  # TODO "draw", "drag", "zoom", "null"
+    subwindow4.active_tool = "draw"  # TODO "draw/drag", "pan", "zoom" , "null"
     subwindow4.polygon_points = []
-    subwindow4.drag_start = None
+    subwindow4.pan_start = None
     subwindow4.pan_offset = [0, 0]
+    subwindow4.drag_point_index = None  # Track which point is being dragged
+
+
+    # Drag: ask if want to load existing grayscale mask
+    draggable = False
+    if editable and hasattr(canvas, "faz_grayscale_arr") and canvas.faz_grayscale_arr is not None:
+        result = messagebox.askyesno(
+            title="Load Confirmation",
+            message="You have an existing FAZ segmentation. Do you want to load it?",
+            parent=subwindow4
+        ) # assign parent to focus on subwindow4
+        if result is True: 
+            draggable = True
 
     # Edit: Show header if editable
     if editable:
@@ -49,7 +62,7 @@ def subwindow4(canvas, editable=False):
         # Header text
         header_label = Label(
             header_frame,
-            text="Click points to define a polygon around the FAZ",
+            text=("Drag " if draggable else "Click ") + "points to define a polygon around the FAZ",
             font=("Roboto", 14),
             bg="#FBE3D6",
             fg=theme_blue,
@@ -86,6 +99,8 @@ def subwindow4(canvas, editable=False):
             if tool_name == "draw":
                 subcanvas4.config(cursor="crosshair")
             elif tool_name == "drag":
+                subcanvas4.config(cursor="hand2")
+            elif tool_name == "pan":
                 subcanvas4.config(cursor="fleur")
             elif tool_name == "zoom":
                 subcanvas4.config(cursor="double_arrow")
@@ -116,16 +131,24 @@ def subwindow4(canvas, editable=False):
         # Store button references
         subwindow4.tool_buttons = {}
 
-        btn_draw = ctk.CTkButton(
-            tools_frame, text="✎", command=lambda: set_active_tool("draw"), **btn_config
-        )
-        pack_tool_button(btn_draw, "draw")
+        if draggable:
+            # Drag tool button
+            btn_drag = ctk.CTkButton(
+                tools_frame, text="⦿", command=lambda: set_active_tool("drag"), **btn_config
+            )
+            pack_tool_button(btn_drag, "drag")
+        else:
+            # Draw tool button
+            btn_draw = ctk.CTkButton(
+                tools_frame, text="✎", command=lambda: set_active_tool("draw"), **btn_config
+            )
+            pack_tool_button(btn_draw, "draw")
     
-        # Drag tool button
-        btn_drag = ctk.CTkButton(
-            tools_frame, text="✋", command=lambda: set_active_tool("drag"), **btn_config
+        # Pan tool button
+        btn_pan = ctk.CTkButton(
+            tools_frame, text="✋", command=lambda: set_active_tool("pan"), **btn_config
         )
-        pack_tool_button(btn_drag, "drag")
+        pack_tool_button(btn_pan, "pan")
 
         # Zoom tool button
         btn_zoom = ctk.CTkButton(
@@ -133,11 +156,12 @@ def subwindow4(canvas, editable=False):
         )
         pack_tool_button(btn_zoom, "zoom")
 
-        # Set draw tool as active by default
-        set_active_tool("draw")
+        # Editor initialization, set draw/drag tool as active by default
+        set_active_tool("drag" if draggable else "draw")
 
-    # Edit: Update image display after 1. drag 2. zoom
+    # Edit: Update image display after 1. pan 2. zoom
     def update_image_display():
+        print("Updating image display with zoom level:", subwindow4.zoom_level, "and pan offset:", subwindow4.pan_offset)
         # Get current canvas size
         canvas_width = subcanvas4.winfo_width()
         canvas_height = subcanvas4.winfo_height()
@@ -162,7 +186,7 @@ def subwindow4(canvas, editable=False):
         )
         img_tk = ImageTk.PhotoImage(resized_img)
 
-        # Drag: Add x/y offset
+        # Pan: Add x/y offset
         img_x = canvas_width // 2 + subwindow4.pan_offset[0]
         img_y = canvas_height // 2 + subwindow4.pan_offset[1]
         subcanvas4.create_image(
@@ -187,23 +211,23 @@ def subwindow4(canvas, editable=False):
                 y = subwindow4.img_position[1] + point[1] * subwindow4.zoom_level
                 flat_points.extend([x, y])
             subcanvas4.create_polygon(*flat_points, fill='#800080', outline="black", tags="polygon")
-        else:
-            # Lines: if polygon hasn't been enclosed yet
-            for i, point in enumerate(subwindow4.polygon_points):
-                x = subwindow4.img_position[0] + point[0] * subwindow4.zoom_level
-                y = subwindow4.img_position[1] + point[1] * subwindow4.zoom_level
-                subcanvas4.create_oval( # I know it says oval but it's our circle
-                    x - 4, y - 4, x + 4, y + 4, fill=point_blue_colour, outline="black", tags="point"
-                )
+        
+        # Lines: if polygon hasn't been enclosed yet
+        for i, point in enumerate(subwindow4.polygon_points):
+            x = subwindow4.img_position[0] + point[0] * subwindow4.zoom_level
+            y = subwindow4.img_position[1] + point[1] * subwindow4.zoom_level
+            subcanvas4.create_oval( # I know it says oval but it's our circle
+                x - 4, y - 4, x + 4, y + 4, fill=point_blue_colour, outline="black", tags="point"
+            )
 
-                # Draw lines
-                if i > 0:
-                    prev_point = subwindow4.polygon_points[i - 1]
-                    prev_x = subwindow4.img_position[0] + prev_point[0] * subwindow4.zoom_level
-                    prev_y = subwindow4.img_position[1] + prev_point[1] * subwindow4.zoom_level
-                    subcanvas4.create_line(
-                        prev_x, prev_y, x, y, fill=point_blue_colour, width=3, tags="line"
-                    )
+            # Draw lines
+            if i > 0:
+                prev_point = subwindow4.polygon_points[i - 1]
+                prev_x = subwindow4.img_position[0] + prev_point[0] * subwindow4.zoom_level
+                prev_y = subwindow4.img_position[1] + prev_point[1] * subwindow4.zoom_level
+                subcanvas4.create_line(
+                    prev_x, prev_y, x, y, fill=point_blue_colour, width=3, tags="line"
+                )
 
         # Keep reference to prevent garbage collection
         subcanvas4.image_ref = img_tk
@@ -271,17 +295,25 @@ def subwindow4(canvas, editable=False):
         # Keep reference to prevent garbage collection
         subcanvas4.image_ref = img_tk
 
-    # Event handlers
+
+    # Event handlers - unified approach to prevent tool switching conflicts
     # Handle mouse click on canvas
     # @listener left mouse click
     def on_canvas_click(event):
         print("Canvas clicked at:", event.x, event.y)
-        if subwindow4.active_tool == "drag":
-            print("[on_canvas_click] Drag registered")
-            # Register the starting drag position
-            subwindow4.drag_start = (event.x, event.y)
+        
+        # Reset all interaction states when clicking
+        subwindow4.drag_point_index = None  # Clear any drag state
+        
+        if subwindow4.active_tool == "pan":
+            print("[on_canvas_click] Pan registered")
+            # Register the starting pan position
+            subwindow4.pan_start = (event.x, event.y)
+            
         elif subwindow4.active_tool == "draw":
             print("[on_canvas_click] Adding polygon point")
+            subwindow4.pan_start = None  # Clear pan state
+            
             # Add point to polygon
             if hasattr(subwindow4, "img_position") and hasattr(
                 subwindow4, "img_display_size"
@@ -314,6 +346,21 @@ def subwindow4(canvas, editable=False):
                     # Add new point
                     subwindow4.polygon_points.append((img_x, img_y))
                     update_image_display()
+                    
+        elif subwindow4.active_tool == "drag":
+            print("[on_canvas_click] Drag point selected")
+            subwindow4.pan_start = None  # Clear pan state
+            
+            # Check if clicking near an existing point to start dragging
+            img_x = (event.x - subwindow4.img_position[0]) / subwindow4.zoom_level
+            img_y = (event.y - subwindow4.img_position[1]) / subwindow4.zoom_level
+
+            for i, point in enumerate(subwindow4.polygon_points):
+                distance = ((img_x - point[0]) ** 2 + (img_y - point[1]) ** 2) ** 0.5
+                if distance < 5:
+                    print("Selected point for dragging:", point)
+                    subwindow4.drag_point_index = i  # Store which point we're dragging
+                    break
 
     # Handle mouse wheel for zooming when zoom tool is active
     # @listener mouse wheel
@@ -335,19 +382,29 @@ def subwindow4(canvas, editable=False):
     # Handle drag motion and end
     # @listener mouse drag events
     def on_drag_motion(event):
-        print("Drag motion at:", event.x, event.y)
-        # Compare with the starting drag position and update the offset
-        if subwindow4.active_tool == "drag" and subwindow4.drag_start:
-            dx = event.x - subwindow4.drag_start[0]
-            dy = event.y - subwindow4.drag_start[1]
+        if subwindow4.active_tool == "pan" and subwindow4.pan_start:
+            # Handle pan motion
+            print("Pan motion at:", event.x, event.y)
+            dx = event.x - subwindow4.pan_start[0]
+            dy = event.y - subwindow4.pan_start[1]
             subwindow4.pan_offset[0] += dx
             subwindow4.pan_offset[1] += dy
-            subwindow4.drag_start = (event.x, event.y)
+            subwindow4.pan_start = (event.x, event.y)
+            update_image_display()
+            
+        elif subwindow4.active_tool == "drag" and subwindow4.drag_point_index is not None:
+            # Handle drag motion
+            img_x = (event.x - subwindow4.img_position[0]) / subwindow4.zoom_level
+            img_y = (event.y - subwindow4.img_position[1]) / subwindow4.zoom_level
+            subwindow4.polygon_points[subwindow4.drag_point_index] = (img_x, img_y)
             update_image_display()
 
+    # Unified release handler - handles both pan and drag end
     def on_drag_end(event):
-        if subwindow4.active_tool == "drag":
-            subwindow4.drag_start = None
+        if subwindow4.active_tool == "pan":
+            subwindow4.pan_start = None
+        elif subwindow4.active_tool == "drag":
+            subwindow4.drag_point_index = None
 
     def confirm_polygon():
         result = messagebox.askyesno(
@@ -379,12 +436,16 @@ def subwindow4(canvas, editable=False):
             subwindow4.destroy()
             display_faz_image(canvas)
 
-        elif result is False:  # No - Draw again
+        elif result is False:  # No - Draw again (Edit: Clear canvas) (Drag: Close without saving)
+            if draggable:
+                # Just close the window without saving
+                subwindow4.destroy()
+                return
             subwindow4.polygon_points = []
             set_active_tool("draw")
             update_image_display()
 
-    # Key Binding events
+    # Key Binding events - unified event handlers
     subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
     subcanvas4.bind("<B1-Motion>", on_drag_motion)
     subcanvas4.bind("<ButtonRelease-1>", on_drag_end)
@@ -394,6 +455,9 @@ def subwindow4(canvas, editable=False):
     def on_close():
         print("FAZ Viewer/Editer closed.")
 
+        if draggable:
+            return confirm_polygon()
+
         # Purge!
         subwindow4.destroy()
 
@@ -401,8 +465,23 @@ def subwindow4(canvas, editable=False):
             # Viewer: send for preview
             display_faz_image(canvas)
 
-    # Initial display after window is rendered
+    # Initial display after window is rendered (100ms)
     subwindow4.after(100, update_image_display if editable else display_fixed_image)
+
+    # Drag: load existing grayscale mask and make dragable polygon (200ms)
+    if draggable:
+        def load_existing_polygon():
+            polygon_points = load_faz_grayscale_arr(canvas)
+            # TODO Scale polygon_points to current image display size
+            scale_ratio = subcanvas4.winfo_height() / canvas.faz_grayscale_arr.shape[1]
+            print("draggable subcanvas4.winfo_height(), canvas.faz_grayscale_arr.height, image scale_ratio:", subcanvas4.winfo_height(), canvas.faz_grayscale_arr.shape[1], scale_ratio)
+            polygon_points = [(pt[0] * scale_ratio, pt[1] * scale_ratio) for pt in polygon_points]
+            polygon_points.append(polygon_points[0]) # close the polygon
+            subwindow4.polygon_points = polygon_points
+            print("Loaded existing FAZ polygon points:", subwindow4.polygon_points)
+            update_image_display() # render the calculated polygon
+        
+        subwindow4.after(200, load_existing_polygon)
 
     subwindow4.protocol("WM_DELETE_WINDOW", on_close)
     subwindow4.resizable(True, True)
