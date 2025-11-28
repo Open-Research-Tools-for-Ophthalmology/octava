@@ -396,7 +396,12 @@ def subwindow4(canvas, editable=False):
             # Handle drag motion
             img_x = (event.x - subwindow4.img_position[0]) / subwindow4.zoom_level
             img_y = (event.y - subwindow4.img_position[1]) / subwindow4.zoom_level
-            subwindow4.polygon_points[subwindow4.drag_point_index] = (img_x, img_y)
+            # If the drag item is the first/last point, update them both
+            if subwindow4.drag_point_index == 0:
+                subwindow4.polygon_points[0] = (img_x, img_y)
+                subwindow4.polygon_points[-1] = (img_x, img_y)
+            else:
+                subwindow4.polygon_points[subwindow4.drag_point_index] = (img_x, img_y)
             update_image_display()
 
     # Unified release handler - handles both pan and drag end
