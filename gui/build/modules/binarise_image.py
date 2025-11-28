@@ -78,7 +78,7 @@ def invert_binarised_image(canvas: Canvas):
     if not hasattr(canvas, "binary_image"):
       messagebox.showwarning(
           "No Binarised Image", 
-          "Please load another image and try to process it again."
+          'Please load another image and click "Start Processing".'
       )
       return
 
