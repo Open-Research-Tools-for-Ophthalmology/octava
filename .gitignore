@@ -1,4 +1,8 @@
-# Ignore Python cache and bytecode
+/source/5000/*
+/source/5001/*
+/source/5002/*
+
+.env
+
 __pycache__/
-*.pyc
-*.pyo
+tempCodeRunnerFile.py

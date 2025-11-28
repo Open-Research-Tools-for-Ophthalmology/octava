@@ -1,6 +1,6 @@
 from adaptive_thresholding import adaptive_thresholding
 from frangi_2dfilter import frangi_2Dfilter
-from fuzzy_thresholding import fuzzy_thresholding
+from gui.build.fuzzy_thresholding import fuzzy_thresholding
 import numpy as np
 
 def BinarizeImage(app, Im:np.ndarray) -> np.ndarray:
@@ -55,7 +55,5 @@ def BinarizeImage(app, Im:np.ndarray) -> np.ndarray:
 
     # make sure to return consistent output type
     Im = Im.astype(np.float32)
-    
+
     return Im
-
-
