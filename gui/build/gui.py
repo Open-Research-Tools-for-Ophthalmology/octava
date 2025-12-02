@@ -406,6 +406,15 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.vad_value_id = canvas.create_text(
+    853.0, 
+    470.0,
+    anchor="nw",
+    text="-- %",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 canvas.create_text(
     710.0,
     500.0,
