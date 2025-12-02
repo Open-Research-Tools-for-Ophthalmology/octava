@@ -2,6 +2,7 @@ from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.biomarker import BiomarkerAnalyzer
 import threading
 
 def start_processing(canvas: Canvas):
@@ -31,5 +32,9 @@ def start_processing_threaded(canvas: Canvas):
 
     print("Image processing completed.")
 
+    BiomarkerAnalyzer.process(canvas)
+
+    print("Biomarker analyzer processing completed.")
+    
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))
