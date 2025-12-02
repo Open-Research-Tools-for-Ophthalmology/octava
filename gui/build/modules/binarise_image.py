@@ -16,6 +16,8 @@ def binarise_image(canvas):
     - Optionally applies Frangi filter (stub).
     Stores result in canvas.binary_image.
     """
+    change_status_to_waiting(canvas, status="🔴 Wait...Binarising")
+
     #todo4: (Done!) test basic binarisation (excluding median filter) 
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img.max(axis=0)
@@ -69,8 +71,8 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Draw on canvas
     canvas.binary_img_id = canvas.create_image(805, 255, image=img_tk)
     # Prevent garbage collection. Without this, the image will not display.
-    if not hasattr(canvas, "_image_refs"):
-        canvas._image_refs = []
+    # if not hasattr(canvas, "_image_refs"):
+    #     canvas._image_refs = []
     canvas._image_refs.append(img_tk)
 
 
@@ -78,11 +80,11 @@ def invert_binarised_image(canvas: Canvas):
     if not hasattr(canvas, "binary_image"):
       messagebox.showwarning(
           "No Binarised Image", 
-          'Please load another image and click "Start Processing".'
+          'Please load an image and click "Start Processing" first.'
       )
       return
 
-    change_status_to_waiting(canvas)
+    change_status_to_waiting(canvas, status="🔴 Wait...Inverting Binarised Image")
 
     print ("Inverting binarised image...")
 

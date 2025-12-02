@@ -71,14 +71,6 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
     canvas.FAZ_ctr = (orig_h / 2.0, orig_w / 2.0)
 
-    # # Create a per-image save folder if base dir provided
-    # base_save_dir = getattr(canvas, "save_dir", None)
-    # if base_save_dir:
-    #     canvas.SaveFolder = os.path.join(base_save_dir, canvas.FileLabelName)
-    #     os.makedirs(canvas.SaveFolder, exist_ok=True)
-    # else:
-    #     canvas.SaveFolder = None
-
     # Remember last drawn items
     canvas.original_img_id = img_id
     canvas.filename_text_id = text_id

@@ -53,7 +53,7 @@ def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: 
     )
 
     # Keep the real path for later use
-    canvas.save_folder_path = dir_path
+    canvas.save_dir = dir_path
 
     change_status_to_ready(canvas)
     
