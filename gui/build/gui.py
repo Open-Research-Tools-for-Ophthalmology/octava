@@ -6,6 +6,7 @@ from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
 from window_help import *
 from window_feedback import *
+from window_faz_viewer import *
 from window_subscribe import *
 from window_faz_viewer import *
 import customtkinter as ctk
@@ -239,9 +240,9 @@ button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindo
 button_auto_faz.place(x=125, y=355)
 
 button8 = ctk.CTkButton(window, text="Measure FAZ",
-                        command=lambda: print("Measure FAZ clicked"),
+                        command=lambda: measure_faz(canvas),
                         width=190,height=40,
-                        font=("Roboto Bold", 14 * -1),
+                        font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_green_colour,
                         corner_radius=8,border_width=1,
