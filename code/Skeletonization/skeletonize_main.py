@@ -1,20 +1,13 @@
 import numpy as np
-from skimage.io import imread
-from skimage.filters import frangi
-import matplotlib.pyplot as plt
 from skimage.morphology import skeletonize, remove_small_objects
 from scipy.ndimage import distance_transform_edt
 from Skel2Graph3D import skel2graph3d
 from Graph2Skel3D import graph2skel3d
-import math
 import scipy.io as sio
 import time
 
 import sys
-sys.path.append("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/code")
-from frangi_2dfilter import frangi_2Dfilter
-from fuzzy_thresholding import fuzzy_thresholding
-from adaptive_thresholding import adaptive_thresholding
+sys.path.append("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code")
 
 
 def skeletonize_main(bin: np.ndarray, THR: int = 0):
@@ -83,7 +76,7 @@ def skeletonize_main(bin: np.ndarray, THR: int = 0):
 
 
 if __name__ == "__main__":
-    data = sio.loadmat("/Users/mutrera/Documents/Uchicago College/Uchicago 2024 - 2025/Summer/Octava/octava/code/Skeletonization/matlab_skels/binarise_python_result.mat")
+    data = sio.loadmat("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/Skeletonization/matlab_skels/binarise_python_result.mat")
     python_bin_img = data['Y_py']
 
     start_skel = time.time()

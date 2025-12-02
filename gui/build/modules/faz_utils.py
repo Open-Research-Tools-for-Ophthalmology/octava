@@ -21,6 +21,29 @@ def display_faz_image(canvas: Canvas):
         canvas._image_refs = []
     canvas._image_refs.append(img_tk)
 
+# Edit: Load existing FAZ grayscale array into polygon points
+def load_faz_grayscale_arr(canvas: Canvas):
+    # Get faz mask
+    grayscale_arr = canvas.faz_grayscale_arr.copy()
+    
+    contours, _ = cv2.findContours(grayscale_arr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) # Find contours from grayscale mask
+
+    print("contours found:", len(contours))
+
+    if len(contours) == 0:
+        return messagebox.showwarning("No FAZ contours found")
+    
+    cnt = max(contours, key=cv2.contourArea)
+    cnt = cnt.reshape(-1, 2)  # Shape: (N, 2)
+    print("largest contour points:", len(cnt))
+
+    # TODO may need better reduce machanism
+    # Reduce number of points to closely to 20 points for easier editing
+    reduce_divisor = max(1, len(cnt) // 20)
+    cnt_reduced = cnt[::reduce_divisor]
+    print("reduced contour points:", len(cnt_reduced))
+    return [(point[0], point[1]) for point in cnt_reduced]
+
 # TODO From FAZ_code/get_area.py
 def get_area(x:np.ndarray,y:np.ndarray)->float:
     """
@@ -106,7 +129,6 @@ def measure_faz(canvas: Canvas):
 
     # 2. Centroid: Calculate centroid
     Cx, Cy = get_central(cnt[:, 0], cnt[:, 1])
-    canvas.FAZ_ctr = (Cy, Cx)
 
     # 3. Convert contour to polar coordinates relative to centroid
     cnt_x = cnt[:, 0] - Cx

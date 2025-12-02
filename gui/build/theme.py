@@ -13,6 +13,7 @@ button_border_colour = "#4D4D4D"
 point_blue_colour = "#05ADF6"
 theme_blue = "#4483FF"
 theme_red = "#FF4444"
+theme_grey = "#EFEFEF"
 
 # Top level subwindows
 subwindow_bg_colour = "#FBE3D6"

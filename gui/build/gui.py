@@ -8,6 +8,7 @@ from window_help import *
 from window_feedback import *
 from window_faz_viewer import *
 from window_subscribe import *
+from window_faz_viewer import *
 import customtkinter as ctk
 from theme import *
 from modules.load_image import *
@@ -18,6 +19,7 @@ from modules.change_status import *
 from modules.binarise_image import *
 from modules.clear import *
 from modules.faz_utils import *
+from modules.histogram import HistogramPlotter
 from test import *
 
 OUTPUT_PATH = Path(__file__).parent
@@ -42,10 +44,10 @@ canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
-canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
+canvas.twig_size = IntVar(value=20)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
-canvas.bin_size_var = IntVar()  # Variable for Bin Size Spinbox
+canvas.bin_size_var = IntVar(value=5)  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 
@@ -61,7 +63,7 @@ canvas.create_text(
 )
 
 button01 = ctk.CTkButton(window, text="Save",
-                        command=lambda: print("Save clicked"),
+                        command=lambda: canvas.hist_plotter.save_plot(),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -116,7 +118,7 @@ button05 = ctk.CTkButton(window, text="Subscribe to Updates",
 button05.place(x=435, y=35)
 
 canvas.status_id = canvas.create_text(
-    1000.0,
+    950.0,
     35.0,
     anchor="nw",
     text="🟢 Ready",
@@ -362,12 +364,24 @@ canvas.create_text(
     font=("Roboto Medium", 12 * -1)
 )
 
+hist_frame = ctk.CTkFrame(window, fg_color=bg_colour, width=230, height=180)
+hist_frame.place(x=945, y=455)
+
+canvas.hist_plotter = HistogramPlotter(
+    master_frame=hist_frame,
+    bg_color=theme_grey,
+    bar_color=theme_blue,
+    axis_color=text_colour
+)
+
+
 # bin size Spinbox
 binsize_spinbox = Spinbox(
     from_=1,
     to=10,
     width=2,
     textvariable=canvas.bin_size_var,
+    command=lambda: canvas.hist_plotter.update_plot(canvas.bin_size_var.get()),
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 12 * -1),
