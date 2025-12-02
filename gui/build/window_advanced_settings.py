@@ -118,8 +118,8 @@ def subwindow1(canvas):
   )
   twig_size_spinbox = Spinbox(
       subwindow,
-      from_=1,
-      to=10,
+      from_=0,
+      to=30,
       width=3,
       textvariable=canvas.twig_size,
       bg=subwindow_bg_colour,

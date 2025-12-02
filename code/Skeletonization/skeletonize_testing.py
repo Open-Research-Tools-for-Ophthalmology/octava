@@ -78,10 +78,10 @@ def skeletonize_main(bin: np.ndarray, THR: int = 0):
     y, x = bin.shape
     L = bin.astype(bool)
     # sk2 = skeletonize(L) 
-    sk2 = skeletonize(L) 
+    sk2, distance = medial_axis(L, return_distance=True)
 
     # removes branches smaller than twig size
-    # sk2 = remove_small_objects(sk2, THR, connectivity=8) 
+    sk2 = remove_small_objects(sk2, THR, connectivity=8) 
 
     # local thickness measurement
     D = distance_transform_edt(L) * 2
