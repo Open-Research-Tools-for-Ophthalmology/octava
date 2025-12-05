@@ -13,34 +13,16 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def process(canvas: Canvas) -> None:
-        # --- Validate Input Data ---
-        if not hasattr(canvas, "binary_image"):
-            return
+        # --- Input Data ---
 
         binary = canvas.binary_image
-
-        # Ensure binary is a valid 2D numpy array
-        if not isinstance(binary, np.ndarray):
-            try:
-                binary = np.asarray(binary)
-            except Exception:
-                return
-        
-        if binary.ndim != 2:
-            return
-
-        # Ensure correct type (uint8)
-        if binary.dtype != np.uint8:
-            binary = binary.astype(np.uint8)
-
+        skeleton = canvas.skeleton_image
+        nodes = canvas.skeleton_nodes
+        links = canvas.skeleton_links
         Nx, Ny = binary.shape
+        image_size_mm = float(canvas.image_size_var.get())
 
         # --- Retrieve Image Parameters ---
-        # Get physical size (mm), default to 1.0 if missing
-        if hasattr(canvas, "image_size_var"):
-            image_size_mm = float(canvas.image_size_var.get())
-        else:
-            image_size_mm = 1.0
 
         # Determine Image Type (Retina/ONH vs Skin/Other)
         img_type = canvas.img_type_var.get() if hasattr(canvas, "img_type_var") else None
@@ -71,16 +53,203 @@ class BiomarkerAnalyzer:
         img_area_mm2 = img_area_pix * (pix_size_mm ** 2)
         vessel_area_mm2 = vessel_pixels * (pix_size_mm ** 2)
 
+        # --- Calculate Vessel Length (mm) & Length Density (mm/mm²) ---
+        # Assume skeleton is 1-pixel wide. Each skeleton pixel ≈ one pixel length.
+        skel_mask = (skeleton > 0)
+
+        total_length_pix = float(np.count_nonzero(skel_mask))
+        total_length_mm = total_length_pix * pix_size_mm
+
+        if img_area_mm2 > 0.0:
+            vessel_length_density = total_length_mm / img_area_mm2
+        else:
+            vessel_length_density = 0.0
+
+
+        # --- Calculate Mean / Median Diameter (mm) ---
+        # Use distance transform like MATLAB bwdist on the binary vessel mask.
+        from scipy.ndimage import distance_transform_edt
+
+        vessel_mask = (binary > 0)
+        if np.any(vessel_mask):
+            # Distance from each vessel pixel to nearest background (in pixels)
+            dist_map = distance_transform_edt(vessel_mask)
+
+            # Sample radii on skeleton pixels
+            radii_pix = dist_map[skel_mask]
+
+            if radii_pix.size > 0:
+                diameters_mm = 2.0 * radii_pix * pix_size_mm
+                mean_diameter_mm = float(np.mean(diameters_mm))
+                median_diameter_mm = float(np.median(diameters_mm))
+            else:
+                mean_diameter_mm = 0.0
+                median_diameter_mm = 0.0
+        else:
+            mean_diameter_mm = 0.0
+            median_diameter_mm = 0.0
+
+        # --- Calculate Branchpoint Density (per mm²) ---
+        from scipy.ndimage import convolve
+
+        # 8-connected neighbor kernel
+        kernel = np.array([[1, 1, 1],
+                           [1, 0, 1],
+                           [1, 1, 1]], dtype=np.uint8)
+
+        skel_uint = skel_mask.astype(np.uint8)
+        neighbor_count = convolve(skel_uint, kernel, mode="constant", cval=0)
+
+        # Branchpoint: skeleton pixel with >= 3 neighbors
+        branchpoints = (skel_mask & (neighbor_count >= 3))
+
+        branchpoint_count = int(np.count_nonzero(branchpoints))
+
+        if img_area_mm2 > 0.0:
+            branchpoint_density = branchpoint_count / img_area_mm2
+        else:
+            branchpoint_density = 0.0
+
+        # --- Calculate Fractal Dimension (Box-Counting) ---
+        # Convert to boolean mask (vessels = True)
+        Z = (binary > 0)
+
+        # Minimal dimension
+        p = min(Z.shape)
+        if p < 2:
+            fractal_dim = 0.0
+        else:
+            # Box sizes: powers of 2 (1, 2, 4, ..., up to p/2)
+            box_sizes = []
+            counts = []
+
+            k = 1
+            while k <= p // 2:
+                box_sizes.append(k)
+
+                # Compute number of non-empty boxes at scale k
+                # Trim image so that it's divisible by k
+                new_shape = (Z.shape[0] // k * k, Z.shape[1] // k * k)
+                Z_trim = Z[:new_shape[0], :new_shape[1]]
+
+                # Reshape into (n_rows, k, n_cols, k) and check any True in each box
+                Z_blocks = Z_trim.reshape(
+                    new_shape[0] // k, k,
+                    new_shape[1] // k, k
+                )
+                non_empty = np.any(Z_blocks, axis=(1, 3))
+                N_k = float(np.count_nonzero(non_empty))
+
+                counts.append(N_k)
+                k *= 2
+
+            # Need at least 2 scales to fit a line
+            if len(box_sizes) >= 2 and all(c > 0 for c in counts):
+                scales = np.array([1.0 / s for s in box_sizes], dtype=float)
+                log_scales = np.log(scales)
+                log_counts = np.log(np.array(counts, dtype=float))
+
+                # Linear fit: log(N) = D * log(1/box_size) + C
+                D, _ = np.polyfit(log_scales, log_counts, 1)
+                fractal_dim = float(D)
+            else:
+                fractal_dim = 0.0
+
+        # --- Calculate Mean Tortuosity ---
+        mean_tortuosity = 0.0
+
+        tortuosities = []
+
+        if links is not None:
+            for link in links:
+                try:
+                    # 这里假设 link 有 coords 属性 / 字段，是 N x 2 (row, col)
+                    coords = np.asarray(getattr(link, "coords", None), dtype=float)
+
+                    if coords is None or coords.shape[0] < 2:
+                        continue
+
+                    # Path length in pixels
+                    diffs = np.diff(coords, axis=0)
+                    step_lengths = np.linalg.norm(diffs, axis=1)
+                    path_len_pix = float(np.sum(step_lengths))
+
+                    # Chord length in pixels (first to last point)
+                    chord_len_pix = float(np.linalg.norm(coords[-1] - coords[0]))
+
+                    if chord_len_pix > 0.0 and path_len_pix > 0.0:
+                        tort = path_len_pix / chord_len_pix
+                        tortuosities.append(tort)
+                except Exception:
+                    # 如果这个 link 结构不符合预期，就跳过它
+                    continue
+
+        if len(tortuosities) > 0:
+            mean_tortuosity = float(np.mean(tortuosities))
+        else:
+            mean_tortuosity = 0.0
+
+
+
         # --- Store Metrics in Canvas ---
         if not hasattr(canvas, "metrics"):
             canvas.metrics = {}
 
         canvas.metrics.update({
-            "vessel_area_density_pct": vad_pct,
+            "vessel_area_density_pct": float(vad_pct),
             "vessel_area_mm2": float(vessel_area_mm2),
-            "image_area_mm2": float(img_area_mm2)
+            "image_area_mm2": float(img_area_mm2),
+            "total_vessel_length_mm": float(total_length_mm),
+            "vessel_length_density_mm_per_mm2": float(vessel_length_density),
+            "mean_diameter_mm": float(mean_diameter_mm),
+            "median_diameter_mm": float(median_diameter_mm),
+            "branchpoint_count": int(branchpoint_count),
+            "branchpoint_density_per_mm2": float(branchpoint_density),
+            "fractal_dimension": float(fractal_dim),
+            "mean_tortuosity": float(mean_tortuosity),
         })
 
         # --- Update GUI Display ---
+        # VAD
         if hasattr(canvas, "vad_value_id"):
-            canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct} %")
+            canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct:.2f} %")
+
+        # Total vessel length (mm)
+        if hasattr(canvas, "total_length_value_id"):
+            canvas.itemconfig(canvas.total_length_value_id,
+                              text=f"{total_length_mm:.2f} mm")
+
+        # Vessel length density (mm/mm²)
+        if hasattr(canvas, "length_density_value_id"):
+            canvas.itemconfig(canvas.length_density_value_id,
+                              text=f"{vessel_length_density:.2f} mm/mm²")
+
+        # Mean diameter (mm)
+        if hasattr(canvas, "mean_diameter_value_id"):
+            canvas.itemconfig(canvas.mean_diameter_value_id,
+                              text=f"{mean_diameter_mm:.4f} mm")
+
+        # Median diameter (mm)
+        if hasattr(canvas, "median_diameter_value_id"):
+            canvas.itemconfig(canvas.median_diameter_value_id,
+                              text=f"{median_diameter_mm:.4f} mm")
+
+        # Branchpoint count
+        if hasattr(canvas, "branch_count_value_id"):
+            canvas.itemconfig(canvas.branch_count_value_id,
+                              text=f"{branchpoint_count:d}")
+
+        # Branchpoint density (per mm²)
+        if hasattr(canvas, "branch_density_value_id"):
+            canvas.itemconfig(canvas.branch_density_value_id,
+                              text=f"{branchpoint_density:.2f} /mm²")
+
+        # Fractal dimension
+        if hasattr(canvas, "fractal_dim_value_id"):
+            canvas.itemconfig(canvas.fractal_dim_value_id,
+                              text=f"{fractal_dim:.3f}")
+
+        # Mean tortuosity
+        if hasattr(canvas, "tortuosity_value_id"):
+            canvas.itemconfig(canvas.tortuosity_value_id,
+                              text=f"{mean_tortuosity:.3f}")
