@@ -438,7 +438,7 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.vld_value_id = canvas.create_text(
+canvas.length_density_value_id = canvas.create_text(
     866.0,
     500.0,
     anchor="nw",
@@ -456,7 +456,7 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.mean_diam_value_id = canvas.create_text(
+canvas.mean_diameter_value_id = canvas.create_text(
     825.0,
     530.0,
     anchor="nw",
@@ -492,7 +492,7 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.fd_value_id = canvas.create_text(
+canvas.fractal_dim_value_id = canvas.create_text(
     843.0,
     590.0,
     anchor="nw",
