@@ -438,11 +438,29 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.vld_value_id = canvas.create_text(
+    866.0,
+    500.0,
+    anchor="nw",
+    text=" %",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 canvas.create_text(
     710.0,
     530.0,
     anchor="nw",
     text="Mean diameter = ",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
+canvas.mean_diam_value_id = canvas.create_text(
+    825.0,
+    530.0,
+    anchor="nw",
+    text=" %",
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
@@ -456,6 +474,15 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.branch_density_value_id = canvas.create_text(
+    857.0,
+    560.0,
+    anchor="nw",
+    text=" %",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 canvas.create_text(
     710.0,
     590.0,
@@ -465,6 +492,16 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.fd_value_id = canvas.create_text(
+    843.0,
+    590.0,
+    anchor="nw",
+    text=" %",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
+
 canvas.create_text(
     710.0,
     620.0,
@@ -473,6 +510,16 @@ canvas.create_text(
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
+
+canvas.tortuosity_value_id = canvas.create_text(
+    830.0,
+    620.0,
+    anchor="nw",
+    text=" %",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 
 
 window.resizable(False, False)
