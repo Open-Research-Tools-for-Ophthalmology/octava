@@ -18,14 +18,12 @@ def binarise_image(canvas):
     """
     change_status_to_waiting(canvas, status="🔴 Wait...Binarising")
 
-    #todo4: (Done!) test basic binarisation (excluding median filter) 
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img.max(axis=0)
     cc = int(y.argmax())
     rr = int(canvas.original_img[:, cc].argmax())
 
     # --- Apply median filter if selected ---
-    #todo5: apply the same medianfilter (leave for advanced processing)
     if canvas.med_filt_bool.get():
         print("Median filter selected.")
         ksize = canvas.kernel_size.get()  # assuming scalar
@@ -43,12 +41,10 @@ def binarise_image(canvas):
             'correctionconst1': 0.8,
             'correctionconst2': 15
         }
-        #todo3: implement frangi function (done)
         img = frangi_2Dfilter(img, opts)
 
     # --- Always use Fuzzy Means ---
     nth = 2
-    #todo1: check fuzzy thresholding function (done)
     binary_image = fuzzy_thresholding(img, nth, 3)-1
 
     # --- Convert to 255 (white vessels) and 0 (black background) ---
@@ -58,7 +54,6 @@ def binarise_image(canvas):
     # --- Store result back to canvas ---
     canvas.binary_image = binary_image
 
-    #todo2: display the binarised image on the canvas (done)
     display_binarised_image(canvas, binary_image)
 
 
@@ -71,8 +66,6 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Draw on canvas
     canvas.binary_img_id = canvas.create_image(805, 255, image=img_tk)
     # Prevent garbage collection. Without this, the image will not display.
-    # if not hasattr(canvas, "_image_refs"):
-    #     canvas._image_refs = []
     canvas._image_refs.append(img_tk)
 
 
