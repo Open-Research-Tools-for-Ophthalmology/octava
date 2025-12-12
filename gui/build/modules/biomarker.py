@@ -53,29 +53,52 @@ class BiomarkerAnalyzer:
         img_area_mm2 = img_area_pix * (pix_size_mm ** 2)
         vessel_area_mm2 = vessel_pixels * (pix_size_mm ** 2)
 
-        # --- Calculate Vessel Length (mm) & Length Density (mm/mm²) ---
-        # Assume skeleton is 1-pixel wide. Each skeleton pixel ≈ one pixel length.
-        skel_mask = (skeleton > 0)
 
-        total_length_pix = float(np.count_nonzero(skel_mask))
+
+        # --- Calculate Vessel Length Density (mm/mm²) ---
+
+        total_length_pix = 0.0
+
+        for link in links:
+            # 1D indices into the binary image
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size < 2:
+                continue
+
+            # Convert flat indices to (row, col)
+            rows, cols = np.unravel_index(indices, binary.shape)
+            coords = np.column_stack((rows, cols)).astype(float)
+
+            # Euclidean length along the path (in pixels)
+            diffs = np.diff(coords, axis=0)
+            step_lengths = np.linalg.norm(diffs, axis=1)
+            length_pix = float(step_lengths.sum())
+
+            total_length_pix += length_pix
+
+            # Optional: store per-link length in pixels
+            link.pixLength = length_pix
+
+        # Pixels -> mm
         total_length_mm = total_length_pix * pix_size_mm
 
-        if img_area_mm2 > 0.0:
-            vessel_length_density = total_length_mm / img_area_mm2
-        else:
-            vessel_length_density = 0.0
+        # Length density (mm per mm²), using image_size_mm²
+        length_area_mm2 = image_size_mm ** 2
+        vessel_length_density = total_length_mm / length_area_mm2
 
 
-        # --- Calculate Mean / Median Diameter (mm) ---
-        # Use distance transform like MATLAB bwdist on the binary vessel mask.
+
+
+        # --- Mean / Median Diameter (mm) ---
         from scipy.ndimage import distance_transform_edt
 
         vessel_mask = (binary > 0)
         if np.any(vessel_mask):
-            # Distance from each vessel pixel to nearest background (in pixels)
             dist_map = distance_transform_edt(vessel_mask)
 
-            # Sample radii on skeleton pixels
+            # define skeleton mask here
+            skel_mask = (skeleton > 0)
+
             radii_pix = dist_map[skel_mask]
 
             if radii_pix.size > 0:
@@ -88,6 +111,7 @@ class BiomarkerAnalyzer:
         else:
             mean_diameter_mm = 0.0
             median_diameter_mm = 0.0
+
 
         # --- Calculate Branchpoint Density (per mm²) ---
         from scipy.ndimage import convolve
@@ -199,7 +223,6 @@ class BiomarkerAnalyzer:
             "vessel_area_density_pct": float(vad_pct),
             "vessel_area_mm2": float(vessel_area_mm2),
             "image_area_mm2": float(img_area_mm2),
-            "total_vessel_length_mm": float(total_length_mm),
             "vessel_length_density_mm_per_mm2": float(vessel_length_density),
             "mean_diameter_mm": float(mean_diameter_mm),
             "median_diameter_mm": float(median_diameter_mm),
@@ -214,15 +237,12 @@ class BiomarkerAnalyzer:
         if hasattr(canvas, "vad_value_id"):
             canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct:.2f} %")
 
-        # Total vessel length (mm)
-        if hasattr(canvas, "total_length_value_id"):
-            canvas.itemconfig(canvas.total_length_value_id,
-                              text=f"{total_length_mm:.2f} mm")
+
 
         # Vessel length density (mm/mm²)
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(canvas.length_density_value_id,
-                              text=f"{vessel_length_density:.2f} mm/mm²")
+                              text=f"{vessel_length_density:.2f} %")
 
         # Mean diameter (mm)
         if hasattr(canvas, "mean_diameter_value_id"):
