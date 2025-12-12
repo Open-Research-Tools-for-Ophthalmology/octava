@@ -8,7 +8,10 @@ import os
 from modules.change_status import *
 from modules.clear import remove_items_from_canvas
 
-def load_image(canvas, x, y, text_x, text_y):
+# Load an image for processing
+# @param {Boolean} silent = True for batch automated processing
+# @param {String} filePath = path to load image from (for batch automated processing)
+def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None):
     """
     Ask the user to pick an image, display a 200x200 grayscale preview
     on the canvas, show the filename near the image, and store useful
@@ -19,14 +22,17 @@ def load_image(canvas, x, y, text_x, text_y):
     """
     change_status_to_waiting(canvas)
 
-    file_path = filedialog.askopenfilename(
-        title="Select an image",
-        filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
-    )
-    if not file_path:
-        change_status_to_ready(canvas)
-        return None  # user cancelled
-
+    if not silent:
+        file_path = filedialog.askopenfilename(
+            title="Select an image",
+            filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
+        )
+        if not file_path:
+            change_status_to_ready(canvas)
+            return None  # user cancelled
+    else:
+        file_path = filePath
+    
     path = Path(file_path)
     try:
         # Load original grayscale image (keep full resolution)

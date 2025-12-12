@@ -18,7 +18,7 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
 
 def clear_screen(canvas: Canvas):
 
-  item_ids_to_remove = ["original_img_id", "filename_text_id", "save_folder_text_id", "binary_img_id"]
+  item_ids_to_remove = ["original_img_id", "filename_text_id", "save_folder_text_id", "binary_img_id", "faz_img_id"]
 
   remove_items_from_canvas(canvas, item_ids_to_remove)
 

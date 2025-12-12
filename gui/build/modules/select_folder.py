@@ -83,7 +83,7 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
             hi = mid - 1  # keep fewer
     return best
 
-def select_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
+def select_folder(canvas: tk.Canvas, mainCanvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
     """
     Ask the user to pick a folder and draw the (fitted) folder path on the canvas
     at (text_x, text_y). `text_width` is the max pixel width allowed for the text.
@@ -117,6 +117,7 @@ def select_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int =
     )
 
     #todo: Keep the real path handy for later use
-    # canvas.selected_folder_path = dir_path
+    mainCanvas.selected_folder_path = dir_path
+    print(f"Selected folder: {dir_path}")
 
     return dir_path
