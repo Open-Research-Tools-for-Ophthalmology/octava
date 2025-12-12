@@ -3,6 +3,7 @@ from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
 from modules.skeletonise import *
+from modules.clear import *
 import threading
 import os
 
@@ -17,6 +18,9 @@ def start_processing(canvas: Canvas):
             "Please load an image before processing."
         )
         return
+    
+    # Clear previous results from the canvas
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
     
     # Create a per-original-image save folder
     base_save_dir = getattr(canvas, "save_dir", None)
