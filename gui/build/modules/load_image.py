@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import os
 from modules.change_status import *
-from modules.clear import remove_items_from_canvas
+from modules.clear import *
 
 def load_image(canvas, x, y, text_x, text_y):
     """
@@ -46,7 +46,7 @@ def load_image(canvas, x, y, text_x, text_y):
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
-    remove_items_from_canvas(canvas, ["original_img_id", "filename_text_id"])
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_LOADING_NEW_IMG)
 
     # Draw the preview and filename on the canvas
     img_id = canvas.create_image(x, y, image=img_tk)
@@ -61,8 +61,8 @@ def load_image(canvas, x, y, text_x, text_y):
 
     # Keep references so Tk doesn't garbage-collect the image
     if not hasattr(canvas, "_image_refs"):
-        canvas._image_refs = []
-    canvas._image_refs.append(img_tk)
+        canvas._image_refs = {}
+    canvas._image_refs["original_img"] = img_tk
 
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
