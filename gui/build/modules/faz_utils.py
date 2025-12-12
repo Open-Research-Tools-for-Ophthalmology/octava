@@ -2,6 +2,7 @@ from tkinter import Canvas, messagebox
 import numpy as np
 import cv2
 import os
+from modules.auto_faz.auto_faz import auto_faz
 from modules.resize_image import *
 from PIL import Image, ImageTk, ImageDraw
 from scipy import ndimage
@@ -91,10 +92,23 @@ def get_central(x,y):
 
     return Cx, Cy
 
+# Generate FAZ mask from image using auto_faz module
+def generate_faz_mask(canvas: Canvas):
+    grayscale_arr = auto_faz(filepath=canvas.filePath)
+
+    # grayscale image from array
+    grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
+
+    print("grayscale_arr type/shape:", type(grayscale_arr), grayscale_arr.shape, "grayscale_img type:", type(grayscale_img))
+
+    # Store to main canvas
+    canvas.faz_grayscale_arr = grayscale_arr
+    canvas.faz_grayscale_img = grayscale_img
+
 # TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
     print("Measuring FAZ metrics...")
-    if not hasattr(canvas, 'save_folder_path'):
+    if not hasattr(canvas, 'save_dir'):
         return messagebox.showwarning("Empty save folder", "Save folder not specified")
     if not hasattr(canvas, 'faz_grayscale_arr'):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
@@ -162,15 +176,15 @@ def measure_faz(canvas: Canvas):
     # 7. FD_300: Apply ring mask to original binary vessel image
     #! Use the original binary image (vessels), not the FAZ mask
     binary_image = canvas.binary_image.copy()
-    mask_bin = (ring_mask / 255.0) * (binary_image / 255.0)
+    mask_bin = (ring_mask / 255.0) * (binary_image / 255.0) # Binary mask within the ring (vessel=1)
     
     print("mask_bin unique values / nansum:", np.unique(mask_bin), np.nansum(mask_bin))
-    n_pix = np.nansum(ring_mask) / 255  # Count pixels in ring (ring_mask has 255 where ring exists)
+    n_pix = np.nansum(ring_mask) / 255  # Num of pixels within the ring (ring_mask has 255 where ring exists)
     print("n_pix:", n_pix)
     n_mask_bin = np.nansum(mask_bin)
     print("n_mask_bin:", n_mask_bin)
     FD_300 = n_mask_bin / n_pix * 100 if n_pix > 0 else 0
-    print("FD_300:", FD_300)
+    print("FD_300:", FD_300) # The vessel density within the ring mask
 
     # Calculate region properties using OpenCV
     # Area
@@ -228,20 +242,20 @@ def measure_faz(canvas: Canvas):
     save_faz_images(canvas, cnt, outer_pts, Cx, Cy)
 
 def save_faz_stats(canvas, stats):
-    os.makedirs(canvas.save_folder_path, exist_ok=True)
+    os.makedirs(canvas.save_dir, exist_ok=True)
     
-    faz_stats_file_path = os.path.join(canvas.save_folder_path, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
+    faz_stats_file_path = os.path.join(canvas.save_dir, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
     pd.DataFrame([stats]).to_excel(faz_stats_file_path, 'FAZ metrics', index=False)
 
     print(f"Saved FAZ stats to {faz_stats_file_path}")
 
 def save_faz_images(canvas, inner_contour, outer_contour, Cx, Cy):
     """Save FAZ visualization images"""
-    os.makedirs(os.path.join(canvas.save_folder_path, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(canvas.save_dir, 'images'), exist_ok=True)
 
     # save faz images
     print("Saving FAZ images...")
-    faz_images_folder_path = os.path.join(canvas.save_folder_path, 'images')
+    faz_images_folder_path = os.path.join(canvas.save_dir, 'images')
     
     # Count current index of existing images
     curr_idx = len([f for f in os.listdir(faz_images_folder_path) if 'FAZ_Contour' in f])

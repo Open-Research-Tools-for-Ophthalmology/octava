@@ -59,7 +59,10 @@ canvas.extended_etdrs_bool = IntVar(value=0)
 canvas.foveal_rings_bool = IntVar(value=0)
 canvas.optic_nerve_head_bool = IntVar(value=0)
 canvas.apply_advanced_settings_bool = IntVar(value=0)
-
+canvas.bp_file_type_var = StringVar(value="tif")  # Variable for File Type dropdown (Batch Processing Settings)
+canvas.bp_batch_resize_var = IntVar(value=0)  # Variable for Batch Resize checkbox (Batch Processing Settings)
+canvas.bp_batch_resize_value = IntVar(value=1000)  # Variable for Batch Resize value Spinbox (Batch Processing Settings)
+canvas.bp_measure_faz_var = IntVar(value=0)  # Variable for Measure FAZ checkbox (Batch Processing Settings)
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -230,7 +233,7 @@ button_advanced_settings.place(x=30, y=270)
 button_point_faz = ctk.CTkButton(window, text="Point FAZ",
                                 command=lambda: subwindow4(canvas, editable=True),
                                 width=80,height=40,
-                                font=("Roboto Bold", 12 * -1),
+                                font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
                                 corner_radius=8,border_width=1,
@@ -241,7 +244,7 @@ button_point_faz.place(x=30, y=355)
 
 button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindow4(canvas, editable=False),
                                 width=80,height=40,
-                                font=("Roboto Bold", 12 * -1),
+                                font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
                                 corner_radius=8,border_width=1,
@@ -274,7 +277,7 @@ button_regional_analysis.place(x=30, y=415)
 
 
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
-                        command=subwindow3,
+                        command=lambda: subwindow3(canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,

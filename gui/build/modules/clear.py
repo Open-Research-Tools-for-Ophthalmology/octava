@@ -22,7 +22,7 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
 
 def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_ENTIRE_SCREEN):
   item_ids_to_remove = set()
-  processed_results_ids = {"binary_img_id","skeleton_img_id"}
+  processed_results_ids = {"binary_img_id","skeleton_img_id", "faz_img_id"}
 
   if clear_screen_mode == ClearMode.CLEAR_ENTIRE_SCREEN:
     other_item_ids_to_remove = {"original_img_id","filename_text_id", "save_folder_text_id"}
