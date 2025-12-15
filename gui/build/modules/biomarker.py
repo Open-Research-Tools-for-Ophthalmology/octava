@@ -28,14 +28,9 @@ class BiomarkerAnalyzer:
         img_type = canvas.img_type_var.get() if hasattr(canvas, "img_type_var") else None
 
         # --- Determine Effective Area (Pixels) ---
-        # Logic: Retina/ONH uses Circular FOV, others use Rectangular
-        if img_type in ("Retina", "ONH"):
-            # MATLAB logic: Area = pi * (radius)^2
-            radius_pix = Nx / 2.0
-            img_area_pix = math.pi * (radius_pix ** 2)
-        else:
-            # MATLAB logic: Area = Nx * Nx (assuming square)
-            img_area_pix = float(Nx * Nx)
+
+        img_area_pix = float(Nx * Nx)
+
 
         # --- Calculate VAD (%) ---
         # Normalize sum of white pixels (255 -> 1)
@@ -50,12 +45,14 @@ class BiomarkerAnalyzer:
         else:
             pix_size_mm = 0.0
 
+
         img_area_mm2 = img_area_pix * (pix_size_mm ** 2)
         vessel_area_mm2 = vessel_pixels * (pix_size_mm ** 2)
 
+        skel_mask = (skeleton > 0)
 
 
-        # --- Calculate Vessel Length Density (mm/mm²) ---
+        # --- Calculate Vessel Length Density ---
 
         total_length_pix = 0.0
 
@@ -88,29 +85,49 @@ class BiomarkerAnalyzer:
 
 
 
-
-        # --- Mean / Median Diameter (mm) ---
+        # --- Mean Diameter (microns, mimic MATLAB) ---
         from scipy.ndimage import distance_transform_edt
 
+        # Binary vessel mask
         vessel_mask = (binary > 0)
+
         if np.any(vessel_mask):
-            dist_map = distance_transform_edt(vessel_mask)
+            # Local thickness map in pixels (like D = bwdist(~L) * 2)
+            thickness_map = distance_transform_edt(vessel_mask) * 2.0  # pixels
+            thickness_flat = thickness_map.ravel()
 
-            # define skeleton mask here
-            skel_mask = (skeleton > 0)
+            diameters_um = []
 
-            radii_pix = dist_map[skel_mask]
+            for link in links:
+                # link.path is a 1D index array into the image (MATLAB: Glinks(i).point)
+                indices = np.asarray(link.path, dtype=int)
+                if indices.size == 0:
+                    continue
 
-            if radii_pix.size > 0:
-                diameters_mm = 2.0 * radii_pix * pix_size_mm
-                mean_diameter_mm = float(np.mean(diameters_mm))
-                median_diameter_mm = float(np.median(diameters_mm))
+                # Diameter values along this link (pixels)
+                diam_vals_pix = thickness_flat[indices]
+                if diam_vals_pix.size == 0:
+                    continue
+
+                # Mean diameter for this link (pixels)
+                link_diam_pix = float(diam_vals_pix.mean())
+
+                # Optional: store back on the link (like MATLAB)
+                link.diameterMeasurements = diam_vals_pix
+                link.diameter = link_diam_pix
+
+                # Convert to microns (pix -> mm -> µm)
+                link_diam_um = link_diam_pix * pix_size_mm * 1000.0
+                diameters_um.append(link_diam_um)
+
+            if diameters_um:
+                mean_diameter_um = float(round(np.mean(diameters_um), 2))
             else:
-                mean_diameter_mm = 0.0
-                median_diameter_mm = 0.0
+                mean_diameter_um = 0.0
         else:
-            mean_diameter_mm = 0.0
-            median_diameter_mm = 0.0
+            mean_diameter_um = 0.0
+
+
 
 
         # --- Calculate Branchpoint Density (per mm²) ---
@@ -224,8 +241,7 @@ class BiomarkerAnalyzer:
             "vessel_area_mm2": float(vessel_area_mm2),
             "image_area_mm2": float(img_area_mm2),
             "vessel_length_density_mm_per_mm2": float(vessel_length_density),
-            "mean_diameter_mm": float(mean_diameter_mm),
-            "median_diameter_mm": float(median_diameter_mm),
+            "mean_diameter_um": float(mean_diameter_um),
             "branchpoint_count": int(branchpoint_count),
             "branchpoint_density_per_mm2": float(branchpoint_density),
             "fractal_dimension": float(fractal_dim),
@@ -237,8 +253,6 @@ class BiomarkerAnalyzer:
         if hasattr(canvas, "vad_value_id"):
             canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct:.2f} %")
 
-
-
         # Vessel length density (mm/mm²)
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(canvas.length_density_value_id,
@@ -247,12 +261,7 @@ class BiomarkerAnalyzer:
         # Mean diameter (mm)
         if hasattr(canvas, "mean_diameter_value_id"):
             canvas.itemconfig(canvas.mean_diameter_value_id,
-                              text=f"{mean_diameter_mm:.4f} mm")
-
-        # Median diameter (mm)
-        if hasattr(canvas, "median_diameter_value_id"):
-            canvas.itemconfig(canvas.median_diameter_value_id,
-                              text=f"{median_diameter_mm:.4f} mm")
+                              text=f"{mean_diameter_um:.2f} µm")
 
         # Branchpoint count
         if hasattr(canvas, "branch_count_value_id"):
