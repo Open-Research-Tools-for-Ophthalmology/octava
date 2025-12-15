@@ -34,4 +34,11 @@ The slicing differences between Python and Matlab:
 6. use the circle movement for optic nerve head
 
 
-regional analysis: nasal and temporal
+- regional analysis: nasal and temporal
+```
+%Set max values for kernel size for median filter, frangi
+            %filter, and adaptive thresholding to the image size 
+            app.kernelSize.Limits = [0 app.fullImSizePix(1)]; 
+            app.sigmamaxSpinner.Limits = [0 app.fullImSizePix(1)]; 
+            app.ATkernelsizeSpinner.Limits = [0 app.fullImSizePix(1)];
+```

@@ -69,7 +69,7 @@ def load_image(canvas, x, y, text_x, text_y):
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.FAZ_ctr = (orig_h / 2.0, orig_w / 2.0)
+    canvas.FAZ_ctr = np.array([orig_h // 2, orig_w // 2])
 
     # Remember last drawn items
     canvas.original_img_id = img_id

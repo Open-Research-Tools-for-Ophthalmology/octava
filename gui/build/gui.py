@@ -48,8 +48,17 @@ canvas.twig_size = IntVar(value=20)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=5)  # Variable for Bin Size Spinbox
-canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
+canvas.image_size_var = IntVar(value=5)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
+# regional analysis settings variables
+canvas.eye_var = StringVar()
+canvas.load_faz_bool = IntVar(value=0)
+canvas.square_grid_bool = IntVar(value=0)
+canvas.etdrs_grid_bool = IntVar(value=0)
+canvas.extended_etdrs_bool = IntVar(value=0)
+canvas.foveal_rings_bool = IntVar(value=0)
+canvas.optic_nerve_head_bool = IntVar(value=0)
+canvas.apply_advanced_settings_bool = IntVar(value=0)
 
 
 canvas.place(x = 0, y = 0)
@@ -253,7 +262,7 @@ button8.place(x=220, y=355)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
-                        command=subwindow2,
+                        command=lambda: subwindow2(canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,

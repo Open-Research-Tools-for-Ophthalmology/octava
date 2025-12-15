@@ -64,8 +64,8 @@ function regionalmetrics = regionalAnalysis(app)
                 roi_1mm = images.roi.Circle(gca,"Center",app.FAZ_ctr,"Radius",rad_1mm,"LineWidth",2,"Color",'y');
                 roi_3mm = images.roi.Circle(gca,"Center",app.FAZ_ctr,"Radius",rad_3mm,"LineWidth",2,"Color",'y');
                 
-                foveal_mask = roi_1mm.createMask;
-                parafoveal_mask = roi_3mm.createMask-roi_1mm.createMask;
+                foveal_mask = roi_1mm.createMask; %Foveal circle
+                parafoveal_mask = roi_3mm.createMask-roi_1mm.createMask; %Parafoveal rim
                 
                 %Create a mask for each segment - start with assumption
                 %of OS (right eye?) and swap labels after if needed...
