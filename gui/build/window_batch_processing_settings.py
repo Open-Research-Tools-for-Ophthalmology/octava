@@ -18,21 +18,24 @@ from theme import *
 from modules.round_rectangle import *
 from modules.select_folder import *
 
+def init_batch_processing_settings(canvas: Canvas):
+    canvas.bp_selected_folder_path = None
+    canvas.bp_file_type_var = StringVar(value="tif")
+    canvas.bp_batch_resize_bool_var = IntVar(value=0)
+    canvas.bp_batch_resize_value_var = IntVar(value=1000)
+    canvas.bp_variable_image_size_bool_var = IntVar(value=0)
+    canvas.bp_variable_image_size_list = None
+    canvas.bp_segment_faz_var = IntVar(value=0)
 
 def close(subwindow):
     subwindow.destroy()
     subwindow.update()
-
 
 def subwindow3(canvas):
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
     subwindow.geometry("350x450")
     subwindow.configure(bg="#FBE3D6")
-
-    variable_image_size_var = IntVar(value=0)
-    apply_advanced_settings_var = IntVar(value=0)
-    apply_regional_analysis_settings_var = IntVar(value=0)
 
     subcanvas3 = Canvas(
         subwindow,
@@ -85,7 +88,7 @@ def subwindow3(canvas):
     batch_resize_checkbox = Checkbutton(
         subwindow,
         text="Batch resize",
-        variable=canvas.bp_batch_resize_var,
+        variable=canvas.bp_batch_resize_bool_var,
         bg=subwindow_bg_colour,
         fg=text_colour,
         font=("Roboto", 14 * -1),
@@ -94,31 +97,32 @@ def subwindow3(canvas):
 
     batch_resize_text = Entry(
         subwindow,
-        textvariable=canvas.bp_batch_resize_value,
+        textvariable=canvas.bp_batch_resize_value_var,
         bg=bg_colour,
         fg=text_colour,
         font=("Roboto", 14 * -1),
-        state="normal" if canvas.bp_batch_resize_var.get() == 1 else "disabled",
+        state="normal" if canvas.bp_batch_resize_bool_var.get() == 1 else "disabled",
         bd=0.5,
         highlightthickness=0,
     )
 
     # Disable text entry if checkbox not selected
     def update_batch_resize_state(*args): # .args to dump unused args
-        if canvas.bp_batch_resize_var.get() == 1:
+        if canvas.bp_batch_resize_bool_var.get() == 1:
             batch_resize_text.config(state="normal")
         else:
             batch_resize_text.config(state="disabled")
 
-    canvas.bp_batch_resize_var.trace("w", update_batch_resize_state)
+    canvas.bp_batch_resize_bool_var.trace("w", update_batch_resize_state)
 
     batch_resize_text.place(x=160.0, y=187.0)
 
     # variable image size checkbox
     variable_image_size_checkbox = Checkbutton(
         subwindow,
-        text="Variable image size (TODO)",
-        variable=variable_image_size_var,
+        text="Variable image size",
+        variable=canvas.bp_variable_image_size_bool_var,
+        command=lambda: select_file(subcanvas3, canvas) if canvas.bp_variable_image_size_bool_var.get() == 1 else None,
         bg=subwindow_bg_colour,
         fg=text_colour,
         font=("Roboto", 14 * -1),
@@ -137,35 +141,13 @@ def subwindow3(canvas):
     # measure faz checkbox
     measure_faz_checkbox = Checkbutton(
         subwindow,
-        text="Measure FAZ",
-        variable=canvas.bp_measure_faz_var,
+        text="Segment FAZ",
+        variable=canvas.bp_segment_faz_var,
         bg=subwindow_bg_colour,
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
     measure_faz_checkbox.place(x=40.0, y=286.0)
-
-    # apply advanced settings checkbox
-    apply_advanced_settings_checkbox = Checkbutton(
-        subwindow,
-        text="Apply advanced settings (TODO)",
-        variable=apply_advanced_settings_var,
-        bg=subwindow_bg_colour,
-        fg=text_colour,
-        font=("Roboto", 14 * -1),
-    )
-    apply_advanced_settings_checkbox.place(x=40.0, y=322.0)
-
-    # apply regional analysis settings checkbox
-    apply_regional_analysis_settings_checkbox = Checkbutton(
-        subwindow,
-        text="Apply regional analysis settings (TODO)",
-        variable=apply_regional_analysis_settings_var,
-        bg=subwindow_bg_colour,
-        fg=text_colour,
-        font=("Roboto", 14 * -1),
-    )
-    apply_regional_analysis_settings_checkbox.place(x=40.0, y=358.0)
 
     # close
     button_close = ctk.CTkButton(
@@ -184,5 +166,17 @@ def subwindow3(canvas):
     )
     button_close.place(x=110, y=394)
 
+    # Populate selected folder path if already set
+    print("Current selected folder path:", canvas.bp_selected_folder_path)
+    if canvas.bp_selected_folder_path is not None:
+        display_text = fit_path_to_canvas(canvas.bp_selected_folder_path, subcanvas3, ("Roboto", 12 * -1), 220)
+        display_text_to_canvas(
+            subcanvas3,
+            60,
+            100,
+            display_text,
+            ("Roboto", 12 * -1),
+        )
+        
     subwindow.resizable(False, False)
     subwindow.mainloop()
