@@ -39,7 +39,6 @@ canvas = Canvas(
     relief = "ridge"
 )
 
-
 canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
@@ -63,6 +62,9 @@ canvas.bp_file_type_var = StringVar(value="tif")  # Variable for File Type dropd
 canvas.bp_batch_resize_var = IntVar(value=0)  # Variable for Batch Resize checkbox (Batch Processing Settings)
 canvas.bp_batch_resize_value = IntVar(value=1000)  # Variable for Batch Resize value Spinbox (Batch Processing Settings)
 canvas.bp_measure_faz_var = IntVar(value=0)  # Variable for Measure FAZ checkbox (Batch Processing Settings)
+
+# Initialize batch processing settings on canvas        
+init_batch_processing_settings(canvas)
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
