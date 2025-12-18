@@ -145,7 +145,65 @@ class BiomarkerAnalyzer:
             branchpoint_density = 0.0
 
 
+        # --- Calculate Fractal Dimension (Exact MATLAB Logic) ---
+        Z = (skeleton > 0)
 
+
+        h, w = Z.shape
+        Nx = max(h, w)
+        
+        if Nx < 2:
+            fractal_dim = 0.0
+        else:
+            import math
+            exponent = math.ceil(math.log2(Nx))
+            width = 2 ** exponent
+
+            Z_pad = np.zeros((width, width), dtype=bool)
+            Z_pad[:h, :w] = Z
+
+            
+            counts = [] # 记录 N(r)
+            r_values = [] # 记录 r
+
+            counts.append(np.sum(Z_pad))
+            r_values.append(1)
+            
+            current_img = Z_pad
+
+            for i in range(1, exponent + 1):
+                rows, cols = current_img.shape
+                
+                if rows < 2 or cols < 2:
+                    break
+
+                shrunk_img = current_img.reshape(rows//2, 2, cols//2, 2).max(axis=(1, 3))
+                
+
+                n_box = np.sum(shrunk_img)
+                counts.append(n_box)
+                r_values.append(2 ** i)
+                
+
+                current_img = shrunk_img
+
+
+            valid_indices = [i for i, c in enumerate(counts) if c > 0]
+            
+            if len(valid_indices) >= 2:
+
+                x = np.log([r_values[i] for i in valid_indices])
+                y = -np.log([counts[i] for i in valid_indices])
+                
+
+                coeffs = np.polyfit(x, y, 1)
+                fractal_dim = float(coeffs[0])
+            else:
+                fractal_dim = 0.0
+
+        # [DEBUG]
+        print(f"DEBUG: Fractal Dimension Inputs: Shape={Z.shape}, Padded={width}x{width}")
+        print(f"DEBUG: FD Calculation: {fractal_dim:.4f}")
 
         # --- Calculate Mean Tortuosity ---
         mean_tortuosity = 0.0
