@@ -76,7 +76,8 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
     # Additional processing if batch mode is on
     if batch:
         if canvas.bp_segment_faz_var.get() == 1:
-            generate_faz_mask(canvas)
+            generate_faz_mask(canvas, batch=True)
+            display_faz_image(canvas)
             measure_faz(canvas)
             print("FAZ generation and metrics measurement completed.")
         # TODO
@@ -146,32 +147,8 @@ def start_batch_processing_threaded(canvas: Canvas):
             )
             continue  # Skip to next image
 
-    # Task to be multi-threaded
-    tasks = [
-        # binarise_image,
-        # skeletonise,
-        # generate_faz_mask,
-        # TODO generate metrics
-    ]
-    threads = []
-
-    # TODO We can multi-thread image processing and saving
-    # Append tasks
-    for task in tasks:
-        thread = threading.Thread(target=task, args=(canvas,))
-        threads.append(thread)
-
-    # Start each thread
-    for thread in threads:
-        thread.start()
-
-    # Wait for all threads to finish
-    for thread in threads:
-        thread.join()
-
-    # TODO For metrics calculation, do it in main thread
+    # TODO Generate overall metrics spreadsheet for all images
     print("Batch image processing completed.")
-    # measure_faz(canvas)
-
-    # Switch back to READY (must be done on main thread)
-    canvas.after(0, lambda: change_status_to_ready(canvas))
+    
+    # Switch back to READY
+    change_status_to_ready(canvas)
