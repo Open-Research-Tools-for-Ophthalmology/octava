@@ -8,6 +8,7 @@ from PIL import Image, ImageTk, ImageDraw
 from scipy import ndimage
 import pandas as pd
 import datetime
+from modules.change_status import *
 
 def display_faz_image(canvas: Canvas):
     # TODO Display finished FAZ mask on main window canvas
@@ -93,7 +94,9 @@ def get_central(x,y):
     return Cx, Cy
 
 # Generate FAZ mask from image using auto_faz module
-def generate_faz_mask(canvas: Canvas):
+def generate_faz_mask(canvas: Canvas, batch: bool = False):
+    change_status_to_waiting(canvas, status="🔴 Wait...Segmenting FAZ")
+
     grayscale_arr = auto_faz(filepath=canvas.filePath)
 
     # grayscale image from array
@@ -104,6 +107,9 @@ def generate_faz_mask(canvas: Canvas):
     # Store to main canvas
     canvas.faz_grayscale_arr = grayscale_arr
     canvas.faz_grayscale_img = grayscale_img
+
+    if not batch:
+        change_status_to_ready(canvas)
 
 # TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
