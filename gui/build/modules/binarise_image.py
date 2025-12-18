@@ -6,7 +6,8 @@ from modules.fuzzy_thresholding import *
 from modules.frangi_2Dfilter import *
 from PIL import Image, ImageTk
 from modules.change_status import *
-
+import cv2
+import os
 
 def binarise_image(canvas):
     """
@@ -55,8 +56,13 @@ def binarise_image(canvas):
     canvas.binary_image = binary_image
     canvas.inverted_image = binary_image.copy()
 
+    # --- Display binarised image ---
     display_binarised_image(canvas, binary_image)
 
+    # --- Save binary image to local ---
+    curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if 'Binarymask' in f])
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Binarymask_{curr_idx}.png")
+    cv2.imwrite(img_path, binary_image)
 
 def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Convert NumPy → PIL → ImageTk
