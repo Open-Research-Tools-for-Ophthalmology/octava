@@ -206,38 +206,48 @@ class BiomarkerAnalyzer:
         print(f"DEBUG: FD Calculation: {fractal_dim:.4f}")
 
         # --- Calculate Mean Tortuosity ---
-        mean_tortuosity = 0.0
+        # 需要: links, image_shape (从 binary.shape 获取)
+        
+        tortuosity_list = []
+        
+        # 获取图像尺寸 (高, 宽) - 只要有 binary 或 skeleton 变量就在这
+        # 如果你不想传 binary，必须手动指定比如 image_shape = (1024, 1024)
+        image_shape = binary.shape 
 
-        tortuosities = []
+        for link in links:
+            # 1. 获取路径索引
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size < 2:
+                continue
 
-        if links is not None:
-            for link in links:
-                try:
-                    # 这里假设 link 有 coords 属性 / 字段，是 N x 2 (row, col)
-                    coords = np.asarray(getattr(link, "coords", None), dtype=float)
+            # 2. 核心步骤：必须用 shape 把索引转回坐标 (Row, Col)
+            rows, cols = np.unravel_index(indices, image_shape)
+            coords = np.column_stack((rows, cols)).astype(float)
 
-                    if coords is None or coords.shape[0] < 2:
-                        continue
+            # 3. 计算实际路径长度 (Arc Length) - 分子
+            # 沿路径每一步距离累加
+            diffs = np.diff(coords, axis=0)
+            arc_length = np.sum(np.linalg.norm(diffs, axis=1))
 
-                    # Path length in pixels
-                    diffs = np.diff(coords, axis=0)
-                    step_lengths = np.linalg.norm(diffs, axis=1)
-                    path_len_pix = float(np.sum(step_lengths))
+            # 4. 计算首尾直线距离 (Chord Length) - 分母
+            start_point = coords[0]
+            end_point = coords[-1]
+            chord_length = np.linalg.norm(start_point - end_point)
 
-                    # Chord length in pixels (first to last point)
-                    chord_len_pix = float(np.linalg.norm(coords[-1] - coords[0]))
+            # 5. 计算弯曲度 (Tortuosity = Arc / Chord)
+            # 过滤掉首尾重合的圆环 (chord_length approx 0)
+            if chord_length > 1e-6:
+                tortuosity = arc_length / chord_length
+                tortuosity_list.append(tortuosity)
 
-                    if chord_len_pix > 0.0 and path_len_pix > 0.0:
-                        tort = path_len_pix / chord_len_pix
-                        tortuosities.append(tort)
-                except Exception:
-                    # 如果这个 link 结构不符合预期，就跳过它
-                    continue
-
-        if len(tortuosities) > 0:
-            mean_tortuosity = float(np.mean(tortuosities))
+        # 6. 计算最终平均值
+        if len(tortuosity_list) > 0:
+            mean_tortuosity = np.mean(tortuosity_list)
         else:
             mean_tortuosity = 0.0
+
+        # [DEBUG]
+        # print(f"DEBUG: Mean Tortuosity: {mean_tortuosity:.4f}")
 
 
 
