@@ -24,7 +24,7 @@ def init_batch_processing_settings(canvas: Canvas):
     canvas.bp_batch_resize_bool_var = IntVar(value=0)
     canvas.bp_batch_resize_value_var = IntVar(value=1000)
     canvas.bp_variable_image_size_bool_var = IntVar(value=0)
-    canvas.bp_variable_image_size_list = None
+    canvas.bp_variable_image_size_df = None
     canvas.bp_segment_faz_var = IntVar(value=0)
 
 def close(subwindow):
@@ -36,6 +36,9 @@ def subwindow3(canvas):
     subwindow.title("Batch Processing Settings")
     subwindow.geometry("350x450")
     subwindow.configure(bg="#FBE3D6")
+    
+    # Trace checkbox to enable/disable batch resize entry
+    trace_id = None
 
     subcanvas3 = Canvas(
         subwindow,
@@ -108,12 +111,13 @@ def subwindow3(canvas):
 
     # Disable text entry if checkbox not selected
     def update_batch_resize_state(*args): # .args to dump unused args
-        if canvas.bp_batch_resize_bool_var.get() == 1:
-            batch_resize_text.config(state="normal")
-        else:
-            batch_resize_text.config(state="disabled")
+        if batch_resize_text.winfo_exists():  # Check if widget still exists
+            if canvas.bp_batch_resize_bool_var.get() == 1:
+                batch_resize_text.config(state="normal")
+            else:
+                batch_resize_text.config(state="disabled")
 
-    canvas.bp_batch_resize_bool_var.trace("w", update_batch_resize_state)
+    trace_id = canvas.bp_batch_resize_bool_var.trace("w", update_batch_resize_state)
 
     batch_resize_text.place(x=160.0, y=187.0)
 
@@ -153,7 +157,10 @@ def subwindow3(canvas):
     button_close = ctk.CTkButton(
         subwindow,
         text="Close",
-        command=lambda: close(subwindow),
+        command=lambda: (
+            canvas.bp_batch_resize_bool_var.trace_vdelete("w", trace_id),
+            close(subwindow)
+        ),
         width=130,
         height=45,
         font=("Roboto", 14 * -1),
