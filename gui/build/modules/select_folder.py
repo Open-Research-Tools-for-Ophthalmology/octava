@@ -65,9 +65,9 @@ def select_file(canvas: tk.Canvas, mainCanvas: tk.Canvas):
     
     print(f"Selected variable image size file: {file_path}")
     try:
-        variable_image_size_list = pd.Series.tolist(pd.read_excel(file_path).squeeze())
-        print(f"Loaded variable image size list: {variable_image_size_list}")
-        mainCanvas.bp_variable_image_size_list = variable_image_size_list
+        variable_image_size_df = pd.read_excel(file_path)
+        print(f"Loaded variable image size dataframe: {variable_image_size_df}")
+        mainCanvas.bp_variable_image_size_df = variable_image_size_df
     except Exception as e:
         print(f"Error reading Excel file: {e}")
         mainCanvas.bp_variable_image_size_bool_var.set(0)
