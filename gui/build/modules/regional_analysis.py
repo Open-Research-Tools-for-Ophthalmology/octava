@@ -11,29 +11,29 @@ def run_regional_analysis(canvas):
 	img_height, img_width = canvas.fullImSizePix
 	pix_to_mm = image_size_mm / img_height
 
+	binary = canvas.binary_image
+	original = canvas.original_img
+
 	if canvas.square_grid_bool.get():
-		apply_square_grid(canvas, pix_to_mm)
+		apply_square_grid(canvas, binary, original, pix_to_mm)
 
 	if canvas.etdrs_grid_bool.get():
-		apply_etdrs_grid(canvas, image_size_mm)
+		apply_etdrs_grid(canvas, binary, original, image_size_mm)
 
 	if canvas.extended_etdrs_grid_bool.get():
-		apply_extended_etdrs_grid(canvas, image_size_mm)
+		apply_extended_etdrs_grid(canvas,binary, original, image_size_mm)
 
 	if canvas.foveal_ring_bool.get():
-		apply_foveal_ring(canvas)
+		apply_foveal_ring(canvas,binary,original, image_size_mm)
 
 	if canvas.optic_nerve_head_bool.get():
-		apply_onh(canvas)
+		apply_onh(canvas,binary, original, image_size_mm)
 
 
-def apply_square_grid(canvas, pix_to_mm):
+def apply_square_grid(canvas, binary, original, pix_to_mm):
 	# Divide image into 3x3 grid
 	regionsize = np.floor(np.array(canvas.fullImSizePix) / 3).astype(int)
 	h, w = regionsize
-
-	binary = canvas.binary_image
-	original = canvas.original_img
 
 	binaryReg = []
 	imgReg = []
@@ -72,7 +72,7 @@ def apply_square_grid(canvas, pix_to_mm):
 	set_square_grid_labels(canvas)
 
 
-def apply_etdrs_grid(canvas, image_size_mm):
+def apply_etdrs_grid(canvas, binary, original, image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -109,7 +109,6 @@ def apply_etdrs_grid(canvas, image_size_mm):
 		sector_masks[:, :, ii] = mask & (~foveal_mask)
 
 	#binary image
-	binary = canvas.binary_image
 	binaryReg = [None] * 8
 	
 	binaryReg[0] = binary * foveal_mask #foveal circle
@@ -139,33 +138,32 @@ def apply_etdrs_grid(canvas, image_size_mm):
 	binaryReg[7] = binaryReg[7][H//2:, :]
 	
 	# original image
-	img = canvas.original_img
 	imgReg = [None] * 8
 
-	imgReg[0] = img * foveal_mask #foveal circle
+	imgReg[0] = original * foveal_mask #foveal circle
 	imgReg[0] = imgReg[0][
 		int(max(cy - rad_3mm, 0)):int(min(cy + rad_3mm, H)),
 		int(max(cx - rad_3mm, 0)):int(min(cx + rad_3mm, W))
 	] #Crops to a bounding box around FAZ (± rad_3mm)
 
-	imgReg[1] = img * parafoveal_mask #parafoveal rim
+	imgReg[1] = original * parafoveal_mask #parafoveal rim
 
-	imgReg[2] = img * (sector_masks[:, :, 0] | sector_masks[:, :, 1] | sector_masks[:, :, 2])#superior hemi-parafoveal rim
+	imgReg[2] = original * (sector_masks[:, :, 0] | sector_masks[:, :, 1] | sector_masks[:, :, 2])#superior hemi-parafoveal rim
 	imgReg[2] = imgReg[2][:H//2, :]
 
-	imgReg[3] = img * (sector_masks[:, :, 3] | sector_masks[:, :, 4] | sector_masks[:, :, 5])#inferior hemi-parafoveal rim
+	imgReg[3] = original * (sector_masks[:, :, 3] | sector_masks[:, :, 4] | sector_masks[:, :, 5])#inferior hemi-parafoveal rim
 	imgReg[3] = imgReg[3][H//2:, :]
 
-	imgReg[4] = img * (sector_masks[:, :, 0] | sector_masks[:, :, 5])
+	imgReg[4] = original * (sector_masks[:, :, 0] | sector_masks[:, :, 5])
 	imgReg[4] = imgReg[4][:, W//2:] #tempo/nasal parafoveal rim
 
-	imgReg[5] = img * (sector_masks[:, :, 2] | sector_masks[:, :, 3])
+	imgReg[5] = original * (sector_masks[:, :, 2] | sector_masks[:, :, 3])
 	imgReg[5] = imgReg[5][:, :W//2]#tempo/nasal parafoveal rim
 
-	imgReg[6] = img * sector_masks[:, :, 1]#superior-parafoveal rim
+	imgReg[6] = original * sector_masks[:, :, 1]#superior-parafoveal rim
 	imgReg[6] = imgReg[6][:H//2, :]
 
-	imgReg[7] = img * sector_masks[:, :, 4]#inferior-parafoveal rim
+	imgReg[7] = original * sector_masks[:, :, 4]#inferior-parafoveal rim
 	imgReg[7] = imgReg[7][H//2:, :]
 
 	#set region labels
@@ -205,7 +203,7 @@ def apply_etdrs_grid(canvas, image_size_mm):
 	]
 
 
-def apply_extended_etdrs_grid(canvas, image_size_mm):
+def apply_extended_etdrs_grid(canvas, binary,original,image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -242,7 +240,6 @@ def apply_extended_etdrs_grid(canvas, image_size_mm):
 		sector_masks[:, :, ii] = mask & (~foveal_mask)
 
 	# binary image
-	binary = canvas.binary_image
 	binaryReg = [None] * 10
 
 	binaryReg[0] = binary * sector_masks[:, :, 0]
@@ -277,37 +274,36 @@ def apply_extended_etdrs_grid(canvas, image_size_mm):
 
 
 	#original image
-	img = canvas.original_img
 	imgReg = [None] * 10
 
-	imgReg[0] = img * sector_masks[:, :, 0]
+	imgReg[0] = original * sector_masks[:, :, 0]
 	imgReg[0] = imgReg[0][:H//2, W//2:]
 
-	imgReg[1] = img * sector_masks[:, :, 1]
+	imgReg[1] = original * sector_masks[:, :, 1]
 	imgReg[1] = imgReg[1][:H//2, W//2:]
 
-	imgReg[2] = img * sector_masks[:, :, 2]
+	imgReg[2] = original * sector_masks[:, :, 2]
 	imgReg[2] = imgReg[2][:H//2, :W//2]
 
-	imgReg[3] = img * sector_masks[:, :, 3]
+	imgReg[3] = original * sector_masks[:, :, 3]
 	imgReg[3] = imgReg[3][:H//2, :W//2]
 
-	imgReg[4] = img * sector_masks[:, :, 4]
+	imgReg[4] = original * sector_masks[:, :, 4]
 	imgReg[4] = imgReg[4][H//2:, :W//2]
 
-	imgReg[5] = img * sector_masks[:, :, 5]
+	imgReg[5] = original * sector_masks[:, :, 5]
 	imgReg[5] = imgReg[5][H//2:, :W//2]
 
-	imgReg[6] = img * sector_masks[:, :, 6]
+	imgReg[6] = original * sector_masks[:, :, 6]
 	imgReg[6] = imgReg[6][H//2:, W//2:]
 
-	imgReg[7] = img * sector_masks[:, :, 7]
+	imgReg[7] = original * sector_masks[:, :, 7]
 	imgReg[7] = imgReg[7][H//2:, W//2:]
 
-	imgReg[8] = img * (sector_masks[:, :, 0] | sector_masks[:, :, 7])
+	imgReg[8] = original * (sector_masks[:, :, 0] | sector_masks[:, :, 7])
 	imgReg[8] = imgReg[8][:, W//2:]
 
-	imgReg[9] = img * (sector_masks[:, :, 3] | sector_masks[:, :, 4])
+	imgReg[9] = original * (sector_masks[:, :, 3] | sector_masks[:, :, 4])
 	imgReg[9] = imgReg[9][:, :W//2]
 
 	#set region labels
@@ -318,23 +314,128 @@ def apply_extended_etdrs_grid(canvas, image_size_mm):
 
 	# Area (pixels)
 	imgArea_pix_vec = [
-    np.sum(sector_masks[:, :, 0]),
-    np.sum(sector_masks[:, :, 1]),
-    np.sum(sector_masks[:, :, 2]),
-    np.sum(sector_masks[:, :, 3]),
-    np.sum(sector_masks[:, :, 4]),
-    np.sum(sector_masks[:, :, 5]),
-    np.sum(sector_masks[:, :, 6]),
-    np.sum(sector_masks[:, :, 7]),
-    np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 7]),
-    np.sum(sector_masks[:, :, 3] | sector_masks[:, :, 4]),
+		np.sum(sector_masks[:, :, 0]),
+		np.sum(sector_masks[:, :, 1]),
+		np.sum(sector_masks[:, :, 2]),
+		np.sum(sector_masks[:, :, 3]),
+		np.sum(sector_masks[:, :, 4]),
+		np.sum(sector_masks[:, :, 5]),
+		np.sum(sector_masks[:, :, 6]),
+		np.sum(sector_masks[:, :, 7]),
+		np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 7]),
+		np.sum(sector_masks[:, :, 3] | sector_masks[:, :, 4]),
 ]
 
-def apply_onh(canvas):
-	pass
+def apply_onh(canvas, binary, original,image_size_mm):
+	H, W = canvas.fullImSizePix
+	rad_1mm = 1 * H / image_size_mm
+	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
+
+	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	cy, cx = canvas.FAZ_ctr
+	
+	# Inner + outer masks
+	ONH_mask_inner = np.zeros((H, W), dtype=bool)
+	rr, cc = disk((cy, cx), rad_1mm, shape=(H, W))
+	ONH_mask_inner[rr, cc] = True
+
+	outer_mask = np.zeros((H, W), dtype=bool)
+	rr, cc = disk((cy, cx), rad_outer, shape=(H, W))
+	outer_mask[rr, cc] = True
+
+	PP_mask = outer_mask & (~ONH_mask_inner)   # peripapillary ring
+
+	# Sector masks (8 × 45° wedges)
+	sector_masks = np.zeros((H, W, 8), dtype=bool)
+
+	for ii in range(8):
+		theta = np.linspace(0, -45, 1000) - 45 * ii
+		x = rad_outer * np.cos(np.deg2rad(theta)) + cx
+		y = rad_outer * np.sin(np.deg2rad(theta)) + cy
+
+		poly_x = np.concatenate([[cx], x, [cx]])
+		poly_y = np.concatenate([[cy], y, [cy]])
+
+		rr, cc = polygon(poly_y, poly_x, shape=(H, W))
+		mask = np.zeros((H, W), dtype=bool)
+		mask[rr, cc] = True
+
+		sector_masks[:, :, ii] = mask & (~ONH_mask_inner)
+
+	# Binary regions (15 total)
+	binaryReg = [None] * 15
+
+	binaryReg[0] = binary * sector_masks[:, :, 0][:H//2, W//2:]
+	binaryReg[1] = binary * sector_masks[:, :, 1][:H//2, W//2:]
+	binaryReg[2] = binary * sector_masks[:, :, 2][:H//2, :W//2]
+	binaryReg[3] = binary * sector_masks[:, :, 3][:H//2, :W//2]
+	binaryReg[4] = binary * sector_masks[:, :, 4][H//2:, :W//2]
+	binaryReg[5] = binary * sector_masks[:, :, 5][H//2:, :W//2]
+	binaryReg[6] = binary * sector_masks[:, :, 6][H//2:, W//2:]
+	binaryReg[7] = binary * sector_masks[:, :, 7][H//2:, W//2:]
+
+	binaryReg[8]  = binary * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
+														sector_masks[:, :, 2] | sector_masks[:, :, 3])[:H//2, :]
+	binaryReg[9]  = binary * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
+														sector_masks[:, :, 6] | sector_masks[:, :, 7])[H//2:, :]
+
+	binaryReg[10] = binary * (sector_masks[:, :, 1] | sector_masks[:, :, 2])[:H//2, :]
+	binaryReg[11] = binary * (sector_masks[:, :, 5] | sector_masks[:, :, 6])[H//2:, :]
+	binaryReg[12] = binary * (sector_masks[:, :, 3] | sector_masks[:, :, 4])[:, :W//2]
+	binaryReg[13] = binary * (sector_masks[:, :, 0] | sector_masks[:, :, 7])[:, W//2:]
+	binaryReg[14] = binary * PP_mask
+
+	# Image regions (same geometry as binaryReg)
+	imgReg = [None] * 15
+
+	imgReg[0] = original * sector_masks[:, :, 0][:H//2, W//2:]
+	imgReg[1] = original * sector_masks[:, :, 1][:H//2, W//2:]
+	imgReg[2] = original * sector_masks[:, :, 2][:H//2, :W//2]
+	imgReg[3] = original * sector_masks[:, :, 3][:H//2, :W//2]
+	imgReg[4] = original * sector_masks[:, :, 4][H//2:, :W//2]
+	imgReg[5] = original * sector_masks[:, :, 5][H//2:, :W//2]
+	imgReg[6] = original * sector_masks[:, :, 6][H//2:, W//2:]
+	imgReg[7] = original * sector_masks[:, :, 7][H//2:, W//2:]
+
+	imgReg[8]  = original * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
+											sector_masks[:, :, 2] | sector_masks[:, :, 3])[:H//2, :]
+	imgReg[9]  = original * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
+											sector_masks[:, :, 6] | sector_masks[:, :, 7])[H//2:, :]
+
+	imgReg[10] = original * (sector_masks[:, :, 1] | sector_masks[:, :, 2])[:H//2, :]
+	imgReg[11] = original * (sector_masks[:, :, 5] | sector_masks[:, :, 6])[H//2:, :]
+	imgReg[12] = original * (sector_masks[:, :, 3] | sector_masks[:, :, 4])[:, :W//2]
+	imgReg[13] = original * (sector_masks[:, :, 0] | sector_masks[:, :, 7])[:, W//2:]
+	imgReg[14] = original * PP_mask
 
 
-def apply_foveal_ring(canvas):
+	#set labels
+	if canvas.eye_var.get() == RIGHT_EYE:
+		canvas.RAlabels = ["NS","SN","ST","TS","TI","IT","IN","NI",
+                "S_hemi","I_hemi","S","I","T","N","PP"]
+	else:
+		canvas.RAlabels =["TS","ST","SN","NS","NI","IN","IT","TI",
+                "S_hemi","I_hemi","S","I","N","T","PP"]
+
+
+	# Area (pixel counts)
+	imgArea_pix_vec = [
+			np.sum(sector_masks[:, :, i]) for i in range(8)
+	] + [
+			np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 1] |
+						sector_masks[:, :, 2] | sector_masks[:, :, 3]),
+			np.sum(sector_masks[:, :, 4] | sector_masks[:, :, 5] |
+						sector_masks[:, :, 6] | sector_masks[:, :, 7]),
+			np.sum(sector_masks[:, :, 1] | sector_masks[:, :, 2]),
+			np.sum(sector_masks[:, :, 5] | sector_masks[:, :, 6]),
+			np.sum(sector_masks[:, :, 3] | sector_masks[:, :, 4]),
+			np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 7]),
+			np.sum(PP_mask),
+	]
+
+def apply_foveal_ring(canvas, binary, original, image_size_mm):
+
+
 	pass
 
 
