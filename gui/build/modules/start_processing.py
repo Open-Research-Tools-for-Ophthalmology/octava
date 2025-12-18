@@ -6,6 +6,7 @@ from modules.skeletonise import *
 from modules.faz_utils import *
 from modules.change_status import *
 from modules.load_image import *
+from modules.clear import *
 import threading
 import os
 
@@ -18,7 +19,7 @@ def start_processing(canvas: Canvas):
     This includes binarisation and any other processing steps.
     """
 
-    # Preliminary checks for image loaded
+    # Check if single image loaded or the mode sets to batch processing
     if not hasattr(canvas, "original_img") and not is_batch_processing_enabled(canvas):
         messagebox.showwarning(
             "No Image Loaded", 
@@ -26,6 +27,9 @@ def start_processing(canvas: Canvas):
         )
         return
 
+    # Clear previous results from the canvas
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
+    
     if not is_batch_processing_enabled(canvas):
         # Preliminary image saving folder setup
         make_save_folder(canvas)
@@ -40,6 +44,7 @@ def start_processing(canvas: Canvas):
 # Create save folder for current image
 # variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
 def make_save_folder(canvas: Canvas):
+    # Create a per-original-image save folder
     base_save_dir = getattr(canvas, "save_dir", None)
     if base_save_dir:
         canvas.current_save_folder = os.path.join(base_save_dir, canvas.FileLabelName)
