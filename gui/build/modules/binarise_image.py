@@ -72,7 +72,7 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Draw on canvas
     canvas.binary_img_id = canvas.create_image(805, 255, image=img_tk)
     # Prevent garbage collection. Without this, the image will not display.
-    canvas._image_refs.append(img_tk)
+    canvas._image_refs["binary_img"] = img_tk
 
 
 def invert_binarised_image(canvas: Canvas):

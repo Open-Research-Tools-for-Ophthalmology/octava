@@ -97,8 +97,8 @@ def skeletonise(canvas: Canvas, bin: np.ndarray, THR: int = 0):
   # --- Resize and convert to ImageTk for display on canvas ---
   resized_img = resize_image(skel_pil)     # if resize is needed
   img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
-  canvas.binary_img_id = canvas.create_image(1060, 255, image=img_tk)
-  canvas._image_refs.append(img_tk)
+  canvas.skeleton_img_id = canvas.create_image(1060, 255, image=img_tk)
+  canvas._image_refs["skeleton_img"] = img_tk
 
   return skel2, nodes, links
 
