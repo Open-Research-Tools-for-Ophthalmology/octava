@@ -9,8 +9,8 @@ from modules.change_status import *
 from modules.clear import *
 
 # Load an image for processing
-# @param {Boolean} silent = True for batch automated processing
-# @param {String} filePath = path to load image from (for batch automated processing)
+# @param {Boolean} silent = True for automated batch processing
+# @param {String} filePath = path to load image from (for automatedbatch processing)
 def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None):
     """
     Ask the user to pick an image, display a 200x200 grayscale preview
