@@ -89,8 +89,8 @@ def process_batch(pairs, ctx):
 #  Auto segment FAZ and save results
 # TODO if filepath then display segmented result in subwindow
 # TODO if image_folder then run batch process and save results to batch folder
-# @param {filepath} filepath - path to image for single segmentation
-# @param {image_folder} image_folder - path to folder for batch segmentation
+# @param {String} filepath - path to image for single segmentation
+# @param {String} image_folder - path to folder for batch segmentation
 def auto_faz(filepath=None, image_folder=None):
     """
     FAZ segmentation tool

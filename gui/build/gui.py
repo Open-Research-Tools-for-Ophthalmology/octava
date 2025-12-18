@@ -39,7 +39,6 @@ canvas = Canvas(
     relief = "ridge"
 )
 
-
 canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
@@ -51,6 +50,8 @@ canvas.bin_size_var = IntVar(value=5)  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar()  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 
+# Initialize batch processing settings on canvas        
+init_batch_processing_settings(canvas)
 
 canvas.place(x = 0, y = 0)
 canvas.create_text(
@@ -221,7 +222,7 @@ button_advanced_settings.place(x=30, y=270)
 button_point_faz = ctk.CTkButton(window, text="Point FAZ",
                                 command=lambda: subwindow4(canvas, editable=True),
                                 width=80,height=40,
-                                font=("Roboto Bold", 12 * -1),
+                                font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
                                 corner_radius=8,border_width=1,
@@ -232,7 +233,7 @@ button_point_faz.place(x=30, y=355)
 
 button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindow4(canvas, editable=False),
                                 width=80,height=40,
-                                font=("Roboto Bold", 12 * -1),
+                                font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
                                 corner_radius=8,border_width=1,
@@ -265,7 +266,7 @@ button_regional_analysis.place(x=30, y=415)
 
 
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
-                        command=subwindow3,
+                        command=lambda: subwindow3(canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
