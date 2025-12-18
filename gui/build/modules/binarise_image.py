@@ -54,6 +54,7 @@ def binarise_image(canvas):
 
     # --- Store result back to canvas ---
     canvas.binary_image = binary_image
+    canvas.inverted_image = binary_image.copy()
 
     # --- Display binarised image ---
     display_binarised_image(canvas, binary_image)
@@ -88,10 +89,10 @@ def invert_binarised_image(canvas: Canvas):
     print ("Inverting binarised image...")
 
     # Invert binary image
-    canvas.binary_image = 255 - canvas.binary_image
+    canvas.inverted_image = 255 - canvas.inverted_image
 
     # Update display of binarised image
-    display_binarised_image(canvas, canvas.binary_image)
+    display_binarised_image(canvas, canvas.inverted_image)
 
     print ("Inverted binarised image.")
 
