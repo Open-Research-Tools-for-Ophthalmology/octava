@@ -91,7 +91,7 @@ def skeletonise(canvas: Canvas, bin: np.ndarray, THR: int = 0):
   fig, ax = plt.subplots(figsize=(3,3), dpi=300)
   ax.imshow(skel, cmap='gray')
   ax.axis('off')
-  img_path = os.path.join(canvas.current_save_folder, f"{canvas.FileLabelName}_Skeletonised_TwigSize{THR}.png")
+  img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{THR}.png")
   plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
 
   # --- Resize and convert to ImageTk for display on canvas ---

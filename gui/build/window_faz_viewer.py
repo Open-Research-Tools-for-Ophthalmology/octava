@@ -235,6 +235,7 @@ def subwindow4(canvas, editable=False):
     # View: Display fixed image without interaction
     # TODO the result from auto faz is binary mask, lets show the FAZ overlay on original image instead
     def display_fixed_image():
+        # FIXME here the FAZ is loading from local file, which evades the resize logic
         grayscale_arr = auto_faz(filepath=canvas.filePath)
 
         # grayscale image from array
