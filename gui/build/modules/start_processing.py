@@ -19,17 +19,31 @@ def start_processing(canvas: Canvas):
     This includes binarisation and any other processing steps.
     """
 
-    # Preliminary checks for image loaded
+    # Check if single image loaded or the mode sets to batch processing
     if not hasattr(canvas, "original_img") and not is_batch_processing_enabled(canvas):
         messagebox.showwarning(
             "No Image Loaded", 
             "Please load an image before processing."
         )
         return
-    
+
     # Clear previous results from the canvas
     clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
     
+    if not is_batch_processing_enabled(canvas):
+        # Preliminary image saving folder setup
+        make_save_folder(canvas)
+        # Indicate that processing is starting
+        change_status_to_waiting(canvas)
+        thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
+        thread.start()
+    else:
+        # TODO batch processing
+        start_batch_processing_threaded(canvas)
+
+# Create save folder for current image
+# variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
+def make_save_folder(canvas: Canvas):
     # Create a per-original-image save folder
     base_save_dir = getattr(canvas, "save_dir", None)
     if base_save_dir:
@@ -37,6 +51,7 @@ def start_processing(canvas: Canvas):
     else:
         canvas.current_save_folder = os.path.join(canvas.lastPath, canvas.FileLabelName)
     os.makedirs(canvas.current_save_folder, exist_ok=True)
+    os.makedirs(os.path.join(canvas.current_save_folder, "images"), exist_ok=True)
 
     if not is_batch_processing_enabled(canvas):
         # Preliminary image saving folder setup
