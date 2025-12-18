@@ -434,6 +434,10 @@ def apply_onh(canvas, binary, original,image_size_mm):
 	]
 
 def apply_foveal_ring(canvas, binary, original, image_size_mm):
+	H, W = canvas.fullImSizePix
+	rad_1mm = 0.5 * H / image_size_mm
+	rad_2mm = 1.0 * H / image_size_mm
+	rad_3mm = 1.5 * H / image_size_mm
 
 
 	pass
