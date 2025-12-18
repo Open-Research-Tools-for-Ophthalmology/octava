@@ -85,7 +85,7 @@ class BiomarkerAnalyzer:
 
 
 
-        # --- Mean Diameter (microns, mimic MATLAB) ---
+        # --- Mean Diameter ---
         from scipy.ndimage import distance_transform_edt
 
         # Binary vessel mask
@@ -127,74 +127,25 @@ class BiomarkerAnalyzer:
         else:
             mean_diameter_um = 0.0
 
+        # --- Calculate Branchpoint Density (Exact MATLAB Logic) ---
 
 
+        
+        branchpoint_count = 0
+        if nodes is not None:
+            for node in nodes:
 
-        # --- Calculate Branchpoint Density (per mm²) ---
-        from scipy.ndimage import convolve
+                if node.ep == 0:
+                    branchpoint_count += 1
 
-        # 8-connected neighbor kernel
-        kernel = np.array([[1, 1, 1],
-                           [1, 0, 1],
-                           [1, 1, 1]], dtype=np.uint8)
-
-        skel_uint = skel_mask.astype(np.uint8)
-        neighbor_count = convolve(skel_uint, kernel, mode="constant", cval=0)
-
-        # Branchpoint: skeleton pixel with >= 3 neighbors
-        branchpoints = (skel_mask & (neighbor_count >= 3))
-
-        branchpoint_count = int(np.count_nonzero(branchpoints))
-
-        if img_area_mm2 > 0.0:
-            branchpoint_density = branchpoint_count / img_area_mm2
+        
+        if total_length_mm > 0.0:
+            branchpoint_density = branchpoint_count / total_length_mm
         else:
             branchpoint_density = 0.0
 
-        # --- Calculate Fractal Dimension (Box-Counting) ---
-        # Convert to boolean mask (vessels = True)
-        Z = (binary > 0)
 
-        # Minimal dimension
-        p = min(Z.shape)
-        if p < 2:
-            fractal_dim = 0.0
-        else:
-            # Box sizes: powers of 2 (1, 2, 4, ..., up to p/2)
-            box_sizes = []
-            counts = []
 
-            k = 1
-            while k <= p // 2:
-                box_sizes.append(k)
-
-                # Compute number of non-empty boxes at scale k
-                # Trim image so that it's divisible by k
-                new_shape = (Z.shape[0] // k * k, Z.shape[1] // k * k)
-                Z_trim = Z[:new_shape[0], :new_shape[1]]
-
-                # Reshape into (n_rows, k, n_cols, k) and check any True in each box
-                Z_blocks = Z_trim.reshape(
-                    new_shape[0] // k, k,
-                    new_shape[1] // k, k
-                )
-                non_empty = np.any(Z_blocks, axis=(1, 3))
-                N_k = float(np.count_nonzero(non_empty))
-
-                counts.append(N_k)
-                k *= 2
-
-            # Need at least 2 scales to fit a line
-            if len(box_sizes) >= 2 and all(c > 0 for c in counts):
-                scales = np.array([1.0 / s for s in box_sizes], dtype=float)
-                log_scales = np.log(scales)
-                log_counts = np.log(np.array(counts, dtype=float))
-
-                # Linear fit: log(N) = D * log(1/box_size) + C
-                D, _ = np.polyfit(log_scales, log_counts, 1)
-                fractal_dim = float(D)
-            else:
-                fractal_dim = 0.0
 
         # --- Calculate Mean Tortuosity ---
         mean_tortuosity = 0.0
@@ -271,7 +222,7 @@ class BiomarkerAnalyzer:
         # Branchpoint density (per mm²)
         if hasattr(canvas, "branch_density_value_id"):
             canvas.itemconfig(canvas.branch_density_value_id,
-                              text=f"{branchpoint_density:.2f} /mm²")
+                              text=f"{branchpoint_density:.2f} (1/mm)")
 
         # Fractal dimension
         if hasattr(canvas, "fractal_dim_value_id"):
