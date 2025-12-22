@@ -21,8 +21,8 @@ def display_faz_image(canvas: Canvas):
 
     # Prevent garbage collection. Without this, the image will not display.
     if not hasattr(canvas, "_image_refs"):
-        canvas._image_refs = []
-    canvas._image_refs.append(img_tk)
+        canvas._image_refs = {}
+    canvas._image_refs["faz_img"] = img_tk
 
 # Edit: Load existing FAZ grayscale array into polygon points
 def load_faz_grayscale_arr(canvas: Canvas):
@@ -98,7 +98,7 @@ def get_central(x,y):
 def generate_faz_mask(canvas: Canvas, batch: bool = False):
     change_status_to_waiting(canvas, status="🔴 Wait...Segmenting FAZ")
 
-    grayscale_arr = auto_faz(filepath=canvas.filePath)
+    grayscale_arr = auto_faz(image=canvas.original_img)
 
     # grayscale image from array
     grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
