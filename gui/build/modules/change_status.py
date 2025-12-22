@@ -12,3 +12,7 @@ def change_status_to_waiting(canvas:Canvas, status:str="🔴 Wait"):
 
 def change_status_to_ready(canvas:Canvas):
   change_status(canvas, status="🟢 Ready")
+
+def change_queue_status(canvas:Canvas, status:str="Processed", fill:str=theme_blue):
+  canvas.itemconfigure(canvas.queue_id, text=status, fill=fill)
+  canvas.update_idletasks()  # immediately refresh the UI

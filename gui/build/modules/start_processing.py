@@ -102,9 +102,10 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    for image_file in image_files:
+    for (index, image_file) in enumerate(image_files, start=1):
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
+        change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red)
 
         # Load image
         try:
@@ -150,3 +151,6 @@ def start_batch_processing_threaded(canvas: Canvas):
     
     # Switch back to READY
     change_status_to_ready(canvas)
+
+    # Reset queue status
+    change_queue_status(canvas, status="Processed", fill=theme_blue)
