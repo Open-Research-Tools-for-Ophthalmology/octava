@@ -90,6 +90,10 @@ class BiomarkerAnalyzer:
 
         total_points = len(all_sampled_diameters)
 
+        diameters_pix = np.asarray(all_sampled_diameters, dtype=float)
+        diameters_um = diameters_pix * pix_size_mm * 1000.0
+        canvas.vessel_diameters_um = diameters_um
+
         if total_points > 0:
             mean_diameter_pix = np.mean(all_sampled_diameters)
             mean_diameter_mm = mean_diameter_pix * pix_size_mm
