@@ -9,6 +9,7 @@ from modules.load_image import *
 from modules.clear import *
 import threading
 import os
+import datetime
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
@@ -52,6 +53,9 @@ def make_save_folder(canvas: Canvas):
         canvas.current_save_folder = os.path.join(canvas.lastPath, canvas.FileLabelName)
     os.makedirs(canvas.current_save_folder, exist_ok=True)
     os.makedirs(os.path.join(canvas.current_save_folder, "images"), exist_ok=True)
+    # create per-original image metrics files
+    canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
+
 
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
@@ -141,6 +145,7 @@ def start_batch_processing_threaded(canvas: Canvas):
             continue  # Skip to next image
 
     # TODO Generate overall metrics spreadsheet for all images
+    # 1. Read individual metrics
     print("Batch image processing completed.")
     
     # Switch back to READY
