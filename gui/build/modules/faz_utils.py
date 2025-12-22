@@ -115,12 +115,12 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
 # TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
     print("Measuring FAZ metrics...")
-    if not hasattr(canvas, 'current_save_folder'):
-        return messagebox.showwarning("Empty save folder", "Save folder not specified")
     if not hasattr(canvas, 'faz_grayscale_arr'):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
     if not hasattr(canvas, 'binary_image'):
         return messagebox.showwarning("No Binarised Image", "Please binarise an image before measuring FAZ.")
+    if not hasattr(canvas, 'current_save_folder'):
+        return messagebox.showwarning("Empty save folder", "Save folder not specified")
     # Get image size from canvas
     image_size_mm = canvas.image_size_var.get()
     
