@@ -1,51 +1,6 @@
-# # folder_loader.py
-# from tkinter import filedialog
-# import os
-
-# def _shorten_path(path: str, max_chars: int = 140) -> str:
-#     """
-#     Shorten long paths for display while keeping the start and end.
-#     e.g. /Users/alex/.../my_project/assets
-#     """
-#     if len(path) <= max_chars:
-#         return path
-#     head = path[: max_chars // 2 - 3]
-#     tail = path[-max_chars // 2 :]
-#     return f"{head}...{tail}"
-
-# def select_folder(canvas, text_x, text_y, text_width=200):
-#     """
-#     Ask the user to pick a folder, draw a simple folder icon on the given canvas,
-#     and show the full folder path near the given position.
-
-#     Returns the selected folder path (str) or None if cancelled.
-#     """
-#     dir_path = filedialog.askdirectory(
-#         title="Select a folder",
-#         mustexist=True,
-#     )
-#     if not dir_path:
-#         return None  # user cancelled
-
-#     # --- show the folder path (shortened for display, full path in a tooltip-ish title) ---
-#     display_text = _shorten_path(dir_path, max_chars=int(text_width * 0.9 // 7))  # rough char/px
-#     text_id = canvas.create_text(
-#         text_x, text_y,
-#         text=display_text,
-#         fill="#333333",
-#         font=("Roboto", 12 * -1),
-#         anchor="w",          # align left edge at (text_x, text_y)
-#         width=text_width,    # enable wrapping if desired
-#     )
-
-#     # Store references/ids on the canvas so callers can manage them later.
-#     canvas.selected_folder_path = dir_path  # keep the real path handy
-
-#     return dir_path
-
-# folder_loader.py
 import os
 import tkinter as tk
+import pandas as pd
 from tkinter import filedialog
 from tkinter import font as tkfont
 
@@ -83,7 +38,44 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
             hi = mid - 1  # keep fewer
     return best
 
-def select_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
+def display_text_to_canvas(canvas: tk.Canvas, text_x: int, text_y: int, display_text: str, font_spec: tuple):
+    # Draw a single-line, left-anchored label (no wrapping needed because we fit it)
+    return canvas.create_text(
+        text_x, text_y,
+        text=display_text,
+        fill="#333333",
+        font=font_spec,
+        anchor="w",
+    )
+
+def select_file(canvas: tk.Canvas, mainCanvas: tk.Canvas):
+    """
+    Ask the user to pick a xlsx file.
+    
+    Returns the selected file path (str) or None if cancelled.
+    """
+    file_path = filedialog.askopenfilename(
+        title="Select a xlsx file",
+        filetypes=[("Excel files", "*.xlsx"), ('Excel Files', '*.xls')],
+        parent=canvas
+    )
+    if not file_path:
+        mainCanvas.bp_variable_image_size_bool_var.set(0)
+        return None  # user cancelled
+    
+    print(f"Selected variable image size file: {file_path}")
+    try:
+        variable_image_size_df = pd.read_excel(file_path)
+        print(f"Loaded variable image size dataframe: {variable_image_size_df}")
+        mainCanvas.bp_variable_image_size_df = variable_image_size_df
+    except Exception as e:
+        print(f"Error reading Excel file: {e}")
+        mainCanvas.bp_variable_image_size_bool_var.set(0)
+        return None
+
+    return file_path
+
+def select_folder(canvas: tk.Canvas, mainCanvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
     """
     Ask the user to pick a folder and draw the (fitted) folder path on the canvas
     at (text_x, text_y). `text_width` is the max pixel width allowed for the text.
@@ -93,6 +85,7 @@ def select_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int =
     dir_path = filedialog.askdirectory(
         title="Select a folder",
         mustexist=True,
+        parent=canvas
     )
     if not dir_path:
         return None  # user cancelled
@@ -107,16 +100,16 @@ def select_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int =
         max_width=text_width,
     )
 
-    # Draw a single-line, left-anchored label (no wrapping needed because we fit it)
-    text_id = canvas.create_text(
-        text_x, text_y,
-        text=display_text,
-        fill="#333333",
-        font=font_spec,
-        anchor="w",
+    display_text_to_canvas(
+        canvas,
+        text_x,
+        text_y,
+        display_text,
+        font_spec
     )
 
     #todo: Keep the real path handy for later use
-    # canvas.selected_folder_path = dir_path
+    mainCanvas.bp_selected_folder_path = dir_path
+    print(f"Selected folder: {dir_path}")
 
     return dir_path

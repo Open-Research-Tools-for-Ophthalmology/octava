@@ -9,21 +9,11 @@ def close(subwindow):
   subwindow.destroy()
   subwindow.update()
 
-def subwindow2():
+def subwindow2(canvas):
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
   subwindow.geometry("349x370")
   subwindow.configure(bg = "#FBE3D6")
-
-  eye_var = StringVar()
-  load_faz_var = IntVar(value=0)
-  square_grid_var = IntVar(value=0)
-  etdrs_grid_var = IntVar(value=0)
-  extended_etdrs_var = IntVar(value=0)
-  foveal_rings_var = IntVar(value=0)
-  optic_nerve_head_var = IntVar(value=0)
-  apply_advanced_settings_var = IntVar(value=0)
-
 
   subcanvas2 = Canvas(
       subwindow,
@@ -34,7 +24,6 @@ def subwindow2():
       highlightthickness = 0,
       relief = "ridge"
   )
-
   subcanvas2.place(x = 0, y = 0)
 
   # eye type dropdown
@@ -49,7 +38,7 @@ def subwindow2():
   eye_list = ["Left Eye", "Right Eye"]
   eye_combobox = Combobox(
       subwindow,
-      textvariable=eye_var,
+      textvariable=canvas.eye_var,
       values=eye_list,
       state="readonly"
   )
@@ -61,7 +50,7 @@ def subwindow2():
   )
 
   # def show_selection(event=None):
-  #     print("Selected:", eye_var.get())
+  #     print("Selected:", canvas.eye_var.get())
 
   # eye_combobox.bind("<<ComboboxSelected>>", show_selection)
 
@@ -70,7 +59,7 @@ def subwindow2():
   load_faz_checkbox = Checkbutton(
       subwindow,
       text="Load FAZ masks",
-      variable=load_faz_var,
+      variable=canvas.load_faz_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -84,7 +73,7 @@ def subwindow2():
   square_grid_checkbox = Checkbutton(
       subwindow,
       text="Square grid",
-      variable=square_grid_var,
+      variable=canvas.square_grid_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -99,7 +88,7 @@ def subwindow2():
   etdrs_grid_checkbox = Checkbutton(
       subwindow,
       text="ETDRS grid",
-      variable=etdrs_grid_var,
+      variable=canvas.etdrs_grid_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -113,7 +102,7 @@ def subwindow2():
   extended_etdrs_checkbox = Checkbutton(
       subwindow,
       text="Extended ETDRS grid",
-      variable=extended_etdrs_var,
+      variable=canvas.extended_etdrs_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -127,7 +116,7 @@ def subwindow2():
   foveal_rings_checkbox = Checkbutton(
       subwindow,
       text="Foveal rings",
-      variable=foveal_rings_var,
+      variable=canvas.foveal_rings_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -141,7 +130,7 @@ def subwindow2():
   optic_nerve_head_checkbox = Checkbutton(
       subwindow,
       text="Optic nerve head",
-      variable=optic_nerve_head_var,
+      variable=canvas.optic_nerve_head_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -155,7 +144,7 @@ def subwindow2():
   apply_advanced_settings_checkbox = Checkbutton(
       subwindow,
       text="Apply advanced settings",
-      variable=apply_advanced_settings_var,
+      variable=canvas.apply_advanced_settings_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)

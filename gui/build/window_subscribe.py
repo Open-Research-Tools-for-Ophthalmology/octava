@@ -6,6 +6,8 @@ import requests
 from dotenv import load_dotenv
 load_dotenv()
 
+#Google sheets link: https://docs.google.com/spreadsheets/d/1nJJvmxrmKOk7J1aLq_f1VeGRaxSBdu3BzHplbuoTaU0/edit?gid=0#gid=0
+
 GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzzJbH4EfyuwmLaxNJkZpT9ghsFlHTpPKH35uoS2E9Y6EZdPiTjwb-y0nI76z61OJw/exec"
 
 def send_email_to_google_sheet(name: str, email: str):

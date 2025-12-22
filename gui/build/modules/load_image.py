@@ -6,9 +6,12 @@ from pathlib import Path
 import numpy as np
 import os
 from modules.change_status import *
-from modules.clear import remove_items_from_canvas
+from modules.clear import *
 
-def load_image(canvas, x, y, text_x, text_y):
+# Load an image for processing
+# @param {Boolean} silent = True for automated batch processing
+# @param {String} filePath = path to load image from (for automatedbatch processing)
+def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None):
     """
     Ask the user to pick an image, display a 200x200 grayscale preview
     on the canvas, show the filename near the image, and store useful
@@ -19,14 +22,17 @@ def load_image(canvas, x, y, text_x, text_y):
     """
     change_status_to_waiting(canvas)
 
-    file_path = filedialog.askopenfilename(
-        title="Select an image",
-        filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
-    )
-    if not file_path:
-        change_status_to_ready(canvas)
-        return None  # user cancelled
-
+    if not silent:
+        file_path = filedialog.askopenfilename(
+            title="Select an image",
+            filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
+        )
+        if not file_path:
+            change_status_to_ready(canvas)
+            return None  # user cancelled
+    else:
+        file_path = filePath
+    
     path = Path(file_path)
     try:
         # Load original grayscale image (keep full resolution)
@@ -46,7 +52,7 @@ def load_image(canvas, x, y, text_x, text_y):
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
-    remove_items_from_canvas(canvas, ["original_img_id", "filename_text_id"])
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_LOADING_NEW_IMG)
 
     # Draw the preview and filename on the canvas
     img_id = canvas.create_image(x, y, image=img_tk)
@@ -61,15 +67,15 @@ def load_image(canvas, x, y, text_x, text_y):
 
     # Keep references so Tk doesn't garbage-collect the image
     if not hasattr(canvas, "_image_refs"):
-        canvas._image_refs = []
-    canvas._image_refs.append(img_tk)
+        canvas._image_refs = {}
+    canvas._image_refs["original_img"] = img_tk
 
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.FAZ_ctr = (orig_h / 2.0, orig_w / 2.0)
+    canvas.FAZ_ctr = np.array([orig_h // 2, orig_w // 2])
 
     # Remember last drawn items
     canvas.original_img_id = img_id
