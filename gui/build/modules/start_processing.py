@@ -90,7 +90,8 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
     print("Binarisation completed. Starting skeletonisation...")
 
-    skeletonise(canvas, canvas.binary_image, canvas.twig_size.get())
+    display = not batch  # only display skeleton in single image mode
+    skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
 
     print("Skeletonisation completed.")
 
@@ -148,8 +149,8 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    skipped_images = []
-    for (index, image_file) in enumerate(image_files, start=1):
+    for image_file in image_files:
+        #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
         canvas.after(0, lambda: change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red))

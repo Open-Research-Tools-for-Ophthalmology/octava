@@ -11,7 +11,7 @@ from modules.clear import *
 # Load an image for processing
 # @param {Boolean} silent = True for automated batch processing
 # @param {String} filePath = path to load image from (for automatedbatch processing)
-def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None):
+def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, display=True):
     """
     Ask the user to pick an image, display a 200x200 grayscale preview
     on the canvas, show the filename near the image, and store useful

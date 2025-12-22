@@ -17,17 +17,17 @@ matplotlib.use("Agg")
 from scipy.ndimage import binary_dilation
 import os
 
-def skeletonise(canvas: Canvas, bin: np.ndarray, THR: int = 0):
+def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, display: bool = True):
   change_status_to_waiting(canvas, status="🔴 Wait...Skeletonising")
 
   # generate skeletonized iamge
-  y, x = bin.shape
-  L = bin.astype(bool)
+  y, x = bin_img.shape
+  L = bin_img.astype(bool)
   # sk2 = skeletonize(L) 
   sk2, distance = medial_axis(L, return_distance=True)
 
   # removes branches smaller than twig size
-  sk2 = remove_small_objects(sk2, THR, connectivity=2) 
+  sk2 = remove_small_objects(sk2, canvas.twig_size.get(), connectivity=2) 
 
 
   # local thickness measurement
@@ -82,23 +82,26 @@ def skeletonise(canvas: Canvas, bin: np.ndarray, THR: int = 0):
 
   # --- Convert binary skeleton to 0–255 grayscale like matplotlib ---
   # skel_uint8 = (canvas.skeleton_image.astype(np.uint8)) * 255
-  skel_uint8 = binary_dilation(canvas.skeleton_image, iterations=1).astype(np.uint8) * 255
-  # --- Create PIL image ---
-  skel_pil = Image.fromarray(skel_uint8, mode="L")
+  if display:
+    skel_uint8 = binary_dilation(canvas.skeleton_image, iterations=1).astype(np.uint8) * 255
+    # --- Create PIL image ---
+    skel_pil = Image.fromarray(skel_uint8, mode="L")
 
-  # Save skeleton image to current save folder
-  skel = canvas.skeleton_image
-  fig, ax = plt.subplots(figsize=(3,3), dpi=300)
-  ax.imshow(skel, cmap='gray')
-  ax.axis('off')
-  img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{THR}.png")
-  plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
+    # Save skeleton image to current save folder
+    skel = canvas.skeleton_image
+    fig, ax = plt.subplots(figsize=(3,3), dpi=300)
+    ax.imshow(skel, cmap='gray')
+    ax.axis('off')
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{THR}.png")
+    plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
 
-  # --- Resize and convert to ImageTk for display on canvas ---
-  resized_img = resize_image(skel_pil)     # if resize is needed
-  img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
-  canvas.skeleton_img_id = canvas.create_image(1060, 255, image=img_tk)
-  canvas._image_refs["skeleton_img"] = img_tk
+    # --- Resize and convert to ImageTk for display on canvas ---
+    resized_img = resize_image(skel_pil)     # if resize is needed
+    img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
+    canvas.skeleton_img_id = canvas.create_image(1060, 255, image=img_tk)
+    canvas._image_refs["skeleton_img"] = img_tk
+
+    #todo: display skeleton overlay image
 
   return skel2, nodes, links
 

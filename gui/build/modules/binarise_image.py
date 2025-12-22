@@ -9,7 +9,7 @@ from modules.change_status import *
 import cv2
 import os
 
-def binarise_image(canvas):
+def binarise_image(canvas: Canvas, display:bool=True):
     """
     binarise canvas.original_img using fuzzy thresholding.
     - Ensures vessels are white (255) and background black (0).
