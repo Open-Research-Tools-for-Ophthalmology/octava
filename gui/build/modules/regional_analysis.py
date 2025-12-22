@@ -1,8 +1,18 @@
 from tkinter import Canvas
 import numpy as np
 from skimage.draw import disk, polygon
+import pandas as pd
+from modules.skeletonise import *
+from enum import Enum
 
 RIGHT_EYE = "Right Eye"
+
+class GridType(Enum):
+	SQUARE_GRID = "Square Grid"
+	ETDRS_GRID = "ETDRS Grid"
+	EXTENDED_ETDRS_GRID = "Extended ETDRS Grid"
+	ONH = "Optic Nerve Head"
+	FOVEAL_RING = "Foveal Ring"
 
 def run_regional_analysis(canvas):
 	# Get image size from canvas
@@ -69,8 +79,32 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	imgArea_mm = imgArea_pix * (pix_to_mm**2)
 
 	# -------- Region labels --------
-	set_square_grid_labels(canvas)
+	if canvas.eye_var.get() == RIGHT_EYE:
+		canvas.RAlabels = [
+			"Supero-temporal",
+			"Superior",
+			"Supero-nasal",
+			"Temporal",
+			"Central",
+			"Nasal",
+			"Infero-temporal",
+			"Inferior",
+			"Infero-nasal",
+		]
+	else:
+		canvas.RAlabels = [
+			"Supero-nasal",
+			"Superior",
+			"Supero-temporal",
+			"Nasal",
+			"Central",
+			"Temporal",
+			"Infero-nasal",
+			"Inferior",
+			"Infero-temporal",
+		]
 
+	run_analysis_on_regions(canvas, binaryReg, imgReg, imgArea_pix_vec=None, pix_to_mm=pix_to_mm, grid_type=GridType.SQUARE_GRID)
 
 def apply_etdrs_grid(canvas, binary, original, image_size_mm):
 	H, W = canvas.fullImSizePix
@@ -365,57 +399,57 @@ def apply_onh(canvas, binary, original,image_size_mm):
 	# Binary regions (15 total)
 	binaryReg = [None] * 15
 
-	binaryReg[0] = binary * sector_masks[:, :, 0][:H//2, W//2:]
-	binaryReg[1] = binary * sector_masks[:, :, 1][:H//2, W//2:]
-	binaryReg[2] = binary * sector_masks[:, :, 2][:H//2, :W//2]
-	binaryReg[3] = binary * sector_masks[:, :, 3][:H//2, :W//2]
-	binaryReg[4] = binary * sector_masks[:, :, 4][H//2:, :W//2]
-	binaryReg[5] = binary * sector_masks[:, :, 5][H//2:, :W//2]
-	binaryReg[6] = binary * sector_masks[:, :, 6][H//2:, W//2:]
-	binaryReg[7] = binary * sector_masks[:, :, 7][H//2:, W//2:]
+	binaryReg[0] = (binary * sector_masks[:, :, 0])[:H//2, W//2:]
+	binaryReg[1] = (binary * sector_masks[:, :, 1])[:H//2, W//2:]
+	binaryReg[2] = (binary * sector_masks[:, :, 2])[:H//2, :W//2]
+	binaryReg[3] = (binary * sector_masks[:, :, 3])[:H//2, :W//2]
+	binaryReg[4] = (binary * sector_masks[:, :, 4])[H//2:, :W//2]
+	binaryReg[5] = (binary * sector_masks[:, :, 5])[H//2:, :W//2]
+	binaryReg[6] = (binary * sector_masks[:, :, 6])[H//2:, W//2:]
+	binaryReg[7] = (binary * sector_masks[:, :, 7])[H//2:, W//2:]
 
-	binaryReg[8]  = binary * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
-														sector_masks[:, :, 2] | sector_masks[:, :, 3])[:H//2, :]
-	binaryReg[9]  = binary * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
-														sector_masks[:, :, 6] | sector_masks[:, :, 7])[H//2:, :]
+	binaryReg[8]  = (binary * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
+														sector_masks[:, :, 2] | sector_masks[:, :, 3]))[:H//2, :]
+	binaryReg[9]  = (binary * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
+														sector_masks[:, :, 6] | sector_masks[:, :, 7]))[H//2:, :]
 
-	binaryReg[10] = binary * (sector_masks[:, :, 1] | sector_masks[:, :, 2])[:H//2, :]
-	binaryReg[11] = binary * (sector_masks[:, :, 5] | sector_masks[:, :, 6])[H//2:, :]
-	binaryReg[12] = binary * (sector_masks[:, :, 3] | sector_masks[:, :, 4])[:, :W//2]
-	binaryReg[13] = binary * (sector_masks[:, :, 0] | sector_masks[:, :, 7])[:, W//2:]
+	binaryReg[10] = (binary * (sector_masks[:, :, 1] | sector_masks[:, :, 2]))[:H//2, :]
+	binaryReg[11] = (binary * (sector_masks[:, :, 5] | sector_masks[:, :, 6]))[H//2:, :]
+	binaryReg[12] = (binary * (sector_masks[:, :, 3] | sector_masks[:, :, 4]))[:, :W//2]
+	binaryReg[13] = (binary * (sector_masks[:, :, 0] | sector_masks[:, :, 7]))[:, W//2:]
 	binaryReg[14] = binary * PP_mask
 
 	# Image regions (same geometry as binaryReg)
 	imgReg = [None] * 15
 
-	imgReg[0] = original * sector_masks[:, :, 0][:H//2, W//2:]
-	imgReg[1] = original * sector_masks[:, :, 1][:H//2, W//2:]
-	imgReg[2] = original * sector_masks[:, :, 2][:H//2, :W//2]
-	imgReg[3] = original * sector_masks[:, :, 3][:H//2, :W//2]
-	imgReg[4] = original * sector_masks[:, :, 4][H//2:, :W//2]
-	imgReg[5] = original * sector_masks[:, :, 5][H//2:, :W//2]
-	imgReg[6] = original * sector_masks[:, :, 6][H//2:, W//2:]
-	imgReg[7] = original * sector_masks[:, :, 7][H//2:, W//2:]
+	imgReg[0] = (original * sector_masks[:, :, 0])[:H//2, W//2:]
+	imgReg[1] = (original * sector_masks[:, :, 1])[:H//2, W//2:]
+	imgReg[2] = (original * sector_masks[:, :, 2])[:H//2, :W//2]
+	imgReg[3] = (original * sector_masks[:, :, 3])[:H//2, :W//2]
+	imgReg[4] = (original * sector_masks[:, :, 4])[H//2:, :W//2]
+	imgReg[5] = (original * sector_masks[:, :, 5])[H//2:, :W//2]
+	imgReg[6] = (original * sector_masks[:, :, 6])[H//2:, W//2:]
+	imgReg[7] = (original * sector_masks[:, :, 7])[H//2:, W//2:]
 
-	imgReg[8]  = original * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
-											sector_masks[:, :, 2] | sector_masks[:, :, 3])[:H//2, :]
-	imgReg[9]  = original * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
-											sector_masks[:, :, 6] | sector_masks[:, :, 7])[H//2:, :]
+	imgReg[8]  = (original * (sector_masks[:, :, 0] | sector_masks[:, :, 1] |
+											sector_masks[:, :, 2] | sector_masks[:, :, 3]))[:H//2, :]
+	imgReg[9]  = (original * (sector_masks[:, :, 4] | sector_masks[:, :, 5] |
+											sector_masks[:, :, 6] | sector_masks[:, :, 7]))[H//2:, :]
 
-	imgReg[10] = original * (sector_masks[:, :, 1] | sector_masks[:, :, 2])[:H//2, :]
-	imgReg[11] = original * (sector_masks[:, :, 5] | sector_masks[:, :, 6])[H//2:, :]
-	imgReg[12] = original * (sector_masks[:, :, 3] | sector_masks[:, :, 4])[:, :W//2]
-	imgReg[13] = original * (sector_masks[:, :, 0] | sector_masks[:, :, 7])[:, W//2:]
+	imgReg[10] = (original * (sector_masks[:, :, 1] | sector_masks[:, :, 2]))[:H//2, :]
+	imgReg[11] = (original * (sector_masks[:, :, 5] | sector_masks[:, :, 6]))[H//2:, :]
+	imgReg[12] = (original * (sector_masks[:, :, 3] | sector_masks[:, :, 4]))[:, :W//2]
+	imgReg[13] = (original * (sector_masks[:, :, 0] | sector_masks[:, :, 7]))[:, W//2:]
 	imgReg[14] = original * PP_mask
 
 
 	#set labels
 	if canvas.eye_var.get() == RIGHT_EYE:
 		canvas.RAlabels = ["NS","SN","ST","TS","TI","IT","IN","NI",
-                "S_hemi","I_hemi","S","I","T","N","PP"]
+								"S_hemi","I_hemi","S","I","T","N","PP"]
 	else:
 		canvas.RAlabels =["TS","ST","SN","NS","NI","IN","IT","TI",
-                "S_hemi","I_hemi","S","I","N","T","PP"]
+								"S_hemi","I_hemi","S","I","N","T","PP"]
 
 
 	# Area (pixel counts)
@@ -439,32 +473,192 @@ def apply_foveal_ring(canvas, binary, original, image_size_mm):
 	rad_2mm = 1.0 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
+	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	cy, cx = canvas.FAZ_ctr
 
-	pass
+	# Create circular ROI masks
+	foveal_mask = np.zeros((H, W), dtype=bool)
+	rr, cc = disk((cy, cx), rad_1mm, shape=(H, W))
+	foveal_mask[rr, cc] = True
+
+	pf500_outer = np.zeros((H, W), dtype=bool)
+	rr, cc = disk((cy, cx), rad_2mm, shape=(H, W))
+	pf500_outer[rr, cc] = True
+	pf500_mask = pf500_outer & (~foveal_mask)
+
+	pfouter_outer = np.zeros((H, W), dtype=bool)
+	rr, cc = disk((cy, cx), rad_3mm, shape=(H, W))
+	pfouter_outer[rr, cc] = True
+	pfouter_mask = pfouter_outer & (~pf500_outer)
+
+	# Binary regions
+	binaryReg = [None] * 3
+
+	#Crops each region to a tight square around the FAZ (± 3 mm) to reduce image size and speed later analysis #todo: check bounds
+	y1 = int(round(max(cy - rad_3mm, 0)))
+	y2 = int(round(min(cy + rad_3mm, H)))
+	x1 = int(round(max(cx - rad_3mm, 0))) 
+	x2 = int(round(min(cx + rad_3mm, W)))
+
+	binaryReg[0] = (binary * foveal_mask)[y1:y2, x1:x2]
+	binaryReg[1] = (binary * pf500_mask)[y1:y2, x1:x2]
+	binaryReg[2] = binary * pfouter_mask
+
+	# Image regions
+	imgReg = [None] * 3
+
+	imgReg[0] = (original * foveal_mask)[y1:y2, x1:x2]
+	imgReg[1] = (original * pf500_mask)[y1:y2, x1:x2]
+	imgReg[2] = original * pfouter_mask
+
+	# Region labels
+	canvas.RAlabels = [
+			"FAZ circle",
+			"Inner 0.5mm ring around FAZ",
+			"Outer 0.5mm ring",
+	]
+
+	# Area (pixel counts)
+	imgArea_pix_vec = [
+			np.sum(foveal_mask),
+			np.sum(pf500_mask),
+			np.sum(pfouter_mask),
+	]
 
 
-def set_square_grid_labels(canvas):
-	if canvas.eye_var.get() == RIGHT_EYE:
-		canvas.RAlabels = [
-			"Supero-temporal",
-			"Superior",
-			"Supero-nasal",
-			"Temporal",
-			"Central",
-			"Nasal",
-			"Infero-temporal",
-			"Inferior",
-			"Infero-nasal",
-		]
-	else:
-		canvas.RAlabels = [
-			"Supero-nasal",
-			"Superior",
-			"Supero-temporal",
-			"Nasal",
-			"Central",
-			"Temporal",
-			"Infero-nasal",
-			"Inferior",
-			"Infero-temporal",
-		]
+def run_analysis_on_regions(
+		canvas,
+		binaryReg,
+		imgReg,
+		imgArea_pix_vec,
+		pix_to_mm,
+		grid_type,
+):
+		"""
+		Exact translation of MATLAB regional metrics loop.
+
+		Parameters
+		----------
+		canvas : object
+				Canvas holding skeleton_nodes, skeleton_links, RAlabels, etc.
+		binaryReg : list[np.ndarray]
+				Binary vessel masks per region
+		imgReg : list[np.ndarray]
+				Original image per region
+		imgArea_pix_vec : list[float]
+				Pixel area per region (only used for non-square grids)
+		pix_to_mm : float
+				Pixel-to-mm conversion
+		grid_type : str
+				Grid type name
+		"""
+		regionalmetrics = []
+
+		for i in range(len(binaryReg)):
+				# Skeletonize this region
+				skeletonise(
+						canvas,
+						imgReg[i],
+						binaryReg[i],
+						display=False,
+				)
+
+				# Image area (MATLAB conditional)
+				if grid_type != grid_type.SQUARE_GRID:
+						imgArea_pix = imgArea_pix_vec[i]
+						imgArea_mm = imgArea_pix * (pix_to_mm ** 2)
+				# else:
+				# 		imgArea_pix = binaryReg[i].size
+				# 		imgArea_mm = imgArea_pix * (pix_to_mm ** 2)
+
+				canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
+				canvas.regional_metrics[i]["Region"] = canvas.RAlabels[i]
+
+				# If skeleton graph exists
+				links = getattr(canvas, "skeleton_links", None)
+				nodes = getattr(canvas, "skeleton_nodes", None)
+
+				if links and len(links) > 0:
+						# MATLAB: sum(~[app.Gnodes.ep])
+						canvas.regional_metrics[i]["nodes"] = sum(1 for n in nodes if n.ep == 0)
+
+						# MATLAB: sum(sum(binaryReg{i})) / 255 / imgArea_pix
+						vessel_pixels = np.sum(binaryReg[i]) / 255.0
+						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
+
+						# MATLAB: sum([app.Glinks.pixLength] * pix_to_mm)
+						total_length_mm = sum(l.pixLength for l in links) * pix_to_mm
+						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
+
+						# MATLAB: VLD %
+						canvas.regional_metrics[i]["VLD_pct"] = round(
+								(total_length_mm * pix_to_mm) / imgArea_mm, 4
+						) * 100
+
+						# MATLAB: VLD 1/mm
+						canvas.regional_metrics[i]["VLD_mminv"] = round(
+								total_length_mm / imgArea_mm, 4
+						)
+
+						# MATLAB: Mean / Median length (µm)
+						lengths_um = np.array([l.pixLength for l in links]) * pix_to_mm * 1000
+						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(lengths_um))
+						canvas.regional_metrics[i]["MedianLength"] = round(np.median(lengths_um))
+
+						# MATLAB: Mean / Median diameter (µm)
+						diam_um = np.array([l.diameter for l in links]) * pix_to_mm * 1000
+						canvas.regional_metrics[i]["MeanDiam"] = round(np.mean(diam_um))
+						canvas.regional_metrics[i]["MedianDiam"] = round(np.median(diam_um))
+
+						# MATLAB: Branch density
+						canvas.regional_metrics[i]["BD"] = round(
+								canvas.regional_metrics[i]["nodes"] / canvas.regional_metrics[i]["totalLength"], 2
+						)
+
+						# MATLAB: fractalDimension(app)
+						slope = compute_fractal_dimension(canvas)
+						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+
+						# MATLAB: mean tortuosity excluding Inf
+						tort = np.array([l.tortuosity for l in links])
+						tort = tort[~np.isinf(tort)]
+						metrics["mTort"] = round(np.mean(tort), 4) if tort.size > 0 else 0
+
+				# --------------------------------------------------
+				# If no skeleton graph
+				# --------------------------------------------------
+				else:
+						metrics["nodes"] = 0
+						vessel_pixels = np.sum(binaryReg[i]) / 255.0
+						metrics["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
+						metrics["totalLength"] = 0
+						metrics["VLD_pct"] = 0
+						metrics["VLD_mminv"] = 0
+						metrics["MeanLength"] = 0
+						metrics["MedianLength"] = 0
+						metrics["MeanDiam"] = 0
+						metrics["MedianDiam"] = 0
+						metrics["BD"] = 0
+
+						slope = compute_fractal_dimension(canvas)
+						metrics["FD"] = round(slope, 4)
+						metrics["mTort"] = 0
+
+				regionalmetrics.append(metrics)
+
+		# Save Excel file (MATLAB: struct2table + writetable)
+		df = pd.DataFrame(regionalmetrics)
+
+		excel_filename = (
+				f"{canvas.current_save_folder}/"
+				f"{canvas.FileLabelName} - Regional Analysis.xlsx"
+		)
+
+		with pd.ExcelWriter(excel_filename, engine="openpyxl") as writer:
+				df.to_excel(
+						writer,
+						index=False,
+						sheet_name=f"Regional analysis_{grid_type}",
+				)
+
+		return df
