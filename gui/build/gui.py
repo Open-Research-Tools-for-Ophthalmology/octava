@@ -140,6 +140,15 @@ canvas.status_id = canvas.create_text(
     font=("Roboto", 20 * -1)
 )
 
+canvas.queue_id = canvas.create_text(
+    975.0,
+    65.0,
+    anchor="nw",
+    text="",
+    fill=theme_blue,
+    font=("Roboto", 16 * -1)
+)
+
 
 # image type dropdown
 img_type_list = ["Retina", "ONH", "Skin"]
