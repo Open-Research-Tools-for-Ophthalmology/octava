@@ -2,9 +2,9 @@ from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.biomarker import *
 from modules.skeletonise import *
 from modules.faz_utils import *
-from modules.change_status import *
 from modules.load_image import *
 from modules.clear import *
 import threading
@@ -88,6 +88,10 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
     print("Skeletonisation completed.")
 
+    BiomarkerAnalyzer.process(canvas)
+
+    print("Biomarker analyzer processing completed.")
+    
     # Additional processing if batch mode is on
     if batch:
         if canvas.bp_segment_faz_var.get() == 1:
