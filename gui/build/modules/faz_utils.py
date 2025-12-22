@@ -9,6 +9,7 @@ from scipy import ndimage
 import pandas as pd
 import datetime
 from modules.change_status import *
+from modules.write_excel import *
 
 def display_faz_image(canvas: Canvas):
     # TODO Display finished FAZ mask on main window canvas
@@ -114,12 +115,12 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
 # TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
     print("Measuring FAZ metrics...")
-    if not hasattr(canvas, 'current_save_folder'):
-        return messagebox.showwarning("Empty save folder", "Save folder not specified")
     if not hasattr(canvas, 'faz_grayscale_arr'):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
     if not hasattr(canvas, 'binary_image'):
         return messagebox.showwarning("No Binarised Image", "Please binarise an image before measuring FAZ.")
+    if not hasattr(canvas, 'current_save_folder'):
+        return messagebox.showwarning("Empty save folder", "Save folder not specified")
     # Get image size from canvas
     image_size_mm = canvas.image_size_var.get()
     
@@ -244,16 +245,8 @@ def measure_faz(canvas: Canvas):
     }
     
     # Save images/excel to local
-    save_faz_stats(canvas, FAZ_stats)
+    write_excel(FAZ_stats, canvas.lastMetricsPath, sheet_name='FAZ metrics')
     save_faz_images(canvas, cnt, outer_pts, Cx, Cy)
-
-def save_faz_stats(canvas, stats):
-    os.makedirs(canvas.current_save_folder, exist_ok=True)
-    
-    faz_stats_file_path = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
-    pd.DataFrame([stats]).to_excel(faz_stats_file_path, 'FAZ metrics', index=False)
-
-    print(f"Saved FAZ stats to {faz_stats_file_path}")
 
 def save_faz_images(canvas, inner_contour, outer_contour, Cx, Cy):
     """Save FAZ visualization images"""
