@@ -94,6 +94,15 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
     BiomarkerAnalyzer.process(canvas)
 
+    # Refresh histogram on main thread
+    def refresh_histogram_ui():
+        if hasattr(canvas, "hist_plotter"):
+            diameters = getattr(canvas, "vessel_diameters_um", [])
+            canvas.hist_plotter.set_data(diameters)
+            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+
+    canvas.after(0, refresh_histogram_ui)
+
     print("Biomarker analyzer processing completed.")
     
     # Additional processing if batch mode is on
