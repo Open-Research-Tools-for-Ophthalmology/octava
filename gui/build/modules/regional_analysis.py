@@ -15,6 +15,13 @@ class GridType(Enum):
 	ONH = "Optic Nerve Head"
 	FOVEAL_RING = "Foveal Ring"
 
+class GridType(Enum):
+	SQUARE_GRID = "Square Grid"
+	ETDRS_GRID = "ETDRS Grid"
+	EXTENDED_ETDRS_GRID = "Extended ETDRS Grid"
+	ONH = "Optic Nerve Head"
+	FOVEAL_RING = "Foveal Ring"
+
 def run_regional_analysis(canvas):
 	# Get image size from canvas
 	image_size_mm = canvas.image_size_var.get()
