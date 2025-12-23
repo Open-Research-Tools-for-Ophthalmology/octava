@@ -552,7 +552,6 @@ def run_analysis_on_regions(
 		grid_type : str
 				Grid type name
 		"""
-		regionalmetrics = []
 
 		for i in range(len(binaryReg)):
 				# Skeletonize this region
@@ -580,14 +579,38 @@ def run_analysis_on_regions(
 
 				if links and len(links) > 0:
 						# MATLAB: sum(~[app.Gnodes.ep])
-						canvas.regional_metrics[i]["nodes"] = canvas.skeleton_nodes
+						canvas.regional_metrics[i]["nodes"] = nodes
 
 						# MATLAB: sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 
 						# MATLAB: sum([app.Glinks.pixLength] * pix_to_mm)
-						total_length_mm = sum(l.pixLength for l in links) * pix_to_mm
+						#todo: check if pixLength is in links
+
+						# Vessel length density from boimarker.py
+						Nx, Ny = binary.shape
+						pix_size_mm = image_size_mm / Nx
+						image_size_mm = float(canvas.image_size_var.get())
+
+						total_length_pix = 0.0
+
+						for link in links:
+								indices = np.asarray(link.path, dtype=int)
+								if indices.size < 2:
+										continue
+
+								rows, cols = np.unravel_index(indices, binary.shape)
+								coords = np.column_stack((rows, cols)).astype(float)
+
+								diffs = np.diff(coords, axis=0)
+								step_lengths = np.linalg.norm(diffs, axis=1)
+								length_pix = float(step_lengths.sum())
+
+								total_length_pix += length_pix
+								link.pixLength = length_pix
+
+						total_length_mm = total_length_pix * pix_size_mm
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
 						# MATLAB: VLD %
@@ -622,32 +645,31 @@ def run_analysis_on_regions(
 						# MATLAB: mean tortuosity excluding Inf
 						tort = np.array([l.tortuosity for l in links])
 						tort = tort[~np.isinf(tort)]
-						metrics["mTort"] = round(np.mean(tort), 4) if tort.size > 0 else 0
+						canvas.regional_metrics[i]["mTort"] = round(np.mean(tort), 4) if tort.size > 0 else 0
 
 				# --------------------------------------------------
 				# If no skeleton graph
 				# --------------------------------------------------
 				else:
-						metrics["nodes"] = 0
+						canvas.regional_metrics[i]["nodes"] = 0
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
-						metrics["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
-						metrics["totalLength"] = 0
-						metrics["VLD_pct"] = 0
-						metrics["VLD_mminv"] = 0
-						metrics["MeanLength"] = 0
-						metrics["MedianLength"] = 0
-						metrics["MeanDiam"] = 0
-						metrics["MedianDiam"] = 0
-						metrics["BD"] = 0
+						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
+						canvas.regional_metrics[i]["totalLength"] = 0
+						canvas.regional_metrics[i]["VLD_pct"] = 0
+						canvas.regional_metrics[i]["VLD_mminv"] = 0
+						canvas.regional_metrics[i]["MeanLength"] = 0
+						canvas.regional_metrics[i]["MedianLength"] = 0
+						canvas.regional_metrics[i]["MeanDiam"] = 0
+						canvas.regional_metrics[i]["MedianDiam"] = 0
+						canvas.regional_metrics[i]["BD"] = 0
 
 						slope = compute_fractal_dimension(canvas)
-						metrics["FD"] = round(slope, 4)
-						metrics["mTort"] = 0
+						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+						canvas.regional_metrics[i]["mTort"] = 0
 
-				regionalmetrics.append(metrics)
 
 		# Save Excel file (MATLAB: struct2table + writetable)
-		df = pd.DataFrame(regionalmetrics)
+		df = pd.DataFrame(canvas.regional_metrics)
 
 		excel_filename = (
 				f"{canvas.current_save_folder}/"
