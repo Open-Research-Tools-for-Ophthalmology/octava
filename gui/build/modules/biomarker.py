@@ -207,16 +207,16 @@ class BiomarkerAnalyzer:
             "mean_tortuosity": float(mean_tortuosity),
         })
         micro_stats = {
+            "name": canvas.FileLabelName,
             "Vessel area density": float(vad_pct),
             "Vessel length density": float(vessel_length_density),
-            "Mean diameter": float(mean_diameter_um),
+            "Mean vessel diameter": float(mean_diameter_um),
             "Branchpoint density": float(branchpoint_density),
             "Fractal dimension": float(fractal_dim),
-            "Mean tortuosity": float(mean_tortuosity),
-            "name": canvas.FileLabelName,
+            "Mean vessel tortuosity": float(mean_tortuosity),
         }
         
-        write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
+        write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="General metrics")
 
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):

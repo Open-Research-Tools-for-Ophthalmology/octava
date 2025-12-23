@@ -474,7 +474,7 @@ canvas.create_text(
     710.0,
     530.0,
     anchor="nw",
-    text="Mean diameter = ",
+    text="Mean vessel diameter = ",
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
@@ -529,7 +529,7 @@ canvas.create_text(
     710.0,
     620.0,
     anchor="nw",
-    text="Mean tortuosity = ",
+    text="Mean vessel tortuosity = ",
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
