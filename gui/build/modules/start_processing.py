@@ -39,8 +39,10 @@ def start_processing(canvas: Canvas):
         thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
         thread.start()
     else:
-        # TODO batch processing
-        start_batch_processing_threaded(canvas)
+        # Batch processing - also run in separate thread to keep UI responsive
+        change_status_to_waiting(canvas)
+        thread = threading.Thread(target=lambda: start_batch_processing_threaded(canvas))
+        thread.start()
 
 # Create save folder for current image
 # variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
@@ -118,7 +120,7 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))
 
-# TODO batch processing
+# batch processing
 def start_batch_processing_threaded(canvas: Canvas):
     print("Starting batch image processing...")
 
@@ -141,7 +143,7 @@ def start_batch_processing_threaded(canvas: Canvas):
     for (index, image_file) in enumerate(image_files, start=1):
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
-        change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red)
+        canvas.after(0, lambda: change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red))
 
         # Load image
         try:
