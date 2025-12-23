@@ -100,6 +100,15 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
             diameters = getattr(canvas, "vessel_diameters_um", [])
             canvas.hist_plotter.set_data(diameters)
             canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+            images_dir = os.path.join(canvas.current_save_folder, "images")
+            os.makedirs(images_dir, exist_ok=True)
+
+            bin_size = int(canvas.bin_size_var.get())
+            hist_path = os.path.join(
+                images_dir,
+                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
+            )
+            canvas.hist_plotter.save_to_file(hist_path)
 
     canvas.after(0, refresh_histogram_ui)
 
