@@ -2,13 +2,14 @@ from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.biomarker import *
 from modules.skeletonise import *
 from modules.faz_utils import *
-from modules.change_status import *
 from modules.load_image import *
 from modules.clear import *
 import threading
 import os
+import datetime
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
@@ -52,6 +53,9 @@ def make_save_folder(canvas: Canvas):
         canvas.current_save_folder = os.path.join(canvas.lastPath, canvas.FileLabelName)
     os.makedirs(canvas.current_save_folder, exist_ok=True)
     os.makedirs(os.path.join(canvas.current_save_folder, "images"), exist_ok=True)
+    # create per-original image metrics files
+    canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
+
 
     if not is_batch_processing_enabled(canvas):
         # Preliminary image saving folder setup
@@ -89,6 +93,10 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
     print("Skeletonisation completed.")
 
+    BiomarkerAnalyzer.process(canvas)
+
+    print("Biomarker analyzer processing completed.")
+    
     # Additional processing if batch mode is on
     if batch:
         if canvas.bp_segment_faz_var.get() == 1:
@@ -121,10 +129,11 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    for image_file in image_files:
-        #todo: limit this to only images
+    skipped_images = []
+    for (index, image_file) in enumerate(image_files, start=1):
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
+        change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red)
 
         # Load image
         try:
@@ -162,10 +171,62 @@ def start_batch_processing_threaded(canvas: Canvas):
                 "Image Load Error",
                 f"Failed to load image {image_file}."
             )
+            skipped_images.append(image_file)
             continue  # Skip to next image
 
     # TODO Generate overall metrics spreadsheet for all images
-    print("Batch image processing completed.")
     
+    # Process only successfully loaded images
+    processed_images = [img for img in image_files if img not in skipped_images]
+    
+    # Dictionary to hold DataFrames by sheet name
+    all_metrics_df = {}
+    
+    for (index, image_file) in enumerate(processed_images, start=1):
+        image_folder_path = os.path.join(canvas.bp_selected_folder_path, os.path.splitext(image_file)[0])
+        
+        # 1. Read the latest generated spreadsheets from this folder
+        spreadsheets = [
+            f for f in os.listdir(image_folder_path)
+            if f.lower().endswith('.xlsx')
+        ]
+        
+        # Sort by datetime in filename (same strptime %d-%b-%Y %H%M%S")
+        def get_file_datetime(file_name):
+            try:
+                file_exts = file_name.split('_', 1)
+                datetime_str = file_exts[1].replace('.xlsx', '')
+                return datetime.datetime.strptime(datetime_str, "%d-%b-%Y %H%M%S")
+            except:
+                pass
+            return datetime.datetime.min
+        
+        # Sort spreadsheets by datetime and get the latest
+        spreadsheets.sort(key=get_file_datetime, reverse=True)
+        print(f"Latest spreadsheet for {image_file}: {spreadsheets[0]}")
+        
+        # Read all sheets from the Excel file
+        excel_data = pd.read_excel(os.path.join(image_folder_path, spreadsheets[0]), sheet_name=None, index_col=None)
+        
+        # Group dfs by sheet name
+        for sheet_name, sheet_df in excel_data.items():
+            if sheet_name not in all_metrics_df:
+                all_metrics_df[sheet_name] = []
+            all_metrics_df[sheet_name].append(sheet_df)
+
+    # 2. Concat df for each sheet and save the overall metrics spreadsheet
+    results_file_path = os.path.join(canvas.bp_selected_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
+    
+    with pd.ExcelWriter(results_file_path, engine='openpyxl') as writer:
+        for sheet_name, df_list in all_metrics_df.items():
+            df_concat = pd.concat(df_list, ignore_index=True)
+            df_concat.to_excel(writer, sheet_name=sheet_name, index=False)
+    
+    print(f"Overall metrics saved to: {results_file_path}")
+    print("Batch image processing completed.")
+
     # Switch back to READY
     change_status_to_ready(canvas)
+
+    # Reset queue status
+    change_queue_status(canvas, status="Processed", fill=theme_blue)

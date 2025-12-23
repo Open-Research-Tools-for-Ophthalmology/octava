@@ -140,6 +140,15 @@ canvas.status_id = canvas.create_text(
     font=("Roboto", 20 * -1)
 )
 
+canvas.queue_id = canvas.create_text(
+    975.0,
+    65.0,
+    anchor="nw",
+    text="",
+    fill=theme_blue,
+    font=("Roboto", 16 * -1)
+)
+
 
 # image type dropdown
 img_type_list = ["Retina", "ONH", "Skin"]
@@ -434,11 +443,29 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.vad_value_id = canvas.create_text(
+    853.0, 
+    470.0,
+    anchor="nw",
+    text="",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 canvas.create_text(
     710.0,
     500.0,
     anchor="nw",
     text="Vessel length density = ",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
+canvas.length_density_value_id = canvas.create_text(
+    866.0,
+    500.0,
+    anchor="nw",
+    text="",
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
@@ -452,11 +479,29 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.mean_diameter_value_id = canvas.create_text(
+    825.0,
+    530.0,
+    anchor="nw",
+    text="",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 canvas.create_text(
     710.0,
     560.0,
     anchor="nw",
     text="Branchpoint density = ",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
+canvas.branch_density_value_id = canvas.create_text(
+    857.0,
+    560.0,
+    anchor="nw",
+    text="",
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
@@ -470,6 +515,16 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+canvas.fractal_dim_value_id = canvas.create_text(
+    843.0,
+    590.0,
+    anchor="nw",
+    text="",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
+
 canvas.create_text(
     710.0,
     620.0,
@@ -478,6 +533,16 @@ canvas.create_text(
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
+
+canvas.tortuosity_value_id = canvas.create_text(
+    830.0,
+    620.0,
+    anchor="nw",
+    text="",
+    fill="#0F1F3F",
+    font=("Roboto", 14 * -1)
+)
+
 
 
 window.resizable(False, False)
