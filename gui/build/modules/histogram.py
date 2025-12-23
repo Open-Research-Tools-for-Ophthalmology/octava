@@ -12,8 +12,8 @@ class HistogramPlotter:
         self.bar_color = bar_color
         self.axis_color = axis_color
         
-        # 1. Generate mock data (can be replaced with real data setter later)
-        self.data = np.random.normal(50, 15, 500)
+        # 1. Create data structure
+        self.data = np.array([], dtype=float)
 
         # 2. Setup Figure
         self.fig = Figure(figsize=(2.4, 2.0), dpi=100)
@@ -22,7 +22,7 @@ class HistogramPlotter:
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor(self.bg_color)
         self.ax.axis('off')
-        self.fig.subplots_adjust(left=0.15, bottom=0.15, right=0.95, top=0.9)
+        self.fig.subplots_adjust(left=0.25, bottom=0.15, right=0.95, top=0.9)
 
         # 3. Embed Canvas
         self.canvas = FigureCanvasTkAgg(self.fig, master=master_frame)
@@ -55,8 +55,8 @@ class HistogramPlotter:
         
     def set_data(self, new_data):
         """External method to update the dataset (for future use)."""
-        self.data = new_data
-        self.update_plot(bin_size=1) # Reset view
+        self.data = np.asarray(new_data, dtype=float)
+
 
     def save_plot(self):
         current_size = getattr(self, 'current_bin_size', 5)

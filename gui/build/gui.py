@@ -46,7 +46,7 @@ canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=20)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
-canvas.bin_size_var = IntVar(value=5)  # Variable for Bin Size Spinbox
+canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = IntVar(value=5)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 # regional analysis settings variables

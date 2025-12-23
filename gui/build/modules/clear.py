@@ -34,6 +34,9 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
   item_ids_to_remove.update(processed_results_ids)
   item_ids_to_remove.update(other_item_ids_to_remove)
   remove_items_from_canvas(canvas, item_ids_to_remove)
+  print("value ids:", [k for k in canvas.__dict__.keys() if k.endswith("_value_id")])
+  print("has hist_plotter:", hasattr(canvas, "hist_plotter"))
+
 
   # Clear all visual images on the canvas
   if hasattr(canvas, "_image_refs"):
@@ -41,3 +44,19 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
     canvas._image_refs.clear() 
     if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and original_img_ref:
       canvas._image_refs["original_img"] = original_img_ref
+
+  for key, val in canvas.__dict__.items():
+    if key.endswith("_value_id"):
+      try:
+        canvas.itemconfig(val, text="")
+      except Exception:
+        pass
+  if hasattr(canvas, "hist_plotter"):
+    try:
+      canvas.hist_plotter.set_data([])
+      canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+    except Exception:
+      pass
+
+
+
