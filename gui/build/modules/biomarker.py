@@ -4,6 +4,7 @@ import numpy as np
 import math
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
+from modules.write_excel import *
 
 
 class BiomarkerAnalyzer:
@@ -205,6 +206,17 @@ class BiomarkerAnalyzer:
             "fractal_dimension": float(fractal_dim),
             "mean_tortuosity": float(mean_tortuosity),
         })
+        micro_stats = {
+            "Vessel area density": float(vad_pct),
+            "Vessel length density": float(vessel_length_density),
+            "Mean diameter": float(mean_diameter_um),
+            "Branchpoint density": float(branchpoint_density),
+            "Fractal dimension": float(fractal_dim),
+            "Mean tortuosity": float(mean_tortuosity),
+            "name": canvas.FileLabelName,
+        }
+        
+        write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
