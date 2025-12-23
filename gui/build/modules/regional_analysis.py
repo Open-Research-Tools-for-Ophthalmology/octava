@@ -580,7 +580,7 @@ def run_analysis_on_regions(
 
 				if links and len(links) > 0:
 						# MATLAB: sum(~[app.Gnodes.ep])
-						canvas.regional_metrics[i]["nodes"] = sum(1 for n in nodes if n.ep == 0)
+						canvas.regional_metrics[i]["nodes"] = canvas.skeleton_nodes
 
 						# MATLAB: sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
