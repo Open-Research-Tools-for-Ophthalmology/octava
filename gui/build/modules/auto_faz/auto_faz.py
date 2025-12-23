@@ -86,21 +86,12 @@ def process_batch(pairs, ctx):
         # TODO save results
         cv2.imwrite(os.path.join(out_dir, f"{image_id}_pred.png"), pred)
 
-#  Auto segment FAZ and save results
-# TODO if filepath then display segmented result in subwindow
-# TODO if image_folder then run batch process and save results to batch folder
-# @param {String} filepath - path to image for single segmentation
-# @param {String} image_folder - path to folder for batch segmentation
-def auto_faz(filepath=None, image_folder=None):
+# Auto segment FAZ and save results
+# @param {Np.array} image - image for single segmentation
+def auto_faz(image=None):
     """
     FAZ segmentation tool
-
-    Use --help to view argument details
-
-    Running the script without --batch arg segments a single image, this requires values for
-    `filepath`, `gt_filepath`, `crop_bottom` in the config file.
-
-    Running in batch mode requires the config values `image_folder`, `gt_folder`, and `crop_bottom`
+    Read image from memory and automatically segment FAZ
     """
     global config, original_img, display_hist, canny_test
 
@@ -108,27 +99,19 @@ def auto_faz(filepath=None, image_folder=None):
 
     # Load parameters
     print(config.items())
-    config['dataset']['filepath'] = filepath
-    config['dataset']['image_folder'] = image_folder
-    config['batch'] = True if image_folder is not None else False
 
-    if (config['batch']):
-        ctx = Context(config)
-        pairs = load_batch(ctx)
-        process_batch(pairs, ctx)
-    else:
-        img = load_dataset_file(config['dataset']['filepath'], config['dataset']['crop_bottom'])
-        original_img = img.copy()
+    img = image.astype(np.uint8) # Downcase to uint8 to enable processings like CLAHE
+    original_img = img.copy()
 
-        ctx = Context(config, None, batch=config['batch'])
+    ctx = Context(config)
 
-        # return raw binary array
-        binary_mask = process_image(img, ctx)
+    # return raw binary array
+    binary_mask = process_image(img, ctx)
 
-        # save mask
-        if binary_mask is not None:
-            # cv2.imwrite("mask.png", processed_img)
-            # print("Saved mask to mask.png")
-            # TODO Show image in a subwindow
-            # TODO display preview in GUI
-            return binary_mask
+    # save mask
+    if binary_mask is not None:
+        # cv2.imwrite("mask.png", processed_img)
+        # print("Saved mask to mask.png")
+        # TODO Show image in a subwindow
+        # TODO display preview in GUI
+        return binary_mask
