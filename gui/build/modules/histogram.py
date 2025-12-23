@@ -70,3 +70,9 @@ class HistogramPlotter:
         if filename:
             self.fig.savefig(filename, dpi=300, bbox_inches='tight', facecolor=self.bg_color)
             print(f"Histogram saved to {filename}")   
+    def save_to_file(self, filepath: str) -> None:
+        """Save current histogram figure to a specific filepath (no dialog)."""
+        if not filepath:
+            return
+        self.fig.savefig(filepath, dpi=300, bbox_inches='tight', facecolor=self.bg_color)
+        print(f"Histogram saved to {filepath}")
