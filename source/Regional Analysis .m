@@ -422,6 +422,7 @@ function regionalmetrics = regionalAnalysis(app)
                     regionalmetrics(i).VLD_mminv = round(regionalmetrics(i).totalLength/imgArea_mm,4); %in inverse mm
                     regionalmetrics(i).MeanLength = round(mean([app.Glinks.pixLength]*pix_to_mm*1000)); %in microns
                     regionalmetrics(i).MedianLength = round(median([app.Glinks.pixLength]*pix_to_mm*1000)); %in microns
+                    
                     regionalmetrics(i).MeanDiam = round(mean([app.Glinks.diameter]*pix_to_mm*1000)); %In microns
                     regionalmetrics(i).MedianDiam = round(median([app.Glinks.diameter]*pix_to_mm*1000));
                     regionalmetrics(i).BD = round(regionalmetrics(i).nodes./regionalmetrics(i).totalLength,2); %in 1/mm

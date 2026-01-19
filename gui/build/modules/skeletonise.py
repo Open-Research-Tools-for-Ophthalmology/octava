@@ -20,6 +20,8 @@ import os
 def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, display: bool = True):
   change_status_to_waiting(canvas, status="🔴 Wait...Skeletonising")
 
+  twig_size = canvas.twig_size.get()
+
   # generate skeletonized iamge
   y, x = bin_img.shape
   L = bin_img.astype(bool)
@@ -27,7 +29,7 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
   sk2, distance = medial_axis(L, return_distance=True)
 
   # removes branches smaller than twig size
-  sk2 = remove_small_objects(sk2, canvas.twig_size.get(), connectivity=2) 
+  sk2 = remove_small_objects(sk2, twig_size, connectivity=2) 
 
 
   # local thickness measurement
@@ -43,7 +45,7 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
 
   else:
       start_skel2graph = time.time()
-      nodes, links = skel2graph3d(sk2, THR)
+      nodes, links = skel2graph3d(sk2, twig_size)
       end_skel2graph = time.time()
   
   print("Time for skel2graph:", end_skel2graph - start_skel2graph)
@@ -92,7 +94,7 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
     fig, ax = plt.subplots(figsize=(3,3), dpi=300)
     ax.imshow(skel, cmap='gray')
     ax.axis('off')
-    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{THR}.png")
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{twig_size}.png")
     plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
 
     # --- Resize and convert to ImageTk for display on canvas ---
@@ -100,8 +102,6 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
     img_tk = ImageTk.PhotoImage(resized_img)   # convert to Tk-compatible image
     canvas.skeleton_img_id = canvas.create_image(1060, 255, image=img_tk)
     canvas._image_refs["skeleton_img"] = img_tk
-
-    #todo: display skeleton overlay image
 
   return skel2, nodes, links
 
