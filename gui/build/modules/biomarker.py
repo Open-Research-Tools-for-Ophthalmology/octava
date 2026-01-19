@@ -92,7 +92,7 @@ class BiomarkerAnalyzer:
 
         if total_points > 0:
             mean_diameter_pix = np.mean(all_sampled_diameters)
-            mean_diameter_mm = mean_diameter_pix * pix_size_mm
+            mean_diameter_mm = mean_diameter_pix * pix_size_mm #pix_size_mm -> pix_to_mm
             mean_diameter_um = mean_diameter_mm * 1000.0
         else:
             mean_diameter_um = 0.0

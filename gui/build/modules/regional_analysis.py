@@ -4,6 +4,7 @@ from skimage.draw import disk, polygon
 import pandas as pd
 from modules.skeletonise import *
 from enum import Enum
+import math
 
 RIGHT_EYE = "Right Eye"
 
@@ -552,7 +553,6 @@ def run_analysis_on_regions(
 		grid_type : str
 				Grid type name
 		"""
-
 		for i in range(len(binaryReg)):
 				# Skeletonize this region
 				skeletonise(
@@ -586,31 +586,9 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 
 						# MATLAB: sum([app.Glinks.pixLength] * pix_to_mm)
-						#todo: check if pixLength is in links
-
 						# Vessel length density from boimarker.py
-						Nx, Ny = binary.shape
-						pix_size_mm = image_size_mm / Nx
-						image_size_mm = float(canvas.image_size_var.get())
-
-						total_length_pix = 0.0
-
-						for link in links:
-								indices = np.asarray(link.path, dtype=int)
-								if indices.size < 2:
-										continue
-
-								rows, cols = np.unravel_index(indices, binary.shape)
-								coords = np.column_stack((rows, cols)).astype(float)
-
-								diffs = np.diff(coords, axis=0)
-								step_lengths = np.linalg.norm(diffs, axis=1)
-								length_pix = float(step_lengths.sum())
-
-								total_length_pix += length_pix
-								link.pixLength = length_pix
-
-						total_length_mm = total_length_pix * pix_size_mm
+						# binary = canvas.binary_image
+						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm) # should I pass canvas.binary_image or binaryReg[i]?
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
 						# MATLAB: VLD %
@@ -624,14 +602,16 @@ def run_analysis_on_regions(
 						)
 
 						# MATLAB: Mean / Median length (µm)
-						lengths_um = np.array([l.pixLength for l in links]) * pix_to_mm * 1000
-						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(lengths_um))
-						canvas.regional_metrics[i]["MedianLength"] = round(np.median(lengths_um))
+						links_length_pix = [l.pixLength for l in links]
+						print('links length in pix:', links_length_pix)
+						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
+						print('mean length:', canvas.regional_metrics[i]["MeanLength"])
+						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_pix)*pix_to_mm*1000)
 
 						# MATLAB: Mean / Median diameter (µm)
-						diam_um = np.array([l.diameter for l in links]) * pix_to_mm * 1000
-						canvas.regional_metrics[i]["MeanDiam"] = round(np.mean(diam_um))
-						canvas.regional_metrics[i]["MedianDiam"] = round(np.median(diam_um))
+						mean_diam_um, median_diam_um = compute_diameter(links, binaryReg[i], pix_to_mm)
+						canvas.regional_metrics[i]["MeanDiam"] = round(mean_diam_um)
+						canvas.regional_metrics[i]["MedianDiam"] = round(median_diam_um)
 
 						# MATLAB: Branch density
 						canvas.regional_metrics[i]["BD"] = round(
@@ -662,7 +642,6 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["MeanDiam"] = 0
 						canvas.regional_metrics[i]["MedianDiam"] = 0
 						canvas.regional_metrics[i]["BD"] = 0
-
 						slope = compute_fractal_dimension(canvas)
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
@@ -684,3 +663,208 @@ def run_analysis_on_regions(
 				)
 
 		return df
+
+
+def compute_length(links, binary, pix_to_mm):
+	"""
+	Compute total length of vessel links.
+
+	Parameters
+	----------
+	links : list
+			List of vessel link objects.
+
+	Returns
+	-------
+	float
+			Total length in mm.
+	"""
+	total_length_pix = 0.0
+
+	for link in links:
+			indices = np.asarray(link.path, dtype=int)
+			if indices.size < 2:
+					continue
+
+			rows, cols = np.unravel_index(indices, binary.shape)
+			coords = np.column_stack((rows, cols)).astype(float)
+
+			diffs = np.diff(coords, axis=0)
+			step_lengths = np.linalg.norm(diffs, axis=1)
+			length_pix = float(step_lengths.sum())
+
+			total_length_pix += length_pix
+			link.pixLength = length_pix
+
+	total_length_mm = total_length_pix * pix_to_mm
+	return total_length_mm
+
+
+def compute_diameter(links, binary, pix_to_mm):
+	"""
+	Compute diameter of a vessel link using distance transform.
+
+	Parameters
+	----------
+	link : object
+			Vessel link with path attribute.
+	binary : np.ndarray
+			Binary vessel mask.
+
+	Returns
+	-------
+	float
+			Diameter in pixels.
+	"""
+	radius_map = distance_transform_edt(binary > 0)
+	diameter_map = radius_map * 2
+
+	all_sampled_diameters = []
+	img_shape = binary.shape
+
+	for link in links:
+			indices = np.asarray(link.path, dtype=int)
+			if indices.size == 0:
+					continue
+
+			rows, cols = np.unravel_index(indices, img_shape)
+			vals = diameter_map[rows, cols]
+			all_sampled_diameters.extend(vals)
+
+	total_points = len(all_sampled_diameters)
+
+	if total_points > 0:
+			mean_diameter_pix = np.mean(all_sampled_diameters)
+			mean_diameter_mm = mean_diameter_pix * pix_to_mm #pix_size_mm -> pix_to_mm
+			mean_diameter_um = mean_diameter_mm * 1000.0
+			median_diameter_pix = np.median(all_sampled_diameters)
+			median_diameter_mm = median_diameter_pix*pix_to_mm
+			median_diameter_um = median_diameter_mm * 1000.0
+	else:
+			mean_diameter_um = 0.0
+			median_diameter_um = 0.0
+
+	return mean_diameter_um, median_diameter_um
+
+
+
+def compute_branch_point_density(nodes, total_length_mm):
+	branchpoint_count = 0
+	if nodes is not None:
+			for node in nodes:
+					if node.ep == 0:
+							branchpoint_count += 1
+
+	if total_length_mm > 0.0:
+			branchpoint_density = branchpoint_count / total_length_mm
+	else:
+			branchpoint_density = 0.0
+	return branchpoint_density
+
+
+def compute_fractal_dimension(canvas):
+	"""
+	Compute fractal dimension using box-counting method.
+
+	Parameters
+	----------
+	canvas : object
+			Canvas holding skeleton image.
+
+	Returns
+	-------
+	float
+			Fractal dimension (slope of log-log plot).
+	"""
+	skeleton = canvas.skeleton_image.astype(bool)
+
+	Z = (skeleton > 0)
+
+	h, w = Z.shape
+	Nx = max(h, w)
+
+	if Nx < 2:
+			fractal_dim = 0.0
+	else:
+			exponent = math.ceil(math.log2(Nx))
+			width = 2 ** exponent
+
+			Z_pad = np.zeros((width, width), dtype=bool)
+			Z_pad[:h, :w] = Z
+
+			counts = []
+			r_values = []
+
+			counts.append(np.sum(Z_pad))
+			r_values.append(1)
+
+			current_img = Z_pad
+
+			for i in range(1, exponent + 1):
+					rows, cols = current_img.shape
+					if rows < 2 or cols < 2:
+							break
+
+					shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+
+					n_box = np.sum(shrunk_img)
+					counts.append(n_box)
+					r_values.append(2 ** i)
+
+					current_img = shrunk_img
+
+			valid_indices = [i for i, c in enumerate(counts) if c > 0]
+
+			if len(valid_indices) >= 2:
+					x = np.log([r_values[i] for i in valid_indices])
+					y = -np.log([counts[i] for i in valid_indices])
+
+					coeffs = np.polyfit(x, y, 1)
+					fractal_dim = float(coeffs[0])
+			else:
+					fractal_dim = 0.0
+	
+	return fractal_dim
+
+
+def compute_mean_tortuosity(links, binary):
+	"""
+	Compute mean tortuosity of vessel links.
+
+	Parameters
+	----------
+	links : list
+			List of vessel link objects.
+
+	Returns
+	-------
+	float
+			Mean tortuosity.
+	"""
+	tortuosity_list = []
+	image_shape = binary.shape
+
+	for link in links:
+			indices = np.asarray(link.path, dtype=int)
+			if indices.size < 2:
+					continue
+
+			rows, cols = np.unravel_index(indices, image_shape)
+			coords = np.column_stack((rows, cols)).astype(float)
+
+			diffs = np.diff(coords, axis=0)
+			arc_length = np.sum(np.linalg.norm(diffs, axis=1))
+
+			start_point = coords[0]
+			end_point = coords[-1]
+			chord_length = np.linalg.norm(start_point - end_point)
+
+			if chord_length > 1e-6:
+					tortuosity = arc_length / chord_length
+					tortuosity_list.append(tortuosity)
+
+	if len(tortuosity_list) > 0:
+			mean_tortuosity = np.mean(tortuosity_list)
+	else:
+			mean_tortuosity = 0.0
+	return mean_tortuosity
