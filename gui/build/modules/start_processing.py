@@ -7,12 +7,17 @@ from modules.skeletonise import *
 from modules.faz_utils import *
 from modules.load_image import *
 from modules.clear import *
+from modules.regional_analysis import *
 import threading
 import os
 import datetime
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
+
+def is_regional_analysis_enabled(canvas:Canvas) ->bool:
+    return hasattr(canvas, "apply_regional_analysis_bool") and canvas.apply_regional_analysis_bool.get() == 1
+
 
 def start_processing(canvas: Canvas):
     """
@@ -36,7 +41,10 @@ def start_processing(canvas: Canvas):
         make_save_folder(canvas)
         # Indicate that processing is starting
         change_status_to_waiting(canvas)
-        thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
+        if not is_regional_analysis_enabled(canvas):
+          thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
+        else:
+          thread = threading.Thread(target=lambda: start_regional_analysis_threaded(canvas))
         thread.start()
     else:
         # Batch processing - also run in separate thread to keep UI responsive
@@ -84,13 +92,14 @@ def make_save_folder(canvas: Canvas):
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
-    print("Starting image processing...")
+    print("Starting binarising...")
 
     binarise_image(canvas)  # long-running
 
     print("Binarisation completed. Starting skeletonisation...")
 
-    display = not batch  # only display skeleton in single image mode
+    # display = not batch  # only display skeleton in single image mode
+    display = True
     skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
 
     print("Skeletonisation completed.")
@@ -250,3 +259,14 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
+
+
+def start_regional_analysis_threaded(canvas: Canvas):
+    print("Starting regional analysis processing...")
+
+    run_regional_analysis(canvas)
+
+    print("Regional analysis processing completed.")
+
+    # Switch back to READY (must be done on main thread)
+    canvas.after(0, lambda: change_status_to_ready(canvas))

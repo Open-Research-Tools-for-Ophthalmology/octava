@@ -3,8 +3,12 @@ import numpy as np
 from skimage.draw import disk, polygon
 import pandas as pd
 from modules.skeletonise import *
+from modules.change_status import *
 from enum import Enum
 import math
+from scipy.ndimage import distance_transform_edt
+import os
+from openpyxl import Workbook
 
 RIGHT_EYE = "Right Eye"
 
@@ -16,6 +20,8 @@ class GridType(Enum):
 	FOVEAL_RING = "Foveal Ring"
 
 def run_regional_analysis(canvas):
+	change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+
 	# Get image size from canvas
 	image_size_mm = canvas.image_size_var.get()
 	# Get image dimensions
@@ -24,21 +30,39 @@ def run_regional_analysis(canvas):
 
 	binary = canvas.binary_image
 	original = canvas.original_img
+	
+	#create/reset Excel file when performing regional analysis
+	excel_filename = (
+			f"{canvas.current_save_folder}/"
+			f"{canvas.FileLabelName} - Regional Analysis.xlsx"
+	)
+
+	# Remove existing file so we start fresh (MATLAB-like)
+	if os.path.exists(excel_filename):
+			os.remove(excel_filename)
+
+	# after delete:
+	wb = Workbook()
+	wb.remove(wb.active)  # remove default sheet
+	wb.save(excel_filename)
+
+	# Store path on canvas so sub-functions can reuse it
+	canvas.regional_excel_path = excel_filename
 
 	if canvas.square_grid_bool.get():
 		apply_square_grid(canvas, binary, original, pix_to_mm)
 
 	if canvas.etdrs_grid_bool.get():
-		apply_etdrs_grid(canvas, binary, original, image_size_mm)
+		apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm)
 
 	if canvas.extended_etdrs_grid_bool.get():
-		apply_extended_etdrs_grid(canvas,binary, original, image_size_mm)
+		apply_extended_etdrs_grid(canvas,binary, original, pix_to_mm, image_size_mm)
 
 	if canvas.foveal_ring_bool.get():
-		apply_foveal_ring(canvas,binary,original, image_size_mm)
+		apply_foveal_ring(canvas,binary,original, pix_to_mm, image_size_mm)
 
 	if canvas.optic_nerve_head_bool.get():
-		apply_onh(canvas,binary, original, image_size_mm)
+		apply_onh(canvas,binary, original, pix_to_mm, image_size_mm)
 
 
 def apply_square_grid(canvas, binary, original, pix_to_mm):
@@ -75,9 +99,9 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	imgReg.append(original[2 * h : 3 * h, w : 2 * w])
 	imgReg.append(original[2 * h : 3 * h, 2 * w : 3 * w])
 
-	# -------- Area calculations --------
-	imgArea_pix = h * w
-	imgArea_mm = imgArea_pix * (pix_to_mm**2)
+	# # -------- Area calculations --------
+	# imgArea_pix = h * w
+	# imgArea_mm = imgArea_pix * (pix_to_mm**2)
 
 	# -------- Region labels --------
 	if canvas.eye_var.get() == RIGHT_EYE:
@@ -107,7 +131,7 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 
 	run_analysis_on_regions(canvas, binaryReg, imgReg, imgArea_pix_vec=None, pix_to_mm=pix_to_mm, grid_type=GridType.SQUARE_GRID)
 
-def apply_etdrs_grid(canvas, binary, original, image_size_mm):
+def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -176,10 +200,12 @@ def apply_etdrs_grid(canvas, binary, original, image_size_mm):
 	imgReg = [None] * 8
 
 	imgReg[0] = original * foveal_mask #foveal circle
-	imgReg[0] = imgReg[0][
-		int(max(cy - rad_3mm, 0)):int(min(cy + rad_3mm, H)),
-		int(max(cx - rad_3mm, 0)):int(min(cx + rad_3mm, W))
-	] #Crops to a bounding box around FAZ (± rad_3mm)
+	y1 = int(round(max(cy - rad_3mm, 0)))
+	y2 = int(round(min(cy + rad_3mm, H)))
+	x1 = int(round(max(cx - rad_3mm, 0)))
+	x2 = int(round(min(cx + rad_3mm, W)))
+	binaryReg[0] = binaryReg[0][y1:y2, x1:x2]
+	imgReg[0]    = imgReg[0][y1:y2, x1:x2] #Crops to a bounding box around FAZ (± rad_3mm)
 
 	imgReg[1] = original * parafoveal_mask #parafoveal rim
 
@@ -234,11 +260,20 @@ def apply_etdrs_grid(canvas, binary, original, image_size_mm):
 		np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 5]),
 		np.sum(sector_masks[:, :, 2] | sector_masks[:, :, 3]),
 		np.sum(sector_masks[:, :, 1]),
-		np.sum(sector_masks[:, :, 1]) #? was that a typo in original code?
+		np.sum(sector_masks[:, :, 4]) #? was np.sum(sector_masks[:, :, 1]) a typo in original code?
 	]
+	
+	run_analysis_on_regions(
+		canvas,
+		binaryReg=binaryReg,
+		imgReg=imgReg,
+		imgArea_pix_vec=imgArea_pix_vec,
+		pix_to_mm=pix_to_mm,
+		grid_type=GridType.ETDRS_GRID,   # change per function
+	)
 
 
-def apply_extended_etdrs_grid(canvas, binary,original,image_size_mm):
+def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -359,9 +394,19 @@ def apply_extended_etdrs_grid(canvas, binary,original,image_size_mm):
 		np.sum(sector_masks[:, :, 7]),
 		np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 7]),
 		np.sum(sector_masks[:, :, 3] | sector_masks[:, :, 4]),
-]
+	]
+	
+	run_analysis_on_regions(
+		canvas,
+		binaryReg=binaryReg,
+		imgReg=imgReg,
+		imgArea_pix_vec=imgArea_pix_vec,
+		pix_to_mm=pix_to_mm,
+		grid_type=GridType.EXTENDED_ETDRS_GRID,   # change per function
+	) 
 
-def apply_onh(canvas, binary, original,image_size_mm):
+
+def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 1 * H / image_size_mm
 	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
@@ -468,7 +513,16 @@ def apply_onh(canvas, binary, original,image_size_mm):
 			np.sum(PP_mask),
 	]
 
-def apply_foveal_ring(canvas, binary, original, image_size_mm):
+	run_analysis_on_regions(
+		canvas,
+		binaryReg=binaryReg,
+		imgReg=imgReg,
+		imgArea_pix_vec=imgArea_pix_vec,
+		pix_to_mm=pix_to_mm,
+		grid_type=GridType.ONH,   # change per function
+	)
+
+def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_2mm = 1.0 * H / image_size_mm
@@ -526,6 +580,15 @@ def apply_foveal_ring(canvas, binary, original, image_size_mm):
 			np.sum(pfouter_mask),
 	]
 
+	run_analysis_on_regions(
+		canvas,
+		binaryReg=binaryReg,
+		imgReg=imgReg,
+		imgArea_pix_vec=imgArea_pix_vec,
+		pix_to_mm=pix_to_mm,
+		grid_type=GridType.FOVEAL_RING,   # change per function
+	)
+
 
 def run_analysis_on_regions(
 		canvas,
@@ -553,6 +616,8 @@ def run_analysis_on_regions(
 		grid_type : str
 				Grid type name
 		"""
+		canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
+
 		for i in range(len(binaryReg)):
 				# Skeletonize this region
 				skeletonise(
@@ -563,14 +628,16 @@ def run_analysis_on_regions(
 				)
 
 				# Image area (MATLAB conditional)
-				if grid_type != grid_type.SQUARE_GRID:
+				if grid_type != GridType.SQUARE_GRID:
 						imgArea_pix = imgArea_pix_vec[i]
 						imgArea_mm = imgArea_pix * (pix_to_mm ** 2)
-				# else:
-				# 		imgArea_pix = binaryReg[i].size
-				# 		imgArea_mm = imgArea_pix * (pix_to_mm ** 2)
+				else:
+						regionsize = np.floor(np.array(canvas.fullImSizePix) / 3).astype(int)
+						h, w = regionsize
+						imgArea_pix = h * w
+						imgArea_mm = imgArea_pix * (pix_to_mm**2)
 
-				canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
+
 				canvas.regional_metrics[i]["Region"] = canvas.RAlabels[i]
 
 				# If skeleton graph exists
@@ -579,7 +646,7 @@ def run_analysis_on_regions(
 
 				if links and len(links) > 0:
 						# MATLAB: sum(~[app.Gnodes.ep])
-						canvas.regional_metrics[i]["nodes"] = nodes
+						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
 
 						# MATLAB: sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
@@ -588,13 +655,13 @@ def run_analysis_on_regions(
 						# MATLAB: sum([app.Glinks.pixLength] * pix_to_mm)
 						# Vessel length density from boimarker.py
 						# binary = canvas.binary_image
-						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm) # should I pass canvas.binary_image or binaryReg[i]?
+						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm)
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
 						# MATLAB: VLD %
 						canvas.regional_metrics[i]["VLD_pct"] = round(
 								(total_length_mm * pix_to_mm) / imgArea_mm, 4
-						) * 100
+						) * 100 #? is that a bug in the original code? (pix_to_mm should not be there?)
 
 						# MATLAB: VLD 1/mm
 						canvas.regional_metrics[i]["VLD_mminv"] = round(
@@ -650,16 +717,13 @@ def run_analysis_on_regions(
 		# Save Excel file (MATLAB: struct2table + writetable)
 		df = pd.DataFrame(canvas.regional_metrics)
 
-		excel_filename = (
-				f"{canvas.current_save_folder}/"
-				f"{canvas.FileLabelName} - Regional Analysis.xlsx"
-		)
+		excel_filename = canvas.regional_excel_path
 
-		with pd.ExcelWriter(excel_filename, engine="openpyxl") as writer:
+		with pd.ExcelWriter(excel_filename, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
 				df.to_excel(
 						writer,
 						index=False,
-						sheet_name=f"Regional analysis_{grid_type}",
+						sheet_name=f"Regional analysis_{grid_type.value}",
 				)
 
 		return df
@@ -747,14 +811,16 @@ def compute_diameter(links, binary, pix_to_mm):
 	return mean_diameter_um, median_diameter_um
 
 
-
-def compute_branch_point_density(nodes, total_length_mm):
+def count_branchpoints(nodes):
 	branchpoint_count = 0
 	if nodes is not None:
 			for node in nodes:
 					if node.ep == 0:
 							branchpoint_count += 1
+	return branchpoint_count
 
+
+def compute_branch_point_density(branchpoint_count, total_length_mm):
 	if total_length_mm > 0.0:
 			branchpoint_density = branchpoint_count / total_length_mm
 	else:
