@@ -5,7 +5,8 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, Spinbox
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, Spinbox, messagebox
+from window_subset_editor import subwindow_subset
 from theme import *
 import customtkinter as ctk
 
@@ -200,7 +201,7 @@ def subwindow1(canvas):
   )
 
   button1 = ctk.CTkButton(subwindow, text="Image Subset",
-                          command=lambda: print("button clicked"),
+                          command=lambda: subwindow_subset(canvas),
                           width=130,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
