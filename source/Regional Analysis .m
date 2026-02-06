@@ -124,7 +124,7 @@ function regionalmetrics = regionalAnalysis(app)
                 
                 imgArea_pix_vec = [sum(sum(foveal_mask)) sum(sum(parafoveal_mask)) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,2)+sector_masks(:,:,3)))...
                     sum(sum(sector_masks(:,:,4)+sector_masks(:,:,5)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,3)+sector_masks(:,:,4)))...
-                    sum(sum(sector_masks(:,:,2))) sum(sum(sector_masks(:,:,2)))];
+                    sum(sum(sector_masks(:,:,2))) sum(sum(sector_masks(:,:,2)))]; %is the last one a bug? Repeated sector_masks(:,:,2)
             elseif strcmp(grid_type,'Extended ETDRS grid')  
                 %Calculate each ring radius in pixels
                 rad_1mm = .5*app.fullImSizePix(1)/app.RealImageSizemm.Value;
@@ -418,10 +418,11 @@ function regionalmetrics = regionalAnalysis(app)
                     regionalmetrics(i).nodes = sum(~[app.Gnodes.ep]);
                     regionalmetrics(i).VAD = round(sum(sum(binaryReg{i}))/255/imgArea_pix,4)*100;
                     regionalmetrics(i).totalLength = round(sum([app.Glinks.pixLength]*pix_to_mm),2); %In mm
-                    regionalmetrics(i).VLD_pct = round(regionalmetrics(i).totalLength*pix_to_mm/imgArea_mm,4)*100; %in percent
+                    regionalmetrics(i).VLD_pct = round(regionalmetrics(i).totalLength*pix_to_mm/imgArea_mm,4)*100; %in percent %? seem to be a bug
                     regionalmetrics(i).VLD_mminv = round(regionalmetrics(i).totalLength/imgArea_mm,4); %in inverse mm
                     regionalmetrics(i).MeanLength = round(mean([app.Glinks.pixLength]*pix_to_mm*1000)); %in microns
                     regionalmetrics(i).MedianLength = round(median([app.Glinks.pixLength]*pix_to_mm*1000)); %in microns
+                    
                     regionalmetrics(i).MeanDiam = round(mean([app.Glinks.diameter]*pix_to_mm*1000)); %In microns
                     regionalmetrics(i).MedianDiam = round(median([app.Glinks.diameter]*pix_to_mm*1000));
                     regionalmetrics(i).BD = round(regionalmetrics(i).nodes./regionalmetrics(i).totalLength,2); %in 1/mm
