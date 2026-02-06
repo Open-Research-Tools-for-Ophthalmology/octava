@@ -116,7 +116,7 @@ def subwindow2(canvas):
   foveal_rings_checkbox = Checkbutton(
       subwindow,
       text="Foveal rings",
-      variable=canvas.foveal_rings_bool,
+      variable=canvas.foveal_ring_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
@@ -140,16 +140,16 @@ def subwindow2(canvas):
       y=220.0
   )
 
-  # apply advanced settings checkbox
-  apply_advanced_settings_checkbox = Checkbutton(
+  # apply regional analysis  checkbox
+  apply_regional_analysis_checkbox = Checkbutton(
       subwindow,
-      text="Apply advanced settings",
-      variable=canvas.apply_advanced_settings_bool,
+      text="Apply regional analysis",
+      variable=canvas.apply_regional_analysis_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
   )
-  apply_advanced_settings_checkbox.place(
+  apply_regional_analysis_checkbox.place(
       x=40.0,
       y=250.0
   )
