@@ -40,7 +40,7 @@ def subwindow_subset(canvas):
     subwindow_subset.pan_offset = [0, 0]
     subwindow_subset.is_drawing = False  # Track if currently drawing rectangle
     subwindow_subset.dragging_corner = None  # Track which corner is being dragged: 'tl', 'tr', 'bl', 'br'
-    subwindow_subset.dragging_box = False  # Track if dragging entire bounding box
+    # subwindow_subset.dragging_box = False  # Track if dragging entire bounding box
     subwindow_subset.drag_box_start = None  # Starting position for box drag
     subwindow_subset.canvas_height_prev = None  # Track canvas height for coordinate rescaling on window resize
     
@@ -156,20 +156,23 @@ def subwindow_subset(canvas):
         display_height = int(canvas_height * subwindow_subset.zoom_level)
         display_width = int(display_height)
 
-        print("Updating image display with zoom level:", subwindow_subset.zoom_level, "and pan offset:", subwindow_subset.pan_offset, "and canvas_height/display_height:", canvas_height, display_height)
+        print("Updating image display with zoom level:", subwindow_subset.zoom_level, "and pan offset:", subwindow_subset.pan_offset, "and canvas_height/display_height:", canvas_height, display_height, "and img position: ", getattr(subwindow_subset, "img_position", None))
 
-        # Rescale rectangle points only if canvas_height changed (canvas resize)
+        # Handle if window resize: relative positions to be maintained, others like display will be refitted without need to scale
         if subwindow_subset.canvas_height_prev is not None and subwindow_subset.canvas_height_prev != canvas_height:
             scale_ratio = canvas_height / subwindow_subset.canvas_height_prev
             print(f"Canvas height changed from {subwindow_subset.canvas_height_prev} to {canvas_height}, rescaling rectangle points by {scale_ratio}")
-            subwindow_subset.rect_start = (
-                subwindow_subset.rect_start[0] * scale_ratio,
-                subwindow_subset.rect_start[1] * scale_ratio
-            )
-            subwindow_subset.rect_end = (
-                subwindow_subset.rect_end[0] * scale_ratio,
-                subwindow_subset.rect_end[1] * scale_ratio
-            )
+            if subwindow_subset.rect_start and subwindow_subset.rect_end:
+                subwindow_subset.rect_start = (
+                    subwindow_subset.rect_start[0] * scale_ratio,
+                    subwindow_subset.rect_start[1] * scale_ratio
+                )
+                subwindow_subset.rect_end = (
+                    subwindow_subset.rect_end[0] * scale_ratio,
+                    subwindow_subset.rect_end[1] * scale_ratio
+                )
+            subwindow_subset.pan_offset[0] *= scale_ratio
+            subwindow_subset.pan_offset[1] *= scale_ratio
         
         # Update previous canvas height
         subwindow_subset.canvas_height_prev = canvas_height
@@ -184,8 +187,8 @@ def subwindow_subset(canvas):
         img_tk = ImageTk.PhotoImage(resized_img)
 
         # Pan: Add x/y offset
-        img_x = canvas_width // 2 + subwindow_subset.pan_offset[0] * subwindow_subset.zoom_level
-        img_y = canvas_height // 2 + subwindow_subset.pan_offset[1] * subwindow_subset.zoom_level
+        img_x = canvas_width // 2 + subwindow_subset.pan_offset[0]
+        img_y = canvas_height // 2 + subwindow_subset.pan_offset[1]
         subcanvas4.create_image(
             img_x, img_y, image=img_tk, anchor="center", tags="image"
         )
@@ -201,7 +204,7 @@ def subwindow_subset(canvas):
         if subwindow_subset.rect_start and subwindow_subset.rect_end:
             print("Drawing rectangle from:", subwindow_subset.rect_start, "to:", subwindow_subset.rect_end)
             
-            # Convert image coordinates to canvas coordinates
+            # Convert canvas coordinates to canvas coordinates
             x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
             y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
             x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
@@ -231,7 +234,7 @@ def subwindow_subset(canvas):
         # Keep reference to prevent garbage collection
         subcanvas4.image_ref = img_tk
 
-    # Helper function to check if mouse is near a corner
+    # Helper function to check if mouse is near a corner within a threshold distance (in pixels)
     def get_corner_at_position(canvas_x, canvas_y, threshold=10):
         """Returns corner identifier if near a corner, None otherwise"""
         if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
@@ -264,10 +267,10 @@ def subwindow_subset(canvas):
             return False
         
         # Convert rect coordinates to canvas coordinates
-        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
-        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
-        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
-        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
+        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0]
+        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1]
+        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0]
+        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1]
         
         # Ensure min/max order
         min_x, max_x = min(x1, x2), max(x1, x2)
@@ -275,8 +278,8 @@ def subwindow_subset(canvas):
         
         return min_x <= canvas_x <= max_x and min_y <= canvas_y <= max_y
 
-    # Event handlers - unified approach to prevent tool switching conflicts
-    # Handle mouse motion for cursor changes
+    # Event handlers
+    # Handle active tool selected/mouse positions for cursor changes
     # @listener mouse motion
     def on_mouse_motion(event):
         """Update cursor when hovering over corners"""
@@ -284,8 +287,8 @@ def subwindow_subset(canvas):
             corner = get_corner_at_position(event.x, event.y)
             if corner:
                 subcanvas4.config(cursor="hand2")
-            elif is_inside_rectangle(event.x, event.y):
-                subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
+            # elif is_inside_rectangle(event.x, event.y):
+            #     subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
             else:
                 subcanvas4.config(cursor="crosshair")
         elif subwindow_subset.active_tool == "pan":
@@ -312,31 +315,31 @@ def subwindow_subset(canvas):
                 return
             
             # Check if clicking inside rectangle for moving
-            if is_inside_rectangle(event.x, event.y):
-                print("[on_canvas_click] Starting box drag")
-                subwindow_subset.dragging_box = True
-                subwindow_subset.drag_box_start = (event.x, event.y)
-                return
+            # if is_inside_rectangle(event.x, event.y):
+            #     print("[on_canvas_click] Starting box drag")
+            #     subwindow_subset.dragging_box = True
+            #     subwindow_subset.drag_box_start = (event.x, event.y)
+            #     return
             
             print("[on_canvas_click] Starting rectangle draw")
             subwindow_subset.pan_start = None  # Clear pan state
             
-            # Start drawing rectangle
+            # If none, then create a new rectangle
             if hasattr(subwindow_subset, "img_position") and hasattr(
                 subwindow_subset, "img_display_size"
             ):
-                # Convert canvas coordinates to image coordinates
-                img_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-                img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+                # Convert event (rel. canvas) coordinates to image (rel. display) coordinates
+                rect_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+                rect_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
 
                 # Check if click is within image bounds
                 if (
-                    0 <= img_x <= subwindow_subset.img_display_size[0]
-                    and 0 <= img_y <= subwindow_subset.img_display_size[1]
+                    0 <= rect_x <= subwindow_subset.img_display_size[0]
+                    and 0 <= rect_y <= subwindow_subset.img_display_size[1]
                 ):
                     # Start new rectangle
-                    subwindow_subset.rect_start = (img_x, img_y)
-                    subwindow_subset.rect_end = (img_x, img_y)
+                    subwindow_subset.rect_start = (rect_x, rect_y)
+                    subwindow_subset.rect_end = (rect_x, rect_y)
                     subwindow_subset.is_drawing = True
                     update_image_display()
 
@@ -370,50 +373,50 @@ def subwindow_subset(canvas):
             subwindow_subset.pan_start = (event.x, event.y)
             update_image_display()
             
-        elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_box:
-            # Handle dragging entire bounding box
-            if hasattr(subwindow_subset, "img_position"):
-                # Convert both current and start positions to image coordinates
-                current_img_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-                current_img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+        # elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_box:
+        #     # Handle dragging entire bounding box
+        #     if hasattr(subwindow_subset, "img_position"):
+        #         # Convert event (rel. canvas) positions to image (rel. display) coordinates
+        #         current_rect_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+        #         current_rect_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
-                start_img_x = (subwindow_subset.drag_box_start[0] - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-                start_img_y = (subwindow_subset.drag_box_start[1] - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+        #         start_rect_x = (subwindow_subset.drag_box_start[0] - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+        #         start_rect_y = (subwindow_subset.drag_box_start[1] - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
-                # Calculate delta in image space
-                dx = current_img_x - start_img_x
-                dy = current_img_y - start_img_y
+        #         # Calculate delta in image space
+        #         dx = current_rect_x - start_rect_x
+        #         dy = current_rect_y - start_rect_y
                 
-                # Update both corners to move the box
-                new_x1 = subwindow_subset.rect_start[0] + dx
-                new_y1 = subwindow_subset.rect_start[1] + dy
-                new_x2 = subwindow_subset.rect_end[0] + dx
-                new_y2 = subwindow_subset.rect_end[1] + dy
+        #         # Update both corners to move the box
+        #         new_x1 = subwindow_subset.rect_start[0] + dx
+        #         new_y1 = subwindow_subset.rect_start[1] + dy
+        #         new_x2 = subwindow_subset.rect_end[0] + dx
+        #         new_y2 = subwindow_subset.rect_end[1] + dy
                 
-                # Clamp to image bounds
-                width = abs(new_x2 - new_x1)
-                height = abs(new_y2 - new_y1)
+        #         # Clamp to image bounds
+        #         width = abs(new_x2 - new_x1)
+        #         height = abs(new_y2 - new_y1)
                 
-                # Clamp x coordinates
-                if new_x1 < 0:
-                    new_x1 = 0
-                    new_x2 = width
-                elif new_x2 > subwindow_subset.img_display_size[0]:
-                    new_x2 = subwindow_subset.img_display_size[0]
-                    new_x1 = new_x2 - width
+        #         # Clamp x coordinates
+        #         if new_x1 < 0:
+        #             new_x1 = 0
+        #             new_x2 = width
+        #         elif new_x2 > subwindow_subset.img_display_size[0]:
+        #             new_x2 = subwindow_subset.img_display_size[0]
+        #             new_x1 = new_x2 - width
                     
-                # Clamp y coordinates
-                if new_y1 < 0:
-                    new_y1 = 0
-                    new_y2 = height
-                elif new_y2 > subwindow_subset.img_display_size[1]:
-                    new_y2 = subwindow_subset.img_display_size[1]
-                    new_y1 = new_y2 - height
+        #         # Clamp y coordinates
+        #         if new_y1 < 0:
+        #             new_y1 = 0
+        #             new_y2 = height
+        #         elif new_y2 > subwindow_subset.img_display_size[1]:
+        #             new_y2 = subwindow_subset.img_display_size[1]
+        #             new_y1 = new_y2 - height
                 
-                subwindow_subset.rect_start = (new_x1, new_y1)
-                subwindow_subset.rect_end = (new_x2, new_y2)
-                subwindow_subset.drag_box_start = (event.x, event.y)  # Update start position for next frame
-                update_image_display()
+        #         subwindow_subset.rect_start = (new_x1, new_y1)
+        #         subwindow_subset.rect_end = (new_x2, new_y2)
+        #         subwindow_subset.drag_box_start = (event.x, event.y)  # Update start position for next frame
+        #         update_image_display()
             
         elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_corner:
             # Handle corner dragging
@@ -422,11 +425,8 @@ def subwindow_subset(canvas):
                 img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
                 # Clamp to image bounds
-                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0]))
-                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1]))
-                
-                x1, y1 = subwindow_subset.rect_start
-                x2, y2 = subwindow_subset.rect_end
+                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
+                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
                 
                 # Update the appropriate corner
                 if subwindow_subset.dragging_corner == 'tl':  # top-left
@@ -449,8 +449,8 @@ def subwindow_subset(canvas):
                 img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
                 # Clamp to image bounds
-                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0]))
-                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1]))
+                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
+                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
                 
                 subwindow_subset.rect_end = (img_x, img_y)
                 update_image_display()
@@ -468,19 +468,19 @@ def subwindow_subset(canvas):
                 corner = get_corner_at_position(event.x, event.y)
                 if corner:
                     subcanvas4.config(cursor="hand2")
-                elif is_inside_rectangle(event.x, event.y):
-                    subcanvas4.config(cursor="fleur")
+                # elif is_inside_rectangle(event.x, event.y):
+                #     subcanvas4.config(cursor="fleur")
                 else:
                     subcanvas4.config(cursor="crosshair")
-            elif subwindow_subset.dragging_box:
-                # Finished dragging box
-                subwindow_subset.dragging_box = False
-                subwindow_subset.drag_box_start = None
-                # Update cursor
-                if is_inside_rectangle(event.x, event.y):
-                    subcanvas4.config(cursor="fleur")
-                else:
-                    subcanvas4.config(cursor="crosshair")
+            # elif subwindow_subset.dragging_box:
+            #     # Finished dragging box
+            #     subwindow_subset.dragging_box = False
+            #     subwindow_subset.drag_box_start = None
+            #     # Update cursor
+            #     if is_inside_rectangle(event.x, event.y):
+            #         subcanvas4.config(cursor="fleur")
+            #     else:
+            #         subcanvas4.config(cursor="crosshair")
             elif subwindow_subset.is_drawing:
                 # Finished drawing new rectangle
                 subwindow_subset.is_drawing = False
@@ -505,7 +505,7 @@ def subwindow_subset(canvas):
 
             # Scale to original image size
             orig_height, orig_width = canvas.original_img.shape
-            scale_ratio = orig_height / subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level
+            scale_ratio = orig_height / subwindow_subset.img_display_size[1]
 
             # Get rectangle coordinates
             x1, y1 = subwindow_subset.rect_start
@@ -528,12 +528,12 @@ def subwindow_subset(canvas):
             # Load into main canvas
             load_image(canvas, 550, 255, 180, 170, imgArr=cropped_img)
 
-            messagebox.showinfo("Saved", f"Image subset cropped!\nCoordinates: ({x_min_orig}, {y_min_orig}) to ({x_max_orig}, {y_max_orig})")
-            print(f"Image cropped to: {cropped_img.shape}, at coords: ({x_min_orig}, {y_min_orig}) to ({x_max_orig}, {y_max_orig})")
+            # messagebox.showinfo("Saved", f"Image subset cropped!\nCoordinates: ({x_min_orig}, {y_min_orig}) to ({x_max_orig}, {y_max_orig})")
+            print(f"Image cropped from display coordinates: ({x_min}, {y_min}) to ({x_max}, {y_max}), original coordinates: ({x_min_orig}, {y_min_orig}) to ({x_max_orig}, {y_max_orig})")
             
         subwindow_subset.destroy()
         
-    # Key Binding events - unified event handlers
+    # Key Binding events
     subcanvas4.bind("<Motion>", on_mouse_motion)
     subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
     subcanvas4.bind("<B1-Motion>", on_drag_motion)

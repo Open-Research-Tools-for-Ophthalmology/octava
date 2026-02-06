@@ -469,7 +469,7 @@ def subwindow4(canvas, editable=False):
             set_active_tool("draw")
             update_image_display()
 
-    # Key Binding events - unified event handlers
+    # Key Binding events
     subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
     subcanvas4.bind("<B1-Motion>", on_drag_motion)
     subcanvas4.bind("<ButtonRelease-1>", on_drag_end)
