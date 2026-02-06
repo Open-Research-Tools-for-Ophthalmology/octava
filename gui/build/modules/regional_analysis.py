@@ -1,3 +1,4 @@
+import re
 from tkinter import Canvas
 import numpy as np
 from skimage.draw import disk, polygon
@@ -15,15 +16,8 @@ RIGHT_EYE = "Right Eye"
 class GridType(Enum):
 	SQUARE_GRID = "Square Grid"
 	ETDRS_GRID = "ETDRS Grid"
-	EXTENDED_ETDRS_GRID = "Extended ETDRS Grid"
-	ONH = "Optic Nerve Head"
-	FOVEAL_RING = "Foveal Ring"
-
-class GridType(Enum):
-	SQUARE_GRID = "Square Grid"
-	ETDRS_GRID = "ETDRS Grid"
-	EXTENDED_ETDRS_GRID = "Extended ETDRS Grid"
-	ONH = "Optic Nerve Head"
+	EXTENDED_ETDRS_GRID = "Extended ETDRS"
+	ONH = "ONH"
 	FOVEAL_RING = "Foveal Ring"
 
 def run_regional_analysis(canvas):
@@ -48,11 +42,6 @@ def run_regional_analysis(canvas):
 	if os.path.exists(excel_filename):
 			os.remove(excel_filename)
 
-	# after delete:
-	wb = Workbook()
-	wb.remove(wb.active)  # remove default sheet
-	wb.save(excel_filename)
-
 	# Store path on canvas so sub-functions can reuse it
 	canvas.regional_excel_path = excel_filename
 
@@ -62,7 +51,7 @@ def run_regional_analysis(canvas):
 	if canvas.etdrs_grid_bool.get():
 		apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm)
 
-	if canvas.extended_etdrs_grid_bool.get():
+	if canvas.extended_etdrs_bool.get():
 		apply_extended_etdrs_grid(canvas,binary, original, pix_to_mm, image_size_mm)
 
 	if canvas.foveal_ring_bool.get():
@@ -178,10 +167,12 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 	binaryReg = [None] * 8
 	
 	binaryReg[0] = binary * foveal_mask #foveal circle
-	binaryReg[0] = binaryReg[0][
-		int(max(cy - rad_3mm, 0)):int(min(cy + rad_3mm, H)),
-		int(max(cx - rad_3mm, 0)):int(min(cx + rad_3mm, W))
-	] #Crops to a bounding box around FAZ (± rad_3mm)
+	y1 = int(round(max(cy - rad_3mm, 0)))
+	y2 = int(round(min(cy + rad_3mm, H)))
+	x1 = int(round(max(cx - rad_3mm, 0)))
+	x2 = int(round(min(cx + rad_3mm, W)))
+	#Crops to a bounding box around FAZ (± rad_3mm)
+	binaryReg[0]=binaryReg[0][y1:y2, x1:x2]
 
 	binaryReg[1] = binary * parafoveal_mask #parafoveal ring
 
@@ -207,11 +198,6 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 	imgReg = [None] * 8
 
 	imgReg[0] = original * foveal_mask #foveal circle
-	y1 = int(round(max(cy - rad_3mm, 0)))
-	y2 = int(round(min(cy + rad_3mm, H)))
-	x1 = int(round(max(cx - rad_3mm, 0)))
-	x2 = int(round(min(cx + rad_3mm, W)))
-	binaryReg[0] = binaryReg[0][y1:y2, x1:x2]
 	imgReg[0]    = imgReg[0][y1:y2, x1:x2] #Crops to a bounding box around FAZ (± rad_3mm)
 
 	imgReg[1] = original * parafoveal_mask #parafoveal rim
@@ -267,7 +253,7 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 		np.sum(sector_masks[:, :, 0] | sector_masks[:, :, 5]),
 		np.sum(sector_masks[:, :, 2] | sector_masks[:, :, 3]),
 		np.sum(sector_masks[:, :, 1]),
-		np.sum(sector_masks[:, :, 4]) #? was np.sum(sector_masks[:, :, 1]) a typo in original code?
+		np.sum(sector_masks[:, :, 1]) #? was np.sum(sector_masks[:, :, 1]) a typo in original code? should be np.sum(sector_masks[:, :, 4])?
 	]
 	
 	run_analysis_on_regions(
@@ -634,6 +620,8 @@ def run_analysis_on_regions(
 						display=False,
 				)
 
+				change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+
 				# Image area (MATLAB conditional)
 				if grid_type != GridType.SQUARE_GRID:
 						imgArea_pix = imgArea_pix_vec[i]
@@ -676,7 +664,7 @@ def run_analysis_on_regions(
 						)
 
 						# MATLAB: Mean / Median length (µm)
-						links_length_pix = [l.pixLength for l in links]
+						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
 						print('links length in pix:', links_length_pix)
 						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
 						print('mean length:', canvas.regional_metrics[i]["MeanLength"])
@@ -696,10 +684,8 @@ def run_analysis_on_regions(
 						slope = compute_fractal_dimension(canvas)
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 
-						# MATLAB: mean tortuosity excluding Inf
-						tort = np.array([l.tortuosity for l in links])
-						tort = tort[~np.isinf(tort)]
-						canvas.regional_metrics[i]["mTort"] = round(np.mean(tort), 4) if tort.size > 0 else 0
+						# MATLAB: mean tortuosity
+						canvas.regional_metrics[i]["mTort"] = compute_mean_tortuosity(links, binaryReg[i])
 
 				# --------------------------------------------------
 				# If no skeleton graph
@@ -723,14 +709,16 @@ def run_analysis_on_regions(
 
 		# Save Excel file (MATLAB: struct2table + writetable)
 		df = pd.DataFrame(canvas.regional_metrics)
-
 		excel_filename = canvas.regional_excel_path
+		mode = "a" if os.path.exists(excel_filename) else "w"
+		sheet_name = f"Regional analysis_{grid_type.value}"
+		sheet_name = re.sub(r'[:\\/?*\[\]]', '_', sheet_name)[:31]
 
-		with pd.ExcelWriter(excel_filename, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+		with pd.ExcelWriter(excel_filename, engine="openpyxl", mode=mode, if_sheet_exists="replace" if mode == "a" else None) as writer:
 				df.to_excel(
 						writer,
 						index=False,
-						sheet_name=f"Regional analysis_{grid_type.value}",
+						sheet_name=sheet_name,
 				)
 
 		return df
@@ -767,6 +755,7 @@ def compute_length(links, binary, pix_to_mm):
 			total_length_pix += length_pix
 			link.pixLength = length_pix
 
+	print([l.pixLength for l in links])
 	total_length_mm = total_length_pix * pix_to_mm
 	return total_length_mm
 
@@ -937,7 +926,32 @@ def compute_mean_tortuosity(links, binary):
 					tortuosity_list.append(tortuosity)
 
 	if len(tortuosity_list) > 0:
-			mean_tortuosity = np.mean(tortuosity_list)
+			mean_tortuosity = round(np.mean(tortuosity_list),4)
 	else:
 			mean_tortuosity = 0.0
 	return mean_tortuosity
+
+
+# def mean_tortuosity_from_links(links, image_shape, order="C"):
+#     tortuosity_list = []
+
+#     for link in links:
+#         indices = np.asarray(getattr(link, "path", []), dtype=np.int64)
+#         if indices.size < 2:
+#             continue
+
+#         rows, cols = np.unravel_index(indices, image_shape, order=order)
+#         coords = np.column_stack((rows, cols)).astype(float)
+
+#         diffs = np.diff(coords, axis=0)
+#         arc_length = float(np.sum(np.linalg.norm(diffs, axis=1)))
+
+#         chord_length = float(np.linalg.norm(coords[-1] - coords[0]))
+#         if chord_length <= 1e-6:
+#             continue
+
+#         tort = arc_length / chord_length
+#         if np.isfinite(tort):
+#             tortuosity_list.append(tort)
+
+#     return float(np.mean(tortuosity_list)) if tortuosity_list else 0.0

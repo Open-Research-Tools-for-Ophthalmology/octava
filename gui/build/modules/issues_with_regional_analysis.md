@@ -1,7 +1,7 @@
 # Issues with regional analysis
 
 ## 1. ETDRS Grid area pixels calculation
-In the following Matlab code, `sum(sum(sector_masks(:,:,2)))` is repeated twice when creating the regional pixel vector.
+In the following Matlab code, `sum(sum(sector_masks(:,:,2)))` is repeated twice at the end when creating the regional pixel vector.
 ```matlab
 imgArea_pix_vec = [sum(sum(foveal_mask)) sum(sum(parafoveal_mask)) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,2)+sector_masks(:,:,3)))...
                     sum(sum(sector_masks(:,:,4)+sector_masks(:,:,5)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,3)+sector_masks(:,:,4)))...
@@ -22,11 +22,8 @@ What should the formula of calculating VLD_pct be?
 
 
 ## 3. Cropping vs area mismatch
-In Matlab ETDRS and Foveal-ring, we crop some regions.
+In Matlab ETDRS and Foveal-ring grid types, we crop some regions.
 
 
 When we crop a region, should we crop the mask used for the area too?
 
-
-
-## 4.

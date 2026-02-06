@@ -116,7 +116,7 @@ def subwindow2(canvas):
   foveal_rings_checkbox = Checkbutton(
       subwindow,
       text="Foveal rings",
-      variable=canvas.foveal_rings_bool,
+      variable=canvas.foveal_ring_bool,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 14 * -1)
