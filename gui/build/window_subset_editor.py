@@ -507,8 +507,9 @@ def subwindow_subset(canvas):
         if result is True:  # Yes - Save
             # Scale to original image size
             orig_height, orig_width = canvas.original_img.shape
-            scale_x = orig_width / subwindow_subset.img_display_size[0]
-            scale_y = orig_height / subwindow_subset.img_display_size[1]
+            print("Original image size:", orig_width, orig_height, "and display size:", subwindow_subset.img_display_size)
+            scale_x = orig_width / subwindow_subset.img_display_size[0] * subwindow_subset.zoom_level
+            scale_y = orig_height / subwindow_subset.img_display_size[1] * subwindow_subset.zoom_level
 
             # Get rectangle coordinates
             x1, y1 = subwindow_subset.rect_start
