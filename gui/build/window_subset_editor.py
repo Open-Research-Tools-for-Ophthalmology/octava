@@ -496,16 +496,19 @@ def subwindow_subset(canvas):
             update_image_display()
 
     def confirm_rectangle():
+        if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
+            return
+        
         result = messagebox.askyesno(
             title="Crop Confirmation",
             message="Apply this cropping area?",
             parent=subwindow_subset
         )
         if result is True:  # Yes - Save
-
             # Scale to original image size
             orig_height, orig_width = canvas.original_img.shape
-            scale_ratio = orig_height / subwindow_subset.img_display_size[1]
+            scale_x = orig_width / subwindow_subset.img_display_size[0]
+            scale_y = orig_height / subwindow_subset.img_display_size[1]
 
             # Get rectangle coordinates
             x1, y1 = subwindow_subset.rect_start
@@ -517,12 +520,13 @@ def subwindow_subset(canvas):
             x_max = int(max(x1, x2))
             y_max = int(max(y1, y2))
             
-            x_min_orig = int(x_min * scale_ratio)
-            y_min_orig = int(y_min * scale_ratio)
-            x_max_orig = int(x_max * scale_ratio)
-            y_max_orig = int(y_max * scale_ratio)
+            x_min_orig = int(x_min * scale_x)
+            y_min_orig = int(y_min * scale_y)
+            x_max_orig = int(x_max * scale_x)
+            y_max_orig = int(y_max * scale_y)
             
             # Store cropped image
+            # Numpy is row/column = y/x
             cropped_img = canvas.original_img[y_min_orig:y_max_orig, x_min_orig:x_max_orig]
             
             # Load into main canvas
