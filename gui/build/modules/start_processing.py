@@ -63,29 +63,6 @@ def make_save_folder(canvas: Canvas):
     # create per-original image metrics files
     canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
 
-
-    # if not is_batch_processing_enabled(canvas):
-    #     # Preliminary image saving folder setup
-    #     make_save_folder(canvas)
-    #     # Indicate that processing is starting
-    #     change_status_to_waiting(canvas)
-    #     thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
-    #     thread.start()
-    # else:
-    #     # TODO batch processing
-    #     start_batch_processing_threaded(canvas)
-
-# Create save folder for current image
-# variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
-# def make_save_folder(canvas: Canvas):
-#     base_save_dir = getattr(canvas, "save_dir", None)
-#     if base_save_dir:
-#         canvas.current_save_folder = os.path.join(base_save_dir, canvas.FileLabelName)
-#     else:
-#         canvas.current_save_folder = os.path.join(canvas.lastPath, canvas.FileLabelName)
-#     os.makedirs(canvas.current_save_folder, exist_ok=True)
-#     os.makedirs(os.path.join(canvas.current_save_folder, "images"), exist_ok=True)
-
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):

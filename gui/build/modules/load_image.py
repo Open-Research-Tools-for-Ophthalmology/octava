@@ -9,9 +9,10 @@ from modules.change_status import *
 from modules.clear import *
 
 # Load an image for processing
-# @param {Boolean} silent = True for automated batch processing
-# @param {String} filePath = path to load image from (for automatedbatch processing)
-def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, display=True):
+# @param {Boolean} silent = True for automated batch processing/image subset
+# @param {String} filePath = path to load image from (for automated batch processing)
+# @param {np.ndarray} imgArr = image array to replace to (for image subset)
+def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr=None):
     """
     Ask the user to pick an image, display a 200x200 grayscale preview
     on the canvas, show the filename near the image, and store useful
@@ -22,28 +23,38 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, displa
     """
     change_status_to_waiting(canvas)
 
-    if not silent:
-        file_path = filedialog.askopenfilename(
-            title="Select an image",
-            filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
-        )
-        if not file_path:
+    # Method 1: Load from given path
+    if imgArr is None:
+        # Method 1.1 Load image from file browser prompt
+        if not silent:
+            file_path = filedialog.askopenfilename(
+                title="Select an image",
+                filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.tif *.tiff")]
+            )
+            if not file_path:
+                change_status_to_ready(canvas)
+                return None  # user cancelled
+        else:
+            # Method 1.2 Load image from given path (image batch processing)
+            file_path = filePath
+        
+        path = Path(file_path)
+        try:
+            # Load original grayscale image (keep full resolution)
+            original_img = Image.open(path).convert("L")
+        except (UnidentifiedImageError, OSError) as e:
+            print(f"Failed to load image: {e}")
             change_status_to_ready(canvas)
-            return None  # user cancelled
-    else:
-        file_path = filePath
-    
-    path = Path(file_path)
-    try:
-        # Load original grayscale image (keep full resolution)
-        original_img = Image.open(path).convert("L")
-    except (UnidentifiedImageError, OSError) as e:
-        print(f"Failed to load image: {e}")
-        change_status_to_ready(canvas)
-        return None
+            return None
 
-    # Store the full-resolution grayscale image
-    canvas.original_img = np.array(original_img)
+        # Store the full-resolution grayscale image
+        canvas.original_img = np.array(original_img)
+    else:
+        # Method 2: Load from given image array (image subset)
+        canvas.original_img = imgArr
+        original_img = Image.fromarray(imgArr.astype(np.uint8))
+        path = Path(canvas.filePath)  # Keep original path info
+
     canvas.original_img = canvas.original_img.astype(np.int16).astype(np.float64)
     orig_w, orig_h = original_img.size
 
