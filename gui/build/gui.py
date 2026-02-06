@@ -1,5 +1,5 @@
 from pathlib import Path
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
 from window_advanced_settings import *
 from window_regional_analysis_settings import *
@@ -43,11 +43,11 @@ canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
-canvas.twig_size = IntVar(value=20)  # Variable for Twig Size Spinbox
+canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
-canvas.image_size_var = IntVar(value=5)  # Variable for Image Size Spinbox
+canvas.image_size_var = DoubleVar(value=5.0)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 # regional analysis settings variables
 canvas.eye_var = StringVar()
@@ -164,6 +164,7 @@ img_type.place(
     height=30.0
 )
 
+
 # prebinary
 prebinary_checkbox = Checkbutton(
     text="Prebinary",
@@ -188,9 +189,10 @@ canvas.create_text(
 )
 # image size Spinbox
 image_size_spinbox = Spinbox(
-    from_=1,
-    to=10,
-    width=3,
+    from_=1.0,
+    to=10.0,
+    increment=0.5,
+    width=4,
     textvariable=canvas.image_size_var,
     bg=bg_colour,
     fg=text_colour,
@@ -249,7 +251,9 @@ button_point_faz = ctk.CTkButton(window, text="Point FAZ",
                                 fg_color=button_green_colour,
                                 corner_radius=8,border_width=1,
                                 hover_color=button_green_hover,
-    border_color=button_border_colour  )
+                                border_color=button_border_colour,
+                                # state="disabled" if canvas.img_type_var.get()=="Skin" else "normal"
+                                )
 button_point_faz.place(x=30, y=355)
 
 
@@ -263,7 +267,7 @@ button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindo
     border_color=button_border_colour  )
 button_auto_faz.place(x=125, y=355)
 
-button8 = ctk.CTkButton(window, text="Measure FAZ",
+button_measure_faz = ctk.CTkButton(window, text="Measure FAZ",
                         command=lambda: measure_faz(canvas),
                         width=190,height=40,
                         font=("Roboto", 14 * -1),
@@ -272,7 +276,21 @@ button8 = ctk.CTkButton(window, text="Measure FAZ",
                         corner_radius=8,border_width=1,
                         hover_color=button_green_hover,
     border_color=button_border_colour  )
-button8.place(x=220, y=355)
+button_measure_faz.place(x=220, y=355)
+
+def update_faz_buttons_state(*args):
+    if canvas.img_type_var.get()=="Skin":
+        button_point_faz.configure(state="disabled")
+        button_auto_faz.configure(state="disabled")
+        button_measure_faz.configure(state="disabled")
+    else:
+        button_point_faz.configure(state="normal")
+        button_auto_faz.configure(state="normal")
+        button_measure_faz.configure(state="normal")
+
+update_faz_buttons_state()
+
+canvas.img_type_var.trace_add("write", update_faz_buttons_state)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
