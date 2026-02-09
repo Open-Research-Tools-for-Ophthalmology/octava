@@ -87,8 +87,8 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
         canvas.binary_image = canvas.original_img.copy()
         canvas.inverted_image = canvas.binary_image.copy()
 
-    # --- Display binarised image ---
-    display_binarised_image(canvas, canvas.binary_image)
+        # --- Display binarised image ---
+        display_binarised_image(canvas, canvas.binary_image)
 
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
