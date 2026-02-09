@@ -50,7 +50,7 @@ canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = DoubleVar(value=5.0)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 # regional analysis settings variables
-canvas.eye_var = StringVar()
+canvas.eye_var = StringVar(value="Right Eye")
 canvas.load_faz_bool = IntVar(value=0)
 canvas.square_grid_bool = IntVar(value=0)
 canvas.etdrs_grid_bool = IntVar(value=0)
