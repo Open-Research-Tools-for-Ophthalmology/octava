@@ -7,12 +7,17 @@ from modules.skeletonise import *
 from modules.faz_utils import *
 from modules.load_image import *
 from modules.clear import *
+from modules.regional_analysis import *
 import threading
 import os
 import datetime
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
+
+def is_regional_analysis_enabled(canvas:Canvas) ->bool:
+    return hasattr(canvas, "apply_regional_analysis_bool") and canvas.apply_regional_analysis_bool.get() == 1
+
 
 def start_processing(canvas: Canvas):
     """
@@ -58,73 +63,57 @@ def make_save_folder(canvas: Canvas):
     # create per-original image metrics files
     canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
 
-
-    # if not is_batch_processing_enabled(canvas):
-    #     # Preliminary image saving folder setup
-    #     make_save_folder(canvas)
-    #     # Indicate that processing is starting
-    #     change_status_to_waiting(canvas)
-    #     thread = threading.Thread(target=lambda: start_processing_threaded(canvas, False))
-    #     thread.start()
-    # else:
-    #     # TODO batch processing
-    #     start_batch_processing_threaded(canvas)
-
-# Create save folder for current image
-# variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
-# def make_save_folder(canvas: Canvas):
-#     base_save_dir = getattr(canvas, "save_dir", None)
-#     if base_save_dir:
-#         canvas.current_save_folder = os.path.join(base_save_dir, canvas.FileLabelName)
-#     else:
-#         canvas.current_save_folder = os.path.join(canvas.lastPath, canvas.FileLabelName)
-#     os.makedirs(canvas.current_save_folder, exist_ok=True)
-#     os.makedirs(os.path.join(canvas.current_save_folder, "images"), exist_ok=True)
-
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
-    print("Starting image processing...")
+    if is_regional_analysis_enabled(canvas):
+        print("Starting binarising...")
+        binarise_image(canvas)  # long-running
 
-    binarise_image(canvas)  # long-running
+        print("Binarisation completed. Running regional analysis...")
+        run_regional_analysis(canvas)
+        print("Regional analysis completed.")
+    else:
+      print("Starting binarising...")
+      binarise_image(canvas)  # long-running
 
-    print("Binarisation completed. Starting skeletonisation...")
+      print("Binarisation completed. Starting skeletonisation...")
+      # display = not batch  # only display skeleton in single image mode
+      display = True
+      skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
+      print("Skeletonisation completed.")
 
-    skeletonise(canvas, canvas.binary_image, canvas.twig_size.get())
+      BiomarkerAnalyzer.process(canvas)
 
-    print("Skeletonisation completed.")
+      # Refresh histogram on main thread
+      def refresh_histogram_ui():
+          if hasattr(canvas, "hist_plotter"):
+              diameters = getattr(canvas, "vessel_diameters_um", [])
+              canvas.hist_plotter.set_data(diameters)
+              canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+              images_dir = os.path.join(canvas.current_save_folder, "images")
+              os.makedirs(images_dir, exist_ok=True)
 
-    BiomarkerAnalyzer.process(canvas)
+              bin_size = int(canvas.bin_size_var.get())
+              hist_path = os.path.join(
+                  images_dir,
+                  f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
+              )
+              canvas.hist_plotter.save_to_file(hist_path)
 
-    # Refresh histogram on main thread
-    def refresh_histogram_ui():
-        if hasattr(canvas, "hist_plotter"):
-            diameters = getattr(canvas, "vessel_diameters_um", [])
-            canvas.hist_plotter.set_data(diameters)
-            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
-            images_dir = os.path.join(canvas.current_save_folder, "images")
-            os.makedirs(images_dir, exist_ok=True)
+      canvas.after(0, refresh_histogram_ui)
 
-            bin_size = int(canvas.bin_size_var.get())
-            hist_path = os.path.join(
-                images_dir,
-                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
-            )
-            canvas.hist_plotter.save_to_file(hist_path)
-
-    canvas.after(0, refresh_histogram_ui)
-
-    print("Biomarker analyzer processing completed.")
-    
-    # Additional processing if batch mode is on
-    if batch:
-        if canvas.bp_segment_faz_var.get() == 1:
-            generate_faz_mask(canvas, batch=True)
-            display_faz_image(canvas)
-            measure_faz(canvas)
-            print("FAZ generation and metrics measurement completed.")
-        # TODO
-        # if regional_analysis xxx
+      print("Biomarker analyzer processing completed.")
+      
+      # Additional processing if batch mode is on
+      if batch:
+          if canvas.bp_segment_faz_var.get() == 1:
+              generate_faz_mask(canvas, batch=True)
+              display_faz_image(canvas)
+              measure_faz(canvas)
+              print("FAZ generation and metrics measurement completed.")
+          # TODO
+          # if regional_analysis xxx
 
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))
@@ -148,8 +137,8 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    skipped_images = []
-    for (index, image_file) in enumerate(image_files, start=1):
+    for image_file in image_files:
+        #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
         canvas.after(0, lambda: change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red))
@@ -249,3 +238,4 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
+

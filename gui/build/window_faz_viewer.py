@@ -40,6 +40,7 @@ def subwindow4(canvas, editable=False):
     subwindow4.pan_start = None
     subwindow4.pan_offset = [0, 0]
     subwindow4.drag_point_index = None  # Track which point is being dragged
+    subwindow4.canvas_height_prev = None  # Track canvas height for coordinate rescaling on window resize
 
 
     # Drag: ask if want to load existing grayscale mask
@@ -160,9 +161,7 @@ def subwindow4(canvas, editable=False):
         set_active_tool("drag" if draggable else "draw")
 
     # Edit: Update image display after 1. pan 2. zoom
-    def update_image_display():
-        print("Updating image display with zoom level:", subwindow4.zoom_level, "and pan offset:", subwindow4.pan_offset)
-        # Get current canvas size
+    def update_image_display():        # Get current canvas size
         canvas_width = subcanvas4.winfo_width()
         canvas_height = subcanvas4.winfo_height()
 
@@ -177,6 +176,17 @@ def subwindow4(canvas, editable=False):
         display_height = int(canvas_height * subwindow4.zoom_level)
         display_width = int(display_height)
 
+        print("Updating image display with zoom level:", subwindow4.zoom_level, "and pan offset:", subwindow4.pan_offset, "and canvas_height/display_height:", canvas_height, display_height)
+
+        # Rescale polygon points only if canvas_height changed (canvas resize)
+        if subwindow4.canvas_height_prev is not None and subwindow4.canvas_height_prev != canvas_height:
+            scale_ratio = canvas_height / subwindow4.canvas_height_prev
+            print(f"Canvas height changed from {subwindow4.canvas_height_prev} to {canvas_height}, rescaling polygon points by {scale_ratio}")
+            subwindow4.polygon_points = [(pt[0] * scale_ratio, pt[1] * scale_ratio) for pt in subwindow4.polygon_points]
+        
+        # Update previous canvas height
+        subwindow4.canvas_height_prev = canvas_height
+
         # Create image copy for drawing
         img_to_display = subwindow4.original_pil.copy()
 
@@ -187,8 +197,8 @@ def subwindow4(canvas, editable=False):
         img_tk = ImageTk.PhotoImage(resized_img)
 
         # Pan: Add x/y offset
-        img_x = canvas_width // 2 + subwindow4.pan_offset[0]
-        img_y = canvas_height // 2 + subwindow4.pan_offset[1]
+        img_x = canvas_width // 2 + subwindow4.pan_offset[0] * subwindow4.zoom_level
+        img_y = canvas_height // 2 + subwindow4.pan_offset[1] * subwindow4.zoom_level
         subcanvas4.create_image(
             img_x, img_y, image=img_tk, anchor="center", tags="image"
         )
@@ -295,8 +305,6 @@ def subwindow4(canvas, editable=False):
         # Keep reference to prevent garbage collection
         subcanvas4.image_ref = img_tk
 
-
-    # Event handlers - unified approach to prevent tool switching conflicts
     # Handle mouse click on canvas
     # @listener left mouse click
     def on_canvas_click(event):
@@ -404,12 +412,23 @@ def subwindow4(canvas, editable=False):
                 subwindow4.polygon_points[subwindow4.drag_point_index] = (img_x, img_y)
             update_image_display()
 
-    # Unified release handler - handles both pan and drag end
+    # Handle both pan and drag end
+    # @listener mouse button release events
     def on_drag_end(event):
         if subwindow4.active_tool == "pan":
             subwindow4.pan_start = None
         elif subwindow4.active_tool == "drag":
             subwindow4.drag_point_index = None
+
+    # Handle canvas resize event
+    # @listener canvas resize events
+    def on_canvas_resize(event):
+        if event.widget == subcanvas4:
+            new_width = event.width
+            new_height = event.height
+            print(f"Canvas resized to: {new_width}x{new_height}")
+            # update display
+            update_image_display()
 
     def confirm_polygon():
         result = messagebox.askyesno(
@@ -450,12 +469,13 @@ def subwindow4(canvas, editable=False):
             set_active_tool("draw")
             update_image_display()
 
-    # Key Binding events - unified event handlers
+    # Key Binding events
     subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
     subcanvas4.bind("<B1-Motion>", on_drag_motion)
     subcanvas4.bind("<ButtonRelease-1>", on_drag_end)
     subcanvas4.bind("<MouseWheel>", on_mouse_wheel)
-
+    subcanvas4.bind("<Configure>", on_canvas_resize)
+    
     # Close window event
     def on_close():
         print("FAZ Viewer/Editer closed.")
