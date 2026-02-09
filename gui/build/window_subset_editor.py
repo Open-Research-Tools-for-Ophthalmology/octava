@@ -40,7 +40,7 @@ def subwindow_subset(canvas):
     subwindow_subset.pan_offset = [0, 0]
     subwindow_subset.is_drawing = False  # Track if currently drawing rectangle
     subwindow_subset.dragging_corner = None  # Track which corner is being dragged: 'tl', 'tr', 'bl', 'br'
-    # subwindow_subset.dragging_box = False  # Track if dragging entire bounding box
+    subwindow_subset.dragging_box = False  # Track if dragging entire bounding box
     subwindow_subset.drag_box_start = None  # Starting position for box drag
     subwindow_subset.canvas_height_prev = None  # Track canvas height for coordinate rescaling on window resize
     
@@ -203,7 +203,7 @@ def subwindow_subset(canvas):
         # Rectangle: Draw the cropping rectangle if both start and end points exist
         if subwindow_subset.rect_start and subwindow_subset.rect_end:
             
-            # Convert canvas coordinates to canvas coordinates
+            # Convert display coordinates to canvas coordinates
             x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
             y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
             x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
@@ -241,7 +241,7 @@ def subwindow_subset(canvas):
         if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
             return None
         
-        # Convert rect coordinates to canvas coordinates
+        # Convert display coordinates to canvas coordinates
         x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
         y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
         x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
@@ -267,11 +267,11 @@ def subwindow_subset(canvas):
         if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
             return False
         
-        # Convert rect coordinates to canvas coordinates
-        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0]
-        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1]
-        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0]
-        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1]
+        # Convert display coordinates to canvas coordinates
+        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
+        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
+        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
+        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
         
         # Ensure min/max order
         min_x, max_x = min(x1, x2), max(x1, x2)
@@ -288,8 +288,8 @@ def subwindow_subset(canvas):
             corner = get_corner_at_position(event.x, event.y)
             if corner:
                 subcanvas4.config(cursor="hand2")
-            # elif is_inside_rectangle(event.x, event.y):
-            #     subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
+            elif is_inside_rectangle(event.x, event.y):
+                subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
             else:
                 subcanvas4.config(cursor="crosshair")
         elif subwindow_subset.active_tool == "pan":
@@ -316,11 +316,11 @@ def subwindow_subset(canvas):
                 return
             
             # Check if clicking inside rectangle for moving
-            # if is_inside_rectangle(event.x, event.y):
-            #     print("[on_canvas_click] Starting box drag")
-            #     subwindow_subset.dragging_box = True
-            #     subwindow_subset.drag_box_start = (event.x, event.y)
-            #     return
+            if is_inside_rectangle(event.x, event.y):
+                print("[on_canvas_click] Starting box drag")
+                subwindow_subset.dragging_box = True
+                subwindow_subset.drag_box_start = (event.x, event.y)
+                return
             
             print("[on_canvas_click] Starting rectangle draw")
             subwindow_subset.pan_start = None  # Clear pan state
@@ -373,51 +373,48 @@ def subwindow_subset(canvas):
             subwindow_subset.pan_offset[1] += dy
             subwindow_subset.pan_start = (event.x, event.y)
             update_image_display()
-            
-        # elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_box:
-        #     # Handle dragging entire bounding box
-        #     if hasattr(subwindow_subset, "img_position"):
-        #         # Convert event (rel. canvas) positions to image (rel. display) coordinates
-        #         current_rect_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-        #         current_rect_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+        
+        elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_box:
+            # Handle dragging entire bounding box
+            if hasattr(subwindow_subset, "img_position"):
+                # Convert event (rel. canvas) positions to image (rel. display) coordinates
+                cursor_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+                cursor_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
-        #         start_rect_x = (subwindow_subset.drag_box_start[0] - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-        #         start_rect_y = (subwindow_subset.drag_box_start[1] - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+                start_cursor_x = (subwindow_subset.drag_box_start[0] - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+                start_cursor_y = (subwindow_subset.drag_box_start[1] - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
-        #         # Calculate delta in image space
-        #         dx = current_rect_x - start_rect_x
-        #         dy = current_rect_y - start_rect_y
+                dx = cursor_x - start_cursor_x
+                dy = cursor_y - start_cursor_y
                 
-        #         # Update both corners to move the box
-        #         new_x1 = subwindow_subset.rect_start[0] + dx
-        #         new_y1 = subwindow_subset.rect_start[1] + dy
-        #         new_x2 = subwindow_subset.rect_end[0] + dx
-        #         new_y2 = subwindow_subset.rect_end[1] + dy
+                # Update both corners to move the box
+                start_x = subwindow_subset.rect_start[0] + dx
+                start_y = subwindow_subset.rect_start[1] + dy
+                end_x = subwindow_subset.rect_end[0] + dx
+                end_y = subwindow_subset.rect_end[1] + dy
+                length = abs(end_x - start_x)
                 
-        #         # Clamp to image bounds
-        #         width = abs(new_x2 - new_x1)
-        #         height = abs(new_y2 - new_y1)
-                
-        #         # Clamp x coordinates
-        #         if new_x1 < 0:
-        #             new_x1 = 0
-        #             new_x2 = width
-        #         elif new_x2 > subwindow_subset.img_display_size[0]:
-        #             new_x2 = subwindow_subset.img_display_size[0]
-        #             new_x1 = new_x2 - width
+                # Clamp x coordinates
+                if start_x < 0:
+                    start_x = 0
+                    end_x = length
+                elif end_x > subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level:
+                    end_x = subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level
+                    start_x = end_x - length
                     
-        #         # Clamp y coordinates
-        #         if new_y1 < 0:
-        #             new_y1 = 0
-        #             new_y2 = height
-        #         elif new_y2 > subwindow_subset.img_display_size[1]:
-        #             new_y2 = subwindow_subset.img_display_size[1]
-        #             new_y1 = new_y2 - height
+                # Clamp y coordinates
+                if start_y < 0:
+                    start_y = 0
+                    end_y = length
+                elif end_y > subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level:
+                    end_y = subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level
+                    start_y = end_y - length
                 
-        #         subwindow_subset.rect_start = (new_x1, new_y1)
-        #         subwindow_subset.rect_end = (new_x2, new_y2)
-        #         subwindow_subset.drag_box_start = (event.x, event.y)  # Update start position for next frame
-        #         update_image_display()
+                subwindow_subset.rect_start = (start_x, start_y)
+                subwindow_subset.rect_end = (end_x, end_y)
+
+                subwindow_subset.drag_box_start = (event.x, event.y)  # Update start position for next frame
+                update_image_display()
             
         elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_corner:
             # Handle corner dragging
@@ -495,19 +492,19 @@ def subwindow_subset(canvas):
                 corner = get_corner_at_position(event.x, event.y)
                 if corner:
                     subcanvas4.config(cursor="hand2")
-                # elif is_inside_rectangle(event.x, event.y):
-                #     subcanvas4.config(cursor="fleur")
+                elif is_inside_rectangle(event.x, event.y):
+                    subcanvas4.config(cursor="fleur")
                 else:
                     subcanvas4.config(cursor="crosshair")
-            # elif subwindow_subset.dragging_box:
-            #     # Finished dragging box
-            #     subwindow_subset.dragging_box = False
-            #     subwindow_subset.drag_box_start = None
-            #     # Update cursor
-            #     if is_inside_rectangle(event.x, event.y):
-            #         subcanvas4.config(cursor="fleur")
-            #     else:
-            #         subcanvas4.config(cursor="crosshair")
+            elif subwindow_subset.dragging_box:
+                # Finished dragging box
+                subwindow_subset.dragging_box = False
+                subwindow_subset.drag_box_start = None
+                # Update cursor
+                if is_inside_rectangle(event.x, event.y):
+                    subcanvas4.config(cursor="fleur")
+                else:
+                    subcanvas4.config(cursor="crosshair")
             elif subwindow_subset.is_drawing:
                 # Finished drawing new rectangle
                 subwindow_subset.is_drawing = False
