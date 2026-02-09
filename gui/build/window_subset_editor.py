@@ -202,7 +202,6 @@ def subwindow_subset(canvas):
   
         # Rectangle: Draw the cropping rectangle if both start and end points exist
         if subwindow_subset.rect_start and subwindow_subset.rect_end:
-            print("Drawing rectangle from:", subwindow_subset.rect_start, "to:", subwindow_subset.rect_end)
             
             # Convert canvas coordinates to canvas coordinates
             x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
@@ -211,11 +210,13 @@ def subwindow_subset(canvas):
             y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
             
             # Draw semi-transparent rectangle
+            #! Stipple won't work on MacOS, and there is no alpha channel for the fill property
+            # https://stackoverflow.com/questions/35994986/tkinter-stipple-option-misbehaving-in-os-x
             subcanvas4.create_rectangle(
                 x1, y1, x2, y2, 
                 outline=point_blue_colour,
                 fill=button_blue_colour,
-                stipple="gray25",  # Semi-transparent background
+                stipple="gray25",
                 width=2, 
                 tags="rectangle"
             )
@@ -421,38 +422,64 @@ def subwindow_subset(canvas):
         elif subwindow_subset.active_tool == "draw" and subwindow_subset.dragging_corner:
             # Handle corner dragging
             if hasattr(subwindow_subset, "img_position"):
-                img_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-                img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+                cursor_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+                cursor_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
                 # Clamp to image bounds
-                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
-                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
+                cursor_x = max(0, min(cursor_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
+                cursor_y = max(0, min(cursor_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
                 
+                start_x, start_y, end_x, end_y = 0, 0, 0, 0
+                if subwindow_subset.dragging_corner in ['tl']:
+                    start_x, start_y = cursor_x, cursor_y
+                    end_x, end_y = subwindow_subset.rect_end
+                elif subwindow_subset.dragging_corner in ['tr']:
+                    start_x, start_y = subwindow_subset.rect_start[0], cursor_y
+                    end_x, end_y = cursor_x, subwindow_subset.rect_end[1]
+                elif subwindow_subset.dragging_corner in ['bl']:
+                    start_x, start_y = cursor_x, subwindow_subset.rect_start[1]
+                    end_x, end_y = subwindow_subset.rect_end[0], cursor_y
+                elif subwindow_subset.dragging_corner in ['br']:
+                    start_x, start_y = subwindow_subset.rect_start
+                    end_x, end_y = cursor_x, cursor_y
+
+                # Fixate aspect ratio of rectangle to 1:1 (square)
+                length  = min(end_x - start_x, end_y - start_y)
+
                 # Update the appropriate corner
                 if subwindow_subset.dragging_corner == 'tl':  # top-left
-                    subwindow_subset.rect_start = (img_x, img_y)
+                    subwindow_subset.rect_start = (end_x - length, end_y - length)
                 elif subwindow_subset.dragging_corner == 'tr':  # top-right
-                    subwindow_subset.rect_end = (img_x, subwindow_subset.rect_end[1])
-                    subwindow_subset.rect_start = (subwindow_subset.rect_start[0], img_y)
+                    subwindow_subset.rect_start = (subwindow_subset.rect_start[0], end_y - length)
+                    subwindow_subset.rect_end = (start_x + length, subwindow_subset.rect_end[1])
                 elif subwindow_subset.dragging_corner == 'bl':  # bottom-left
-                    subwindow_subset.rect_start = (img_x, subwindow_subset.rect_start[1])
-                    subwindow_subset.rect_end = (subwindow_subset.rect_end[0], img_y)
+                    subwindow_subset.rect_start = (end_x - length, subwindow_subset.rect_start[1])
+                    subwindow_subset.rect_end = (subwindow_subset.rect_end[0], start_y + length)
                 elif subwindow_subset.dragging_corner == 'br':  # bottom-right
-                    subwindow_subset.rect_end = (img_x, img_y)
+                    subwindow_subset.rect_end = (start_x + length, start_y + length)
                 
                 update_image_display()
             
         elif subwindow_subset.active_tool == "draw" and subwindow_subset.is_drawing:
             # Handle rectangle drawing
             if hasattr(subwindow_subset, "img_position"):
-                img_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
-                img_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
+                cursor_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
+                cursor_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
                 
                 # Clamp to image bounds
-                img_x = max(0, min(img_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
-                img_y = max(0, min(img_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
+                cursor_x = max(0, min(cursor_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
+                cursor_y = max(0, min(cursor_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
                 
-                subwindow_subset.rect_end = (img_x, img_y)
+                dx = cursor_x - subwindow_subset.rect_start[0]
+                dy = cursor_y - subwindow_subset.rect_start[1]
+                
+                # Fixate aspect ratio of rectangle to 1:1 (square)
+                length = min(abs(dx), abs(dy))
+
+                end_x = subwindow_subset.rect_start[0] + (length if dx >= 0 else -length)
+                end_y = subwindow_subset.rect_start[1] + (length if dy >= 0 else -length)
+
+                subwindow_subset.rect_end = (end_x, end_y)
                 update_image_display()
 
     # Handle both pan and drag end
