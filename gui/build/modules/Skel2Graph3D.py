@@ -677,9 +677,13 @@ def skel2graph3d(skel, thr=0):
 
     link_list = []
     l_idx = 0
+    # --- O(1) membership masks ---
     is_canal_voxel = np.zeros_like(skel2_flat, dtype=bool)
     if cans.size > 0:
         is_canal_voxel[cans[:, 0]] = True
+
+    is_ep_voxel = np.zeros_like(skel2_flat, dtype=bool)
+    is_ep_voxel[ep] = True
 
     for curr_node_idx_cluster, node_obj in enumerate(node_list):
 
@@ -696,15 +700,15 @@ def skel2graph3d(skel, thr=0):
             candidates = nhi[li][nh_row]
 
             # endpoint neighbors
-            ep_cands = candidates[np.isin(candidates, ep)]
+            ep_cands = candidates[is_ep_voxel[candidates]]
 
             # only voxels still marked 1 in skel2 and in canal list
             cand_mask = (skel2_flat[candidates] == 1)
             candidates = candidates[cand_mask]
+            candidates = candidates[is_canal_voxel[candidates]]
             if candidates.size == 0:
                 continue
-            
-            candidates = candidates[is_canal_voxel[candidates]]
+
 
             # follow each canal candidate
             for c in candidates:
