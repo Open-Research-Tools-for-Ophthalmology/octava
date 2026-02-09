@@ -43,12 +43,11 @@ function regionalmetrics = regionalAnalysis(app)
                 else
                     app.RAlabels = ["Supero-nasal" "Superior" "Supero-temporal" "Nasal" "Central" "Temporal" "Infero-nasal" "Inferior" "Infero-temporal"];
                 end
-                
             elseif strcmp(grid_type,'ETDRS grid')
                 %Calculate each ring radius in pixels
                 rad_1mm = .5*app.fullImSizePix(1)/app.RealImageSizemm.Value;
                 rad_3mm = 1.5*app.fullImSizePix(1)/app.RealImageSizemm.Value;
-                
+            
                 fig = figure;
                 image(app.inputImage)
                 fig.Visible = 'off';
@@ -60,18 +59,18 @@ function regionalmetrics = regionalAnalysis(app)
                 if isempty(app.FAZ_ctr)
                     app.FAZ_ctr = app.fullImSizePix/2;
                 end
-                
+            
                 roi_1mm = images.roi.Circle(gca,"Center",app.FAZ_ctr,"Radius",rad_1mm,"LineWidth",2,"Color",'y');
                 roi_3mm = images.roi.Circle(gca,"Center",app.FAZ_ctr,"Radius",rad_3mm,"LineWidth",2,"Color",'y');
-                
+            
                 foveal_mask = roi_1mm.createMask; %Foveal circle
                 parafoveal_mask = roi_3mm.createMask-roi_1mm.createMask; %Parafoveal rim
-                
+            
                 %Create a mask for each segment - start with assumption
                 %of OS (right eye?) and swap labels after if needed...
-                
+            
                 sector_masks = zeros(app.fullImSizePix(1), app.fullImSizePix(2), 6);
-                
+            
                 for ii = 1:6
                     theta = linspace(0, -60, 1000)-60*(ii-1);
                     x_sector = [app.FAZ_ctr(1) rad_3mm*cosd(theta)+app.FAZ_ctr(1) app.FAZ_ctr(1)];
@@ -83,7 +82,7 @@ function regionalmetrics = regionalAnalysis(app)
                 end
                 drawnow
                 close(fig)
-                
+            
                 binaryReg{1} = app.BinaryImage.*foveal_mask; %foveal circle
                 binaryReg{1} = binaryReg{1}(round(max(app.FAZ_ctr(1)-rad_3mm,1)):round(min(app.FAZ_ctr(1)+rad_3mm,app.fullImSizePix(1))), round(max(app.FAZ_ctr(2)-rad_3mm,1)):round(min(app.FAZ_ctr(2)+rad_3mm,app.fullImSizePix(2))));
                 binaryReg{2} = app.BinaryImage.*parafoveal_mask; %Parafoveal rim
@@ -99,7 +98,7 @@ function regionalmetrics = regionalAnalysis(app)
                 binaryReg{7} = binaryReg{7}(1:round(app.fullImSizePix(1)/2),:);
                 binaryReg{8} = app.BinaryImage.*sector_masks(:,:,5); %inferior-parafoveal rim
                 binaryReg{8} = binaryReg{8}(round(app.fullImSizePix(1)/2+1):end,:);
-
+            
                 imgReg{1} = app.inputImage.*foveal_mask; %foveal circle
                 imgReg{1} = imgReg{1}(round(max(app.FAZ_ctr(1)-rad_3mm,1)):round(min(app.FAZ_ctr(1)+rad_3mm,app.fullImSizePix(1))), round(max(app.FAZ_ctr(2)-rad_3mm,1)):round(min(app.FAZ_ctr(2)+rad_3mm,app.fullImSizePix(2))));
                 imgReg{2} = app.inputImage.*parafoveal_mask; %Parafoveal rim
@@ -115,13 +114,13 @@ function regionalmetrics = regionalAnalysis(app)
                 imgReg{7} = imgReg{7}(1:round(app.fullImSizePix(1)/2),:);
                 imgReg{8} = app.inputImage.*sector_masks(:,:,5); %inferior-parafoveal rim
                 imgReg{8} = imgReg{8}(round(app.fullImSizePix(1)/2+1):end,:);
-                
+            
                 if strcmp(app.RL.Value,'Right Eye')
                     app.RAlabels = ["Foveal circle" "Parafoveal rim " "Superior hemi-parafoveal rim" "Inferior hemi-parafoveal rim" "Nasal parafoveal rim" "Tempo parafoveal rim" "Superior parafoveal rim" "Inferior parafoveal rim"];
                 else
                     app.RAlabels = ["Foveal circle" "Parafoveal rim " "Superior hemi-parafoveal rim" "Inferior hemi-parafoveal rim" "Tempo parafoveal rim" "Nasal parafoveal rim" "Superior parafoveal rim" "Inferior parafoveal rim"];
                 end
-                
+            
                 imgArea_pix_vec = [sum(sum(foveal_mask)) sum(sum(parafoveal_mask)) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,2)+sector_masks(:,:,3)))...
                     sum(sum(sector_masks(:,:,4)+sector_masks(:,:,5)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,1)+sector_masks(:,:,6))) sum(sum(sector_masks(:,:,3)+sector_masks(:,:,4)))...
                     sum(sum(sector_masks(:,:,2))) sum(sum(sector_masks(:,:,2)))]; %is the last one a bug? Repeated sector_masks(:,:,2)

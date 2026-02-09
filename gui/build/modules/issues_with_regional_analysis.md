@@ -24,6 +24,10 @@ What should the formula of calculating VLD_pct be?
 ## 3. Cropping vs area mismatch
 In Matlab ETDRS and Foveal-ring grid types, we crop some regions.
 
+1. What regions should be cropped?
+2. When we crop a region, should we crop the mask used for the area too?
 
-When we crop a region, should we crop the mask used for the area too?
-
+In ETDRS:
+	•	we crop binaryReg[0] and imgReg[0] (foveal circle)
+	•	but don’t crop binaryReg[1] (parafoveal ring consideration)
+MATLAB crops only the foveal circle too.

@@ -10,6 +10,7 @@ import math
 from scipy.ndimage import distance_transform_edt
 import os
 from openpyxl import Workbook
+import matplotlib.pyplot as plt
 
 RIGHT_EYE = "Right Eye"
 
@@ -128,11 +129,22 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	run_analysis_on_regions(canvas, binaryReg, imgReg, imgArea_pix_vec=None, pix_to_mm=pix_to_mm, grid_type=GridType.SQUARE_GRID)
 
 def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
+	'''
+	ETDRS stands for Early Treatment Diabetic Retinopathy Study.
+
+In retinal imaging, the ETDRS grid is a standardized way of dividing the macula into clinically meaningful regions so measurements are comparable across studies, devices, and software.
+
+Conceptually, the ETDRS grid consists of:
+	1.	A central circular region (the fovea)
+	2.	A surrounding ring (the parafoveal region between 1mm and 3mm from the center)
+	3.	That ring is divided into angular sectors (here: 6 sectors of 60° each)
+	'''
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# foveal and parafoveal masks
@@ -265,13 +277,26 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
 
+	# plt.imshow(canvas.original_img, cmap="gray")
+	# colors = ["r","g","b","y","c","m"]
+
+	# for i in range(6):
+	# 		mask = sector_masks[:, :, i]
+	# 		plt.contour(mask, colors=colors[i], linewidths=1)
+	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
+
+	# plt.axis('off')
+	# plt.scatter(cx, cy, c="white")
+	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
+
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# Foveal & parafoveal masks
@@ -404,7 +429,8 @@ def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 	rad_1mm = 1 * H / image_size_mm
 	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 	
 	# Inner + outer masks
@@ -521,7 +547,8 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	rad_2mm = 1.0 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# Create circular ROI masks
@@ -639,7 +666,7 @@ def run_analysis_on_regions(
 				links = getattr(canvas, "skeleton_links", None)
 				nodes = getattr(canvas, "skeleton_nodes", None)
 
-				if links and len(links) > 0:
+				if links is not None and len(links) > 0:
 						# MATLAB: sum(~[app.Gnodes.ep])
 						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
 
