@@ -141,13 +141,14 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    for image_file in image_files:
+    for (index, image_file) in enumerate(image_files, start=1):
         #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
         canvas.after(0, lambda: change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red))
 
         # Load image
+        skipped_images = []
         try:
             load_image(canvas, 550, 255, 180, 170, silent=True, filePath=image_path)
 
