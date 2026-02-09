@@ -7,6 +7,7 @@ import numpy as np
 import os
 from modules.change_status import *
 from modules.clear import *
+from modules.binarise_image import *
 
 # Load an image for processing
 # @param {Boolean} silent = True for automated batch processing/image subset
@@ -80,6 +81,14 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     if not hasattr(canvas, "_image_refs"):
         canvas._image_refs = {}
     canvas._image_refs["original_img"] = img_tk
+
+    # Prebinary, load original image as binarized if prebinary is toggled on
+    if canvas.prebinary_var.get():    # --- Store result back to canvas ---
+        canvas.binary_image = canvas.original_img.copy()
+        canvas.inverted_image = canvas.binary_image.copy()
+
+        # --- Display binarised image ---
+        display_binarised_image(canvas, canvas.binary_image)
 
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
