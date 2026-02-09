@@ -18,6 +18,8 @@ def is_batch_processing_enabled(canvas: Canvas) -> bool:
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
     return hasattr(canvas, "apply_regional_analysis_bool") and canvas.apply_regional_analysis_bool.get() == 1
 
+def is_prebinary_enabled(canvas:Canvas) ->bool:
+    return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
 
 def start_processing(canvas: Canvas):
     """
@@ -67,17 +69,19 @@ def make_save_folder(canvas: Canvas):
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
     if is_regional_analysis_enabled(canvas):
-        print("Starting binarising...")
-        binarise_image(canvas)  # long-running
+        if not is_prebinary_enabled(canvas):
+            print("Starting binarising...")
+            binarise_image(canvas)  # long-running
 
         print("Binarisation completed. Running regional analysis...")
         run_regional_analysis(canvas)
         print("Regional analysis completed.")
     else:
-      print("Starting binarising...")
-      binarise_image(canvas)  # long-running
+      if not is_prebinary_enabled(canvas):
+        print("Starting binarising...")
+        binarise_image(canvas)  # long-running
 
-      print("Binarisation completed. Starting skeletonisation...")
+        print("Binarisation completed. Starting skeletonisation...")
       # display = not batch  # only display skeleton in single image mode
       display = True
       skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
