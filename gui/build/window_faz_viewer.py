@@ -247,6 +247,9 @@ def subwindow4(canvas, editable=False):
     def display_fixed_image():
         grayscale_arr = auto_faz(image=canvas.original_img)
 
+        if grayscale_arr.sum() == 0:
+            return messagebox.showwarning("No FAZ detected", "Failed to detect any FAZ region in this image.", parent=subwindow4)
+        
         # grayscale image from array
         grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
 

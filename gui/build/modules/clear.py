@@ -30,6 +30,9 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
     other_item_ids_to_remove = {"original_img_id","filename_text_id"}
   elif clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING:
     other_item_ids_to_remove = {}
+    # Skip clearing binary image if prebinary is toggled on
+    if canvas.prebinary_var.get():
+      processed_results_ids.remove("binary_img_id") 
   
   item_ids_to_remove.update(processed_results_ids)
   item_ids_to_remove.update(other_item_ids_to_remove)
@@ -41,9 +44,12 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
   # Clear all visual images on the canvas
   if hasattr(canvas, "_image_refs"):
     original_img_ref = canvas._image_refs.get("original_img")
+    binary_img_ref = canvas._image_refs.get("binary_img") if canvas.prebinary_var.get() else None
     canvas._image_refs.clear() 
     if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and original_img_ref:
       canvas._image_refs["original_img"] = original_img_ref
+    if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and binary_img_ref:
+      canvas._image_refs["binary_img"] = binary_img_ref
 
   for key, val in canvas.__dict__.items():
     if key.endswith("_value_id"):

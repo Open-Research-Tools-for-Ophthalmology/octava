@@ -18,6 +18,8 @@ def is_batch_processing_enabled(canvas: Canvas) -> bool:
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
     return hasattr(canvas, "apply_regional_analysis_bool") and canvas.apply_regional_analysis_bool.get() == 1
 
+def is_prebinary_enabled(canvas:Canvas) ->bool:
+    return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
 
 def start_processing(canvas: Canvas):
     """
@@ -67,17 +69,19 @@ def make_save_folder(canvas: Canvas):
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
     if is_regional_analysis_enabled(canvas):
-        print("Starting binarising...")
-        binarise_image(canvas)  # long-running
+        if not is_prebinary_enabled(canvas):
+            print("Starting binarising...")
+            binarise_image(canvas)  # long-running
 
         print("Binarisation completed. Running regional analysis...")
         run_regional_analysis(canvas)
         print("Regional analysis completed.")
     else:
-      print("Starting binarising...")
-      binarise_image(canvas)  # long-running
+      if not is_prebinary_enabled(canvas):
+        print("Starting binarising...")
+        binarise_image(canvas)  # long-running
 
-      print("Binarisation completed. Starting skeletonisation...")
+        print("Binarisation completed. Starting skeletonisation...")
       # display = not batch  # only display skeleton in single image mode
       display = True
       skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
@@ -137,13 +141,14 @@ def start_batch_processing_threaded(canvas: Canvas):
         return change_status_to_ready(canvas)
 
     # Process each image
-    for image_file in image_files:
+    for (index, image_file) in enumerate(image_files, start=1):
         #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
         canvas.after(0, lambda: change_queue_status(canvas, status=f"Processing {index} of {len(image_files)}", fill=theme_red))
 
         # Load image
+        skipped_images = []
         try:
             load_image(canvas, 550, 255, 180, 170, silent=True, filePath=image_path)
 

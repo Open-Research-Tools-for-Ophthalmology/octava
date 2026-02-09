@@ -561,7 +561,16 @@ canvas.tortuosity_value_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
+# Event handlers
+def on_prebinary_toggle():
+    if canvas.prebinary_var.get() and getattr(canvas, "bp_selected_folder_path", None) is None and getattr(canvas, "original_img", None) is not None:
+        canvas.binary_image = canvas.original_img
+        canvas.inverted_image = canvas.original_img.copy()
+        display_binarised_image(canvas, canvas.original_img)
+    else:
+        clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
 
+prebinary_checkbox.configure(command=on_prebinary_toggle)
 
 window.resizable(False, False)
 window.mainloop()
