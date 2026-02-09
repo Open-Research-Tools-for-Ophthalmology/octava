@@ -677,6 +677,9 @@ def skel2graph3d(skel, thr=0):
 
     link_list = []
     l_idx = 0
+    is_canal_voxel = np.zeros_like(skel2_flat, dtype=bool)
+    if cans.size > 0:
+        is_canal_voxel[cans[:, 0]] = True
 
     for curr_node_idx_cluster, node_obj in enumerate(node_list):
 
@@ -700,8 +703,8 @@ def skel2graph3d(skel, thr=0):
             candidates = candidates[cand_mask]
             if candidates.size == 0:
                 continue
-
-            candidates = candidates[np.isin(candidates, cans[:, 0])]
+            
+            candidates = candidates[is_canal_voxel[candidates]]
 
             # follow each canal candidate
             for c in candidates:
