@@ -47,7 +47,7 @@ canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
-canvas.image_size_var = DoubleVar(value=5.0)  # Variable for Image Size Spinbox
+canvas.image_size_var = DoubleVar(value=5.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 # regional analysis settings variables
 canvas.eye_var = StringVar(value="Right Eye")
@@ -189,9 +189,9 @@ canvas.create_text(
 )
 # image size Spinbox
 image_size_spinbox = Spinbox(
-    from_=1.0,
-    to=10.0,
-    increment=0.5,
+    from_=0.50,
+    to=10.00,
+    increment=0.50,
     width=4,
     textvariable=canvas.image_size_var,
     bg=bg_colour,

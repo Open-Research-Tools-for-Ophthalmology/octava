@@ -128,11 +128,22 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	run_analysis_on_regions(canvas, binaryReg, imgReg, imgArea_pix_vec=None, pix_to_mm=pix_to_mm, grid_type=GridType.SQUARE_GRID)
 
 def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
+	'''
+	ETDRS stands for Early Treatment Diabetic Retinopathy Study.
+
+In retinal imaging, the ETDRS grid is a standardized way of dividing the macula into clinically meaningful regions so measurements are comparable across studies, devices, and software.
+
+Conceptually, the ETDRS grid consists of:
+	1.	A central circular region (the fovea)
+	2.	A surrounding ring (the parafoveal region between 1mm and 3mm from the center)
+	3.	That ring is divided into angular sectors (here: 6 sectors of 60° each)
+	'''
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# foveal and parafoveal masks
@@ -265,13 +276,26 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
 
+	# plt.imshow(canvas.original_img, cmap="gray")
+	# colors = ["r","g","b","y","c","m"]
+
+	# for i in range(6):
+	# 		mask = sector_masks[:, :, i]
+	# 		plt.contour(mask, colors=colors[i], linewidths=1)
+	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
+
+	# plt.axis('off')
+	# plt.scatter(cx, cy, c="white")
+	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
+
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# Foveal & parafoveal masks
@@ -404,7 +428,8 @@ def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 	rad_1mm = 1 * H / image_size_mm
 	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 	
 	# Inner + outer masks
@@ -521,7 +546,8 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	rad_2mm = 1.0 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
-	canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
 
 	# Create circular ROI masks
@@ -639,7 +665,7 @@ def run_analysis_on_regions(
 				links = getattr(canvas, "skeleton_links", None)
 				nodes = getattr(canvas, "skeleton_nodes", None)
 
-				if links and len(links) > 0:
+				if links is not None and len(links) > 0:
 						# MATLAB: sum(~[app.Gnodes.ep])
 						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
 
@@ -824,69 +850,105 @@ def compute_branch_point_density(branchpoint_count, total_length_mm):
 	return branchpoint_density
 
 
-def compute_fractal_dimension(canvas):
-	"""
-	Compute fractal dimension using box-counting method.
+# def compute_fractal_dimension(canvas):
+# 	"""
+# 	Compute fractal dimension using box-counting method.
 
-	Parameters
-	----------
-	canvas : object
-			Canvas holding skeleton image.
+# 	Parameters
+# 	----------
+# 	canvas : object
+# 			Canvas holding skeleton image.
 
-	Returns
-	-------
-	float
-			Fractal dimension (slope of log-log plot).
-	"""
-	skeleton = canvas.skeleton_image.astype(bool)
+# 	Returns
+# 	-------
+# 	float
+# 			Fractal dimension (slope of log-log plot).
+# 	"""
+# 	skeleton = canvas.skeleton_image.astype(bool)
 
-	Z = (skeleton > 0)
+# 	Z = (skeleton > 0)
 
-	h, w = Z.shape
-	Nx = max(h, w)
+# 	h, w = Z.shape
+# 	Nx = max(h, w)
 
-	if Nx < 2:
-			fractal_dim = 0.0
-	else:
-			exponent = math.ceil(math.log2(Nx))
-			width = 2 ** exponent
+# 	if Nx < 2:
+# 			fractal_dim = 0.0
+# 	else:
+# 			exponent = math.ceil(math.log2(Nx))
+# 			width = 2 ** exponent
 
-			Z_pad = np.zeros((width, width), dtype=bool)
-			Z_pad[:h, :w] = Z
+# 			Z_pad = np.zeros((width, width), dtype=bool)
+# 			Z_pad[:h, :w] = Z
 
-			counts = []
-			r_values = []
+# 			counts = []
+# 			r_values = []
 
-			counts.append(np.sum(Z_pad))
-			r_values.append(1)
+# 			counts.append(np.sum(Z_pad))
+# 			r_values.append(1)
 
-			current_img = Z_pad
+# 			current_img = Z_pad
 
-			for i in range(1, exponent + 1):
-					rows, cols = current_img.shape
-					if rows < 2 or cols < 2:
-							break
+# 			for i in range(1, exponent + 1):
+# 					rows, cols = current_img.shape
+# 					if rows < 2 or cols < 2:
+# 							break
 
-					shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+# 					shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
 
-					n_box = np.sum(shrunk_img)
-					counts.append(n_box)
-					r_values.append(2 ** i)
+# 					n_box = np.sum(shrunk_img)
+# 					counts.append(n_box)
+# 					r_values.append(2 ** i)
 
-					current_img = shrunk_img
+# 					current_img = shrunk_img
 
-			valid_indices = [i for i, c in enumerate(counts) if c > 0]
+# 			valid_indices = [i for i, c in enumerate(counts) if c > 0]
 
-			if len(valid_indices) >= 2:
-					x = np.log([r_values[i] for i in valid_indices])
-					y = -np.log([counts[i] for i in valid_indices])
+# 			if len(valid_indices) >= 2:
+# 					x = np.log([r_values[i] for i in valid_indices])
+# 					y = -np.log([counts[i] for i in valid_indices])
 
-					coeffs = np.polyfit(x, y, 1)
-					fractal_dim = float(coeffs[0])
-			else:
-					fractal_dim = 0.0
+# 					coeffs = np.polyfit(x, y, 1)
+# 					fractal_dim = float(coeffs[0])
+# 			else:
+# 					fractal_dim = 0.0
 	
-	return fractal_dim
+# 	return fractal_dim
+
+
+def compute_fractal_dimension(canvas):
+    img = canvas.skeleton_image.astype(bool)
+
+    h, w = img.shape
+    Nx = max(h, w)
+    if Nx < 2:
+        return 0.0
+
+    numIterations = int(math.ceil(math.log(Nx, 2)))  # ceil(log2(Nx))
+    width = 2 ** numIterations
+
+    Z = np.zeros((width, width), dtype=bool)
+    Z[:h, :w] = img
+
+    # MATLAB: n_r(numIterations+1) = sum(sum(img));
+    n_r = [int(Z.sum())]
+
+    current = Z
+    for _ in range(numIterations):
+        rows, cols = current.shape
+        if rows < 2 or cols < 2:
+            break
+        # MATLAB's effect is repeated 2×2 OR pooling
+        current = current.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+        n_r.append(int(current.sum()))
+
+    # MATLAB does: n_r = n_r(end:-1:1); r = 2.^(0:numIterations);
+    # But their final polyfit uses matching r with n_r ordered from r=1,2,4,...
+    r = 2 ** np.arange(len(n_r), dtype=float)          # [1,2,4,...]
+    n_r = np.array(n_r, dtype=float)
+
+    # MATLAB: P = polyfit(log(r), -log(n_r), 1); slope = P(1);
+    P = np.polyfit(np.log(r), -np.log(n_r), 1)
+    return float(P[0])
 
 
 def compute_mean_tortuosity(links, binary):
