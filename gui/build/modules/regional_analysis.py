@@ -290,6 +290,43 @@ Conceptually, the ETDRS grid consists of:
 
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
+	"""
+	Construct an Extended ETDRS parafoveal grid for regional retinal analysis.
+
+	This function implements an Extended ETDRS grid based on the standard
+	ETDRS parafoveal ring (1–3 mm diameter), with increased angular resolution
+	and additional composite regions for enhanced regional sensitivity.
+
+	The algorithm performs the following steps:
+
+	1. Convert physical radii (0.5 mm and 1.5 mm) into pixel units using the
+		image dimensions and real-world image scale.
+	2. Define the foveal avascular zone (FAZ) center, defaulting to the image
+		center if not previously specified.
+	3. Generate circular masks for the foveal region (inner 1 mm diameter)
+		and the parafoveal ring (1–3 mm diameter).
+	4. Subdivide the parafoveal ring into eight equal angular sectors
+		(45° wedges) covering the full 360° circumference.
+	5. Exclude the foveal region from all wedge masks to ensure analysis is
+		restricted to parafoveal tissue only.
+	6. Define ten analysis regions in total:
+		- Eight individual 45° parafoveal wedges
+		- One 90° nasal composite wedge
+		- One 90° temporal composite wedge
+	7. Extract corresponding binary vessel masks and grayscale image data for
+		each region, applying quadrant-based cropping to preserve anatomical
+		orientation and reduce irrelevant image content.
+	8. Assign anatomically correct region labels, accounting for eye laterality
+		(right vs. left eye).
+	9. Compute pixel-area values for each region to support normalization of
+		downstream vascular metrics.
+
+	The resulting regional masks and image subsets are used for quantitative
+	vascular analysis, including vessel density, skeleton-based metrics, and
+	fractal dimension estimation. The Extended ETDRS grid enables improved
+	directional sensitivity and facilitates nasal–temporal asymmetry analysis
+	beyond the standard ETDRS grid.
+"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -422,8 +459,76 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 		grid_type=GridType.EXTENDED_ETDRS_GRID,   # change per function
 	) 
 
+	plt.figure(figsize=(6, 6))
+	plt.imshow(canvas.original_img, cmap="gray")
+
+	colors = ["r", "g", "b", "y", "c", "m", "orange", "lime"]
+
+	for i in range(8):
+			mask = sector_masks[:, :, i]
+			plt.contour(mask, colors=[colors[i]], linewidths=1.5)
+			plt.text(
+					cx + 10 * np.cos(np.deg2rad(-45*i)),
+					cy + 10 * np.sin(np.deg2rad(-45*i)),
+					f"S{i+1}",
+					color=colors[i],
+					fontsize=10,
+					weight="bold",
+			)
+
+	# plt.scatter(cx, cy, c="white", s=20)  # FAZ center
+	# plt.axis("off")
+
+	# plt.savefig(
+	# 		"extended_etdrs_wedge_orientation_debug.png",
+	# 		dpi=300,
+	# 		bbox_inches="tight",
+	# )
+	# plt.close()
+	# print("Saved extended ETDRS grid debug image with wedge orientations.")
+
 
 def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
+	"""
+Construct an Optic Nerve Head (ONH) / peripapillary grid for regional analysis.
+
+This function defines a peripapillary analysis grid centered on the optic
+nerve head (ONH). The grid consists of an inner ONH exclusion zone and an
+outer peripapillary ring, which is subdivided into angular sectors and
+composite regions to enable detailed regional vascular analysis.
+
+The algorithm performs the following steps:
+
+1. Convert physical radii (1 mm inner ONH radius and an outer peripapillary
+   radius, default 2.0 mm) into pixel units based on the image size and
+   real-world scaling.
+2. Define the ONH center (FAZ/ONH center), defaulting to the image center if
+   not previously specified.
+3. Create a circular inner mask representing the ONH region and an outer
+   circular mask representing the peripapillary boundary.
+4. Define the peripapillary ring as the region between the inner ONH mask
+   and the outer circular mask.
+5. Subdivide the peripapillary ring into eight equal 45° angular sectors
+   covering the full 360° circumference.
+6. Exclude the ONH region from all sector masks to ensure analysis is
+   restricted to peripapillary tissue.
+7. Define fifteen analysis regions in total:
+   - Eight individual 45° peripapillary wedges
+   - Two superior and inferior hemispheric regions
+   - Four cardinal composite regions (superior, inferior, nasal, temporal)
+   - One full peripapillary ring region
+8. Extract corresponding binary vessel masks and grayscale image data for
+   each region, using quadrant-based cropping to preserve anatomical
+   orientation and reduce irrelevant image content.
+9. Assign anatomically correct region labels, accounting for eye laterality
+   (right vs. left eye).
+10. Compute pixel-area values for each region to support normalization of
+    downstream vascular metrics.
+
+The resulting regional masks and image subsets are used for quantitative
+analysis of peripapillary vasculature, including vessel density,
+skeleton-based metrics, tortuosity, and fractal dimension.
+"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 1 * H / image_size_mm
 	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
@@ -540,7 +645,55 @@ def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 		grid_type=GridType.ONH,   # change per function
 	)
 
+
+
 def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
+	"""
+    Construct a foveal ring grid for concentric retinal regional analysis.
+
+    This function defines a fovea-centered, radially symmetric analysis grid
+    consisting of concentric circular regions surrounding the foveal avascular
+    zone (FAZ). The grid enables quantification of vascular metrics as a
+    function of radial distance from the foveal center, independent of
+    angular orientation.
+
+    The grid is composed of three regions:
+
+    1. FAZ circle (central foveal region)
+       - Radius: 0.5 mm
+       - Typically avascular or minimally vascular
+
+    2. Inner parafoveal ring
+       - Radial extent: 0.5–1.0 mm from the foveal center
+       - Corresponds to the region of highest capillary density
+
+    3. Outer parafoveal ring
+       - Radial extent: 1.0–1.5 mm from the foveal center
+       - Represents the outer parafoveal vascular network
+
+    The algorithm performs the following steps:
+
+    1. Converts physical radii (0.5 mm, 1.0 mm, and 1.5 mm) into pixel units
+       using the image size and real-world scaling.
+    2. Determines the foveal center (FAZ center), defaulting to the image
+       center if not previously defined.
+    3. Creates concentric circular binary masks for each radial region.
+    4. Defines ring masks by subtracting inner regions from outer regions.
+    5. Extracts corresponding binary vessel masks and grayscale image data
+       for each region.
+    6. Crops central regions to a tight bounding box (±1.5 mm) to reduce
+       computational load while preserving anatomical context.
+    7. Assigns descriptive region labels.
+    8. Computes pixel-area values for each region to enable normalization of
+       downstream vascular metrics.
+
+    The resulting regional masks and image subsets are passed to the
+    downstream regional analysis pipeline to compute vessel density,
+    skeleton-based metrics, tortuosity, and fractal dimension.
+
+    This foveal ring grid is particularly suited for FAZ-centric and
+    radial-gradient analyses in OCT-A studies.
+    """
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_2mm = 1.0 * H / image_size_mm
