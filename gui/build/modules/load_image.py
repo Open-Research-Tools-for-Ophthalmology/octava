@@ -92,7 +92,7 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
 
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
-    canvas.FileLabelName = path.stem.replace("_", "")
+    canvas.FileLabelName = path.stem # match input/output naming convention
     canvas.lastPath = str(path.parent)
     canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
     canvas.FAZ_ctr = np.array([orig_h // 2, orig_w // 2])
