@@ -10,6 +10,7 @@ import math
 from scipy.ndimage import distance_transform_edt
 import os
 from openpyxl import Workbook
+import cv2
 
 RIGHT_EYE = "Right Eye"
 
@@ -476,16 +477,16 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 					weight="bold",
 			)
 
-	# plt.scatter(cx, cy, c="white", s=20)  # FAZ center
-	# plt.axis("off")
+	plt.scatter(cx, cy, c="white", s=20)  # FAZ center
+	plt.axis("off")
 
-	# plt.savefig(
-	# 		"extended_etdrs_wedge_orientation_debug.png",
-	# 		dpi=300,
-	# 		bbox_inches="tight",
-	# )
-	# plt.close()
-	# print("Saved extended ETDRS grid debug image with wedge orientations.")
+	plt.savefig(
+			"extended_etdrs_wedge_orientation_debug.png",
+			dpi=300,
+			bbox_inches="tight",
+	)
+	plt.close()
+	print("Saved extended ETDRS grid debug image with wedge orientations.")
 
 
 def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
@@ -500,30 +501,30 @@ composite regions to enable detailed regional vascular analysis.
 The algorithm performs the following steps:
 
 1. Convert physical radii (1 mm inner ONH radius and an outer peripapillary
-   radius, default 2.0 mm) into pixel units based on the image size and
-   real-world scaling.
+	 radius, default 2.0 mm) into pixel units based on the image size and
+	 real-world scaling.
 2. Define the ONH center (FAZ/ONH center), defaulting to the image center if
-   not previously specified.
+	 not previously specified.
 3. Create a circular inner mask representing the ONH region and an outer
-   circular mask representing the peripapillary boundary.
+	 circular mask representing the peripapillary boundary.
 4. Define the peripapillary ring as the region between the inner ONH mask
-   and the outer circular mask.
+	 and the outer circular mask.
 5. Subdivide the peripapillary ring into eight equal 45° angular sectors
-   covering the full 360° circumference.
+	 covering the full 360° circumference.
 6. Exclude the ONH region from all sector masks to ensure analysis is
-   restricted to peripapillary tissue.
+	 restricted to peripapillary tissue.
 7. Define fifteen analysis regions in total:
-   - Eight individual 45° peripapillary wedges
-   - Two superior and inferior hemispheric regions
-   - Four cardinal composite regions (superior, inferior, nasal, temporal)
-   - One full peripapillary ring region
+	 - Eight individual 45° peripapillary wedges
+	 - Two superior and inferior hemispheric regions
+	 - Four cardinal composite regions (superior, inferior, nasal, temporal)
+	 - One full peripapillary ring region
 8. Extract corresponding binary vessel masks and grayscale image data for
-   each region, using quadrant-based cropping to preserve anatomical
-   orientation and reduce irrelevant image content.
+	 each region, using quadrant-based cropping to preserve anatomical
+	 orientation and reduce irrelevant image content.
 9. Assign anatomically correct region labels, accounting for eye laterality
-   (right vs. left eye).
+	 (right vs. left eye).
 10. Compute pixel-area values for each region to support normalization of
-    downstream vascular metrics.
+		downstream vascular metrics.
 
 The resulting regional masks and image subsets are used for quantitative
 analysis of peripapillary vasculature, including vessel density,
@@ -649,51 +650,51 @@ skeleton-based metrics, tortuosity, and fractal dimension.
 
 def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	"""
-    Construct a foveal ring grid for concentric retinal regional analysis.
+		Construct a foveal ring grid for concentric retinal regional analysis.
 
-    This function defines a fovea-centered, radially symmetric analysis grid
-    consisting of concentric circular regions surrounding the foveal avascular
-    zone (FAZ). The grid enables quantification of vascular metrics as a
-    function of radial distance from the foveal center, independent of
-    angular orientation.
+		This function defines a fovea-centered, radially symmetric analysis grid
+		consisting of concentric circular regions surrounding the foveal avascular
+		zone (FAZ). The grid enables quantification of vascular metrics as a
+		function of radial distance from the foveal center, independent of
+		angular orientation.
 
-    The grid is composed of three regions:
+		The grid is composed of three regions:
 
-    1. FAZ circle (central foveal region)
-       - Radius: 0.5 mm
-       - Typically avascular or minimally vascular
+		1. FAZ circle (central foveal region)
+			 - Radius: 0.5 mm
+			 - Typically avascular or minimally vascular
 
-    2. Inner parafoveal ring
-       - Radial extent: 0.5–1.0 mm from the foveal center
-       - Corresponds to the region of highest capillary density
+		2. Inner parafoveal ring
+			 - Radial extent: 0.5–1.0 mm from the foveal center
+			 - Corresponds to the region of highest capillary density
 
-    3. Outer parafoveal ring
-       - Radial extent: 1.0–1.5 mm from the foveal center
-       - Represents the outer parafoveal vascular network
+		3. Outer parafoveal ring
+			 - Radial extent: 1.0–1.5 mm from the foveal center
+			 - Represents the outer parafoveal vascular network
 
-    The algorithm performs the following steps:
+		The algorithm performs the following steps:
 
-    1. Converts physical radii (0.5 mm, 1.0 mm, and 1.5 mm) into pixel units
-       using the image size and real-world scaling.
-    2. Determines the foveal center (FAZ center), defaulting to the image
-       center if not previously defined.
-    3. Creates concentric circular binary masks for each radial region.
-    4. Defines ring masks by subtracting inner regions from outer regions.
-    5. Extracts corresponding binary vessel masks and grayscale image data
-       for each region.
-    6. Crops central regions to a tight bounding box (±1.5 mm) to reduce
-       computational load while preserving anatomical context.
-    7. Assigns descriptive region labels.
-    8. Computes pixel-area values for each region to enable normalization of
-       downstream vascular metrics.
+		1. Converts physical radii (0.5 mm, 1.0 mm, and 1.5 mm) into pixel units
+			 using the image size and real-world scaling.
+		2. Determines the foveal center (FAZ center), defaulting to the image
+			 center if not previously defined.
+		3. Creates concentric circular binary masks for each radial region.
+		4. Defines ring masks by subtracting inner regions from outer regions.
+		5. Extracts corresponding binary vessel masks and grayscale image data
+			 for each region.
+		6. Crops central regions to a tight bounding box (±1.5 mm) to reduce
+			 computational load while preserving anatomical context.
+		7. Assigns descriptive region labels.
+		8. Computes pixel-area values for each region to enable normalization of
+			 downstream vascular metrics.
 
-    The resulting regional masks and image subsets are passed to the
-    downstream regional analysis pipeline to compute vessel density,
-    skeleton-based metrics, tortuosity, and fractal dimension.
+		The resulting regional masks and image subsets are passed to the
+		downstream regional analysis pipeline to compute vessel density,
+		skeleton-based metrics, tortuosity, and fractal dimension.
 
-    This foveal ring grid is particularly suited for FAZ-centric and
-    radial-gradient analyses in OCT-A studies.
-    """
+		This foveal ring grid is particularly suited for FAZ-centric and
+		radial-gradient analyses in OCT-A studies.
+		"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_2mm = 1.0 * H / image_size_mm
@@ -790,7 +791,15 @@ def run_analysis_on_regions(
 		"""
 		canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
 
+		# --------------------------------------------------
+		# Create validation folder
+		# --------------------------------------------------
+		validation_folder = os.path.join(canvas.current_save_folder, 		"regional_validation")
+		os.makedirs(validation_folder, exist_ok=True)
+
 		for i in range(len(binaryReg)):
+				# change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+
 				# Skeletonize this region
 				skeletonise(
 						canvas,
@@ -799,7 +808,32 @@ def run_analysis_on_regions(
 						display=False,
 				)
 
-				change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]))
+				region_name = re.sub(r'[^\w]', '', region_name)
+				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
+
+				cv2.imwrite(
+					os.path.join(validation_folder, f"{file_prefix}_img.png"),
+					imgReg[i].astype(np.uint8),
+				)
+
+				cv2.imwrite(
+						os.path.join(validation_folder, f"{file_prefix}_binary.png"),
+						binaryReg[i].astype(np.uint8),
+				)
+
+				cv2.imwrite(
+						os.path.join(validation_folder, f"{file_prefix}_skel.png"),
+						(canvas.skeleton_image.astype(np.uint8) * 255),
+				)
+
+				np.savez(
+						os.path.join(validation_folder, f"{file_prefix}_data.npz"),
+						imgRegion=imgReg[i],
+						binaryRegion=binaryReg[i],
+						skelRegion=(canvas.skeleton_image.astype(np.uint8) * 255),
+				)
+
 
 				# Image area (MATLAB conditional)
 				if grid_type != GridType.SQUARE_GRID:
@@ -844,9 +878,9 @@ def run_analysis_on_regions(
 
 						# MATLAB: Mean / Median length (µm)
 						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
-						print('links length in pix:', links_length_pix)
+						# print('links length in pix:', links_length_pix)
 						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
-						print('mean length:', canvas.regional_metrics[i]["MeanLength"])
+						# print('mean length:', canvas.regional_metrics[i]["MeanLength"])
 						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_pix)*pix_to_mm*1000)
 
 						# MATLAB: Mean / Median diameter (µm)
@@ -934,7 +968,7 @@ def compute_length(links, binary, pix_to_mm):
 			total_length_pix += length_pix
 			link.pixLength = length_pix
 
-	print([l.pixLength for l in links])
+	# print([l.pixLength for l in links])
 	total_length_mm = total_length_pix * pix_to_mm
 	return total_length_mm
 
@@ -1069,39 +1103,39 @@ def compute_branch_point_density(branchpoint_count, total_length_mm):
 
 
 def compute_fractal_dimension(canvas):
-    img = canvas.skeleton_image.astype(bool)
+		img = canvas.skeleton_image.astype(bool)
 
-    h, w = img.shape
-    Nx = max(h, w)
-    if Nx < 2:
-        return 0.0
+		h, w = img.shape
+		Nx = max(h, w)
+		if Nx < 2:
+				return 0.0
 
-    numIterations = int(math.ceil(math.log(Nx, 2)))  # ceil(log2(Nx))
-    width = 2 ** numIterations
+		numIterations = int(math.ceil(math.log(Nx, 2)))  # ceil(log2(Nx))
+		width = 2 ** numIterations
 
-    Z = np.zeros((width, width), dtype=bool)
-    Z[:h, :w] = img
+		Z = np.zeros((width, width), dtype=bool)
+		Z[:h, :w] = img
 
-    # MATLAB: n_r(numIterations+1) = sum(sum(img));
-    n_r = [int(Z.sum())]
+		# MATLAB: n_r(numIterations+1) = sum(sum(img));
+		n_r = [int(Z.sum())]
 
-    current = Z
-    for _ in range(numIterations):
-        rows, cols = current.shape
-        if rows < 2 or cols < 2:
-            break
-        # MATLAB's effect is repeated 2×2 OR pooling
-        current = current.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
-        n_r.append(int(current.sum()))
+		current = Z
+		for _ in range(numIterations):
+				rows, cols = current.shape
+				if rows < 2 or cols < 2:
+						break
+				# MATLAB's effect is repeated 2×2 OR pooling
+				current = current.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+				n_r.append(int(current.sum()))
 
-    # MATLAB does: n_r = n_r(end:-1:1); r = 2.^(0:numIterations);
-    # But their final polyfit uses matching r with n_r ordered from r=1,2,4,...
-    r = 2 ** np.arange(len(n_r), dtype=float)          # [1,2,4,...]
-    n_r = np.array(n_r, dtype=float)
+		# MATLAB does: n_r = n_r(end:-1:1); r = 2.^(0:numIterations);
+		# But their final polyfit uses matching r with n_r ordered from r=1,2,4,...
+		r = 2 ** np.arange(len(n_r), dtype=float)          # [1,2,4,...]
+		n_r = np.array(n_r, dtype=float)
 
-    # MATLAB: P = polyfit(log(r), -log(n_r), 1); slope = P(1);
-    P = np.polyfit(np.log(r), -np.log(n_r), 1)
-    return float(P[0])
+		# MATLAB: P = polyfit(log(r), -log(n_r), 1); slope = P(1);
+		P = np.polyfit(np.log(r), -np.log(n_r), 1)
+		return float(P[0])
 
 
 def compute_mean_tortuosity(links, binary):
