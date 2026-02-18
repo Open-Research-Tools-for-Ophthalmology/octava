@@ -47,19 +47,36 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
             change_status_to_ready(canvas)
             return None
 
-        # Store the full-resolution grayscale image
-        canvas.original_img = np.array(original_img)
     else:
         # Method 2: Load from given image array (image subset)
-        canvas.original_img = imgArr
         original_img = Image.fromarray(imgArr.astype(np.uint8))
-        path = Path(canvas.filePath)  # Keep original path info
+        path = Path(canvas.filePath) if hasattr(canvas, "filePath") else Path("unknown")
+    
+    # resize image according to spinbox value
+    mm_value = canvas.image_size_var.get() # current spinbox value
 
-    canvas.original_img = canvas.original_img.astype(np.int16).astype(np.float64)
-    orig_w, orig_h = original_img.size
+    print("---- Resize debug info ----")
+    print("Spinbox value (mm):", mm_value)
+
+    target_pixels = size_to_pixels(mm_value) # convert from mm to pixels
+
+    print("Target pixel size:", target_pixels)
+
+    resized_img = resize_image(original_img, (target_pixels, target_pixels))
+
+    print("Resized image size (W, H):", resized_img.size)
+
+    canvas.original_img = np.array(resized_img).astype(np.float64)
+
+    # Update metadata
+    canvas.fullImSizePix = (resized_img.height, resized_img.width)  # H x W
+    canvas.FAZ_ctr = np.array([resized_img.height // 2, resized_img.width // 2])
+
+    print("Stored fullImSizePix:", canvas.fullImSizePix)
+    print("Stored FAZ_ctr:", canvas.FAZ_ctr)
 
     # Create a 200x200 resized version for display
-    preview = resize_image(original_img)
+    preview = resize_image(resized_img, (200, 200))
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
@@ -85,8 +102,6 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     canvas.filePath = str(path)
     canvas.FileLabelName = path.stem.replace("_", "")
     canvas.lastPath = str(path.parent)
-    canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.FAZ_ctr = np.array([orig_h // 2, orig_w // 2])
 
     # Remember last drawn items
     canvas.original_img_id = img_id
@@ -97,7 +112,7 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     return {
         "path": path,
         "filename": path.name,
-        "size": (orig_w, orig_h),
+        "size": (resized_img.width, resized_img.height),
         "img_id": img_id,
         "text_id": text_id,
     }
