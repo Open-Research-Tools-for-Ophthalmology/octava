@@ -211,17 +211,6 @@ def subwindow1(canvas):
       border_color=button_border_colour  )
   button1.place(x=35, y=190)
 
-  button2 = ctk.CTkButton(subwindow, text="Image Resize",
-                          command=lambda: print("button clicked"),
-                          width=130,height=45,
-                          font=("Roboto", 14 * -1),
-                          text_color=text_colour,
-                          fg_color=button_yellow_colour,
-                          corner_radius=8,border_width=1,
-                          hover_color=button_yellow_hover,
-      border_color=button_border_colour  )
-  button2.place(x=190, y=190)
-
   subcanvas1.create_text(
       45.0,
       274.0,
