@@ -62,8 +62,9 @@ jobs:
     - name: Build executable
       # Don't spawn terminal for production
       # Bundle all runtimes inside
+      #! --hidden-import to resolve missing import issues on Linux, see https://stackoverflow.com/questions/46680429/importerror-no-module-named-tkinter-finder
       run: |
-        pyinstaller --noconsole --onefile ./gui/build/gui.py
+        pyinstaller --noconsole --onefile ./gui/build/gui.py --hidden-import='PIL._tkinter_finder'
       working-directory: ./
 
     - name: Upload Artifact
