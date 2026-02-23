@@ -6,53 +6,64 @@ from .util import *
 
 
 def process_image(img, ctx):
+    # check if input images are already pre-binarized 0/255 uint8
+    binarised = img
+    unique_vals = np.unique(img)
+    is_binarized = np.isin(unique_vals, [0, 255]).all()
+
     h, w = img.shape
     brightness = int(img.mean())
     if (ctx.steps):
         print("Image mean brightness", brightness)
         print(f"Image dimensions: height: {h}", f"width: {w}")
 
-    # keep initial darkest 30% and brightest 30% pixels in image
-    img = keep_darkest_pixels(img, percentile=30)
-    img = keep_brightest_pixels(img, percentile=30)
-    if (ctx.steps): ctx.show(img, "keep darkest and lightest")
+    # If en-face image, binarise. Else skip binarisation
+    if not is_binarized:
+        # keep initial darkest 30% and brightest 30% pixels in image
+        img = keep_darkest_pixels(img, percentile=30)
+        img = keep_brightest_pixels(img, percentile=30)
+        if (ctx.steps): ctx.show(img, "keep darkest and lightest")
 
-    if h <= 500:
-        tileGridSize = (10, 10)
-    if h > 500:
-        tileGridSize = (60, 60)
+        if h <= 500:
+            tileGridSize = (10, 10)
+        if h > 500:
+            tileGridSize = (60, 60)
 
-    # very bright   
-    if brightness > 140:
-        img = apply_clahe(img, clipLimit=1.5, tileGridSize=tileGridSize)
+        # very bright   
+        if brightness > 140:
+            img = apply_clahe(img, clipLimit=1.5, tileGridSize=tileGridSize)
+            if (ctx.steps): ctx.show(img, "clahe")
+        elif brightness > 100:
+            img = apply_clahe(img, clipLimit= 1.5, tileGridSize=tileGridSize)
+            if (ctx.steps): ctx.show(img, "clahe")
+        elif brightness > 60:
+            img = apply_clahe(img, clipLimit=3.0, tileGridSize=tileGridSize)
+            if (ctx.steps): ctx.show(img, "clahe")
+        else:
+        # very dark
+            img = apply_clahe(img, clipLimit=4.0, tileGridSize=tileGridSize)
+            if (ctx.steps): ctx.show(img, "clahe")
+
+
+        if h <= 500:
+            img = apply_gaussian_blur(img, kernel_size=(3, 3))
+        if h > 500:
+            img = apply_gaussian_blur(img, kernel_size=(5, 5))
+        if (ctx.steps): ctx.show(img, "gaussian blur")
+
+
+        # apply CLAHE for better contrast
+        img = apply_clahe(img, clipLimit=2.0, tileGridSize=(3, 3))
         if (ctx.steps): ctx.show(img, "clahe")
-    elif brightness > 100:
-        img = apply_clahe(img, clipLimit= 1.5, tileGridSize=tileGridSize)
-        if (ctx.steps): ctx.show(img, "clahe")
-    elif brightness > 60:
-        img = apply_clahe(img, clipLimit=3.0, tileGridSize=tileGridSize)
-        if (ctx.steps): ctx.show(img, "clahe")
-    else:
-    # very dark
-        img = apply_clahe(img, clipLimit=4.0, tileGridSize=tileGridSize)
-        if (ctx.steps): ctx.show(img, "clahe")
 
 
-    if h <= 500:
-        img = apply_gaussian_blur(img, kernel_size=(3, 3))
-    if h > 500:
-        img = apply_gaussian_blur(img, kernel_size=(5, 5))
-    if (ctx.steps): ctx.show(img, "gaussian blur")
+        # percentile thresholding for binarisation
+        binarised = threshold(img, 40)
 
-
-    # apply CLAHE for better contrast
-    img = apply_clahe(img, clipLimit=2.0, tileGridSize=(3, 3))
-    if (ctx.steps): ctx.show(img, "clahe")
-
-
-    # percentile thresholding for binarisation
-    binarised = threshold(img, 40)
-    if (ctx.steps): ctx.show(img, "binarise threshold")
+        # visual check
+        # if not is_binarized:
+        #     plt.imsave("auto_faz_binarised.png", binarised, cmap='gray')
+        if (ctx.steps): ctx.show(img, "binarise threshold")
 
 
     if h <= 500:
