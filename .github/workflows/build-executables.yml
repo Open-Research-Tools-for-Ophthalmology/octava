@@ -13,7 +13,8 @@ on:
 jobs:
   build:
     # See https://github.com/actions/runner-images for available runners
-    #! No runner for windows and linux arm64
+    #! No runner for windows and linux arm64 and paid runner for macos for x64
+    #! https://docs.github.com/en/actions/concepts/runners/github-hosted-runners#overview-of-github-hosted-runners
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,9 +29,9 @@ jobs:
             architecture: x64
             artifact_name: linux-x64-binary
           # macOS x64
-          - os: macos-26-large
-            architecture: x64 
-            artifact_name: macos-x64-binary
+          # - os: macos-26-large
+          #   architecture: x64 
+          #   artifact_name: macos-x64-binary
           # macOS arm
           - os: macos-26
             architecture: arm64
