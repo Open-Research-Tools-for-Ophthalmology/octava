@@ -1,0 +1,14 @@
+customtkinter==5.2.2
+numpy==2.2.6
+pillow==12.1.1
+scipy==1.15.3
+scikit-fuzzy==0.5.0
+opencv-python==4.13.0.92
+pandas==2.3.3
+dotenv==0.9.9
+pyyaml==6.0.3
+tifffile==2025.5.10
+matplotlib==3.10.8
+requests==2.32.5
+scikit-image==0.25.2
+openpyxl==3.1.5
