@@ -34,11 +34,11 @@ def subwindow_subset(canvas):
     )
     subwindow_subset.zoom_level = 1.0
     subwindow_subset.active_tool = "draw"  # "draw", "pan", "zoom"
-    subwindow_subset.rect_start = None  # Start point of rectangle
-    subwindow_subset.rect_end = None  # End point of rectangle
+    subwindow_subset.sq_start = None  # Start point of square
+    subwindow_subset.sq_end = None  # End point of square
     subwindow_subset.pan_start = None
     subwindow_subset.pan_offset = [0, 0]
-    subwindow_subset.is_drawing = False  # Track if currently drawing rectangle
+    subwindow_subset.is_drawing = False  # Track if currently drawing square
     subwindow_subset.dragging_corner = None  # Track which corner is being dragged: 'tl', 'tr', 'bl', 'br'
     subwindow_subset.dragging_box = False  # Track if dragging entire bounding box
     subwindow_subset.drag_box_start = None  # Starting position for box drag
@@ -52,7 +52,7 @@ def subwindow_subset(canvas):
     # Header text
     header_label = Label(
         header_frame,
-        text="Draw a rectangle to define the cropping area",
+        text="Draw a square to define the cropping area",
         font=("Roboto", 14),
         bg="#FBE3D6",
         fg=theme_blue,
@@ -139,7 +139,7 @@ def subwindow_subset(canvas):
     # Editor initialization, set draw tool as active by default
     set_active_tool("draw")
 
-    # Edit: Update image display after 1. pan 2. zoom 3. draw rectangle
+    # Edit: Update image display after 1. pan 2. zoom 3. draw square
     def update_image_display():
         # Get current canvas size
         canvas_width = subcanvas4.winfo_width()
@@ -161,15 +161,15 @@ def subwindow_subset(canvas):
         # Handle if window resize: relative positions to be maintained, others like display will be refitted without need to scale
         if subwindow_subset.canvas_height_prev is not None and subwindow_subset.canvas_height_prev != canvas_height:
             scale_ratio = canvas_height / subwindow_subset.canvas_height_prev
-            print(f"Canvas height changed from {subwindow_subset.canvas_height_prev} to {canvas_height}, rescaling rectangle points by {scale_ratio}")
-            if subwindow_subset.rect_start and subwindow_subset.rect_end:
-                subwindow_subset.rect_start = (
-                    subwindow_subset.rect_start[0] * scale_ratio,
-                    subwindow_subset.rect_start[1] * scale_ratio
+            print(f"Canvas height changed from {subwindow_subset.canvas_height_prev} to {canvas_height}, rescaling square points by {scale_ratio}")
+            if subwindow_subset.sq_start and subwindow_subset.sq_end:
+                subwindow_subset.sq_start = (
+                    subwindow_subset.sq_start[0] * scale_ratio,
+                    subwindow_subset.sq_start[1] * scale_ratio
                 )
-                subwindow_subset.rect_end = (
-                    subwindow_subset.rect_end[0] * scale_ratio,
-                    subwindow_subset.rect_end[1] * scale_ratio
+                subwindow_subset.sq_end = (
+                    subwindow_subset.sq_end[0] * scale_ratio,
+                    subwindow_subset.sq_end[1] * scale_ratio
                 )
             subwindow_subset.pan_offset[0] *= scale_ratio
             subwindow_subset.pan_offset[1] *= scale_ratio
@@ -200,25 +200,26 @@ def subwindow_subset(canvas):
             img_y - display_height // 2,
         )
   
-        # Rectangle: Draw the cropping rectangle if both start and end points exist
-        if subwindow_subset.rect_start and subwindow_subset.rect_end:
+        # square: Draw the cropping square if both start and end points exist
+        if subwindow_subset.sq_start and subwindow_subset.sq_end:
             
             # Convert display coordinates to canvas coordinates
-            x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
-            y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
-            x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
-            y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
+            x1 = subwindow_subset.img_position[0] + subwindow_subset.sq_start[0] * subwindow_subset.zoom_level
+            y1 = subwindow_subset.img_position[1] + subwindow_subset.sq_start[1] * subwindow_subset.zoom_level
+            x2 = subwindow_subset.img_position[0] + subwindow_subset.sq_end[0] * subwindow_subset.zoom_level
+            y2 = subwindow_subset.img_position[1] + subwindow_subset.sq_end[1] * subwindow_subset.zoom_level
             
-            # Draw semi-transparent rectangle
+            # Draw semi-transparent square
             #! Stipple won't work on MacOS, and there is no alpha channel for the fill property
             # https://stackoverflow.com/questions/35994986/tkinter-stipple-option-misbehaving-in-os-x
+            # 02232026: Remove fill/stipple and leave the square completely transparent
             subcanvas4.create_rectangle(
                 x1, y1, x2, y2, 
                 outline=point_blue_colour,
-                fill=button_blue_colour,
-                stipple="gray25",
+                # fill=button_blue_colour,
+                # stipple="gray25",
                 width=2, 
-                tags="rectangle"
+                tags="square"
             )
             
             # Draw corner handles
@@ -238,14 +239,14 @@ def subwindow_subset(canvas):
     # Helper function to check if mouse is near a corner within a threshold distance (in pixels)
     def get_corner_at_position(canvas_x, canvas_y, threshold=10):
         """Returns corner identifier if near a corner, None otherwise"""
-        if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
+        if not (subwindow_subset.sq_start and subwindow_subset.sq_end):
             return None
         
         # Convert display coordinates to canvas coordinates
-        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
-        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
-        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
-        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
+        x1 = subwindow_subset.img_position[0] + subwindow_subset.sq_start[0] * subwindow_subset.zoom_level
+        y1 = subwindow_subset.img_position[1] + subwindow_subset.sq_start[1] * subwindow_subset.zoom_level
+        x2 = subwindow_subset.img_position[0] + subwindow_subset.sq_end[0] * subwindow_subset.zoom_level
+        y2 = subwindow_subset.img_position[1] + subwindow_subset.sq_end[1] * subwindow_subset.zoom_level
         
         # Check each corner
         corners = {
@@ -261,17 +262,17 @@ def subwindow_subset(canvas):
                 return corner_id
         return None
 
-    # Helper function to check if mouse is inside the rectangle
-    def is_inside_rectangle(canvas_x, canvas_y):
-        """Returns True if point is inside the rectangle"""
-        if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
+    # Helper function to check if mouse is inside the square
+    def is_inside_square(canvas_x, canvas_y):
+        """Returns True if point is inside the square"""
+        if not (subwindow_subset.sq_start and subwindow_subset.sq_end):
             return False
         
         # Convert display coordinates to canvas coordinates
-        x1 = subwindow_subset.img_position[0] + subwindow_subset.rect_start[0] * subwindow_subset.zoom_level
-        y1 = subwindow_subset.img_position[1] + subwindow_subset.rect_start[1] * subwindow_subset.zoom_level
-        x2 = subwindow_subset.img_position[0] + subwindow_subset.rect_end[0] * subwindow_subset.zoom_level
-        y2 = subwindow_subset.img_position[1] + subwindow_subset.rect_end[1] * subwindow_subset.zoom_level
+        x1 = subwindow_subset.img_position[0] + subwindow_subset.sq_start[0] * subwindow_subset.zoom_level
+        y1 = subwindow_subset.img_position[1] + subwindow_subset.sq_start[1] * subwindow_subset.zoom_level
+        x2 = subwindow_subset.img_position[0] + subwindow_subset.sq_end[0] * subwindow_subset.zoom_level
+        y2 = subwindow_subset.img_position[1] + subwindow_subset.sq_end[1] * subwindow_subset.zoom_level
         
         # Ensure min/max order
         min_x, max_x = min(x1, x2), max(x1, x2)
@@ -288,7 +289,7 @@ def subwindow_subset(canvas):
             corner = get_corner_at_position(event.x, event.y)
             if corner:
                 subcanvas4.config(cursor="hand2")
-            elif is_inside_rectangle(event.x, event.y):
+            elif is_inside_square(event.x, event.y):
                 subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
             else:
                 subcanvas4.config(cursor="crosshair")
@@ -315,17 +316,17 @@ def subwindow_subset(canvas):
                 subwindow_subset.dragging_corner = corner
                 return
             
-            # Check if clicking inside rectangle for moving
-            if is_inside_rectangle(event.x, event.y):
+            # Check if clicking inside square for moving
+            if is_inside_square(event.x, event.y):
                 print("[on_canvas_click] Starting box drag")
                 subwindow_subset.dragging_box = True
                 subwindow_subset.drag_box_start = (event.x, event.y)
                 return
             
-            print("[on_canvas_click] Starting rectangle draw")
+            print("[on_canvas_click] Starting square draw")
             subwindow_subset.pan_start = None  # Clear pan state
             
-            # If none, then create a new rectangle
+            # If none, then create a new square
             if hasattr(subwindow_subset, "img_position") and hasattr(
                 subwindow_subset, "img_display_size"
             ):
@@ -338,9 +339,9 @@ def subwindow_subset(canvas):
                     0 <= rect_x <= subwindow_subset.img_display_size[0]
                     and 0 <= rect_y <= subwindow_subset.img_display_size[1]
                 ):
-                    # Start new rectangle
-                    subwindow_subset.rect_start = (rect_x, rect_y)
-                    subwindow_subset.rect_end = (rect_x, rect_y)
+                    # Start new square
+                    subwindow_subset.sq_start = (rect_x, rect_y)
+                    subwindow_subset.sq_end = (rect_x, rect_y)
                     subwindow_subset.is_drawing = True
                     update_image_display()
 
@@ -388,10 +389,10 @@ def subwindow_subset(canvas):
                 dy = cursor_y - start_cursor_y
                 
                 # Update both corners to move the box
-                start_x = subwindow_subset.rect_start[0] + dx
-                start_y = subwindow_subset.rect_start[1] + dy
-                end_x = subwindow_subset.rect_end[0] + dx
-                end_y = subwindow_subset.rect_end[1] + dy
+                start_x = subwindow_subset.sq_start[0] + dx
+                start_y = subwindow_subset.sq_start[1] + dy
+                end_x = subwindow_subset.sq_end[0] + dx
+                end_y = subwindow_subset.sq_end[1] + dy
                 length = abs(end_x - start_x)
                 
                 # Clamp x coordinates
@@ -410,8 +411,8 @@ def subwindow_subset(canvas):
                     end_y = subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level
                     start_y = end_y - length
                 
-                subwindow_subset.rect_start = (start_x, start_y)
-                subwindow_subset.rect_end = (end_x, end_y)
+                subwindow_subset.sq_start = (start_x, start_y)
+                subwindow_subset.sq_end = (end_x, end_y)
 
                 subwindow_subset.drag_box_start = (event.x, event.y)  # Update start position for next frame
                 update_image_display()
@@ -429,36 +430,36 @@ def subwindow_subset(canvas):
                 start_x, start_y, end_x, end_y = 0, 0, 0, 0
                 if subwindow_subset.dragging_corner in ['tl']:
                     start_x, start_y = cursor_x, cursor_y
-                    end_x, end_y = subwindow_subset.rect_end
+                    end_x, end_y = subwindow_subset.sq_end
                 elif subwindow_subset.dragging_corner in ['tr']:
-                    start_x, start_y = subwindow_subset.rect_start[0], cursor_y
-                    end_x, end_y = cursor_x, subwindow_subset.rect_end[1]
+                    start_x, start_y = subwindow_subset.sq_start[0], cursor_y
+                    end_x, end_y = cursor_x, subwindow_subset.sq_end[1]
                 elif subwindow_subset.dragging_corner in ['bl']:
-                    start_x, start_y = cursor_x, subwindow_subset.rect_start[1]
-                    end_x, end_y = subwindow_subset.rect_end[0], cursor_y
+                    start_x, start_y = cursor_x, subwindow_subset.sq_start[1]
+                    end_x, end_y = subwindow_subset.sq_end[0], cursor_y
                 elif subwindow_subset.dragging_corner in ['br']:
-                    start_x, start_y = subwindow_subset.rect_start
+                    start_x, start_y = subwindow_subset.sq_start
                     end_x, end_y = cursor_x, cursor_y
 
-                # Fixate aspect ratio of rectangle to 1:1 (square)
+                # Fixate aspect ratio of square to 1:1 (square)
                 length  = min(end_x - start_x, end_y - start_y)
 
                 # Update the appropriate corner
                 if subwindow_subset.dragging_corner == 'tl':  # top-left
-                    subwindow_subset.rect_start = (end_x - length, end_y - length)
+                    subwindow_subset.sq_start = (end_x - length, end_y - length)
                 elif subwindow_subset.dragging_corner == 'tr':  # top-right
-                    subwindow_subset.rect_start = (subwindow_subset.rect_start[0], end_y - length)
-                    subwindow_subset.rect_end = (start_x + length, subwindow_subset.rect_end[1])
+                    subwindow_subset.sq_start = (subwindow_subset.sq_start[0], end_y - length)
+                    subwindow_subset.sq_end = (start_x + length, subwindow_subset.sq_end[1])
                 elif subwindow_subset.dragging_corner == 'bl':  # bottom-left
-                    subwindow_subset.rect_start = (end_x - length, subwindow_subset.rect_start[1])
-                    subwindow_subset.rect_end = (subwindow_subset.rect_end[0], start_y + length)
+                    subwindow_subset.sq_start = (end_x - length, subwindow_subset.sq_start[1])
+                    subwindow_subset.sq_end = (subwindow_subset.sq_end[0], start_y + length)
                 elif subwindow_subset.dragging_corner == 'br':  # bottom-right
-                    subwindow_subset.rect_end = (start_x + length, start_y + length)
+                    subwindow_subset.sq_end = (start_x + length, start_y + length)
                 
                 update_image_display()
             
         elif subwindow_subset.active_tool == "draw" and subwindow_subset.is_drawing:
-            # Handle rectangle drawing
+            # Handle square drawing
             if hasattr(subwindow_subset, "img_position"):
                 cursor_x = (event.x - subwindow_subset.img_position[0]) / subwindow_subset.zoom_level
                 cursor_y = (event.y - subwindow_subset.img_position[1]) / subwindow_subset.zoom_level
@@ -467,16 +468,16 @@ def subwindow_subset(canvas):
                 cursor_x = max(0, min(cursor_x, subwindow_subset.img_display_size[0] / subwindow_subset.zoom_level))
                 cursor_y = max(0, min(cursor_y, subwindow_subset.img_display_size[1] / subwindow_subset.zoom_level))
                 
-                dx = cursor_x - subwindow_subset.rect_start[0]
-                dy = cursor_y - subwindow_subset.rect_start[1]
+                dx = cursor_x - subwindow_subset.sq_start[0]
+                dy = cursor_y - subwindow_subset.sq_start[1]
                 
-                # Fixate aspect ratio of rectangle to 1:1 (square)
+                # Fixate aspect ratio of square to 1:1 (square)
                 length = min(abs(dx), abs(dy))
 
-                end_x = subwindow_subset.rect_start[0] + (length if dx >= 0 else -length)
-                end_y = subwindow_subset.rect_start[1] + (length if dy >= 0 else -length)
+                end_x = subwindow_subset.sq_start[0] + (length if dx >= 0 else -length)
+                end_y = subwindow_subset.sq_start[1] + (length if dy >= 0 else -length)
 
-                subwindow_subset.rect_end = (end_x, end_y)
+                subwindow_subset.sq_end = (end_x, end_y)
                 update_image_display()
 
     # Handle both pan and drag end
@@ -492,7 +493,7 @@ def subwindow_subset(canvas):
                 corner = get_corner_at_position(event.x, event.y)
                 if corner:
                     subcanvas4.config(cursor="hand2")
-                elif is_inside_rectangle(event.x, event.y):
+                elif is_inside_square(event.x, event.y):
                     subcanvas4.config(cursor="fleur")
                 else:
                     subcanvas4.config(cursor="crosshair")
@@ -501,12 +502,12 @@ def subwindow_subset(canvas):
                 subwindow_subset.dragging_box = False
                 subwindow_subset.drag_box_start = None
                 # Update cursor
-                if is_inside_rectangle(event.x, event.y):
+                if is_inside_square(event.x, event.y):
                     subcanvas4.config(cursor="fleur")
                 else:
                     subcanvas4.config(cursor="crosshair")
             elif subwindow_subset.is_drawing:
-                # Finished drawing new rectangle
+                # Finished drawing new square
                 subwindow_subset.is_drawing = False
 
     # Handle canvas resize event
@@ -519,8 +520,8 @@ def subwindow_subset(canvas):
             # update display
             update_image_display()
 
-    def confirm_rectangle():
-        if not (subwindow_subset.rect_start and subwindow_subset.rect_end):
+    def confirm_square():
+        if not (subwindow_subset.sq_start and subwindow_subset.sq_end):
             return
         
         result = messagebox.askyesno(
@@ -535,9 +536,9 @@ def subwindow_subset(canvas):
             scale_x = orig_width / subwindow_subset.img_display_size[0] * subwindow_subset.zoom_level
             scale_y = orig_height / subwindow_subset.img_display_size[1] * subwindow_subset.zoom_level
 
-            # Get rectangle coordinates
-            x1, y1 = subwindow_subset.rect_start
-            x2, y2 = subwindow_subset.rect_end
+            # Get square coordinates
+            x1, y1 = subwindow_subset.sq_start
+            x2, y2 = subwindow_subset.sq_end
             
             # Ensure top-left and bottom-right order
             x_min = int(min(x1, x2))
@@ -572,7 +573,7 @@ def subwindow_subset(canvas):
 
     # Close window event
     def on_close():
-        confirm_rectangle()
+        confirm_square()
 
     # Initial display after window is rendered (100ms)
     subwindow_subset.after(100, update_image_display)
