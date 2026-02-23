@@ -12,20 +12,41 @@ on:
 
 jobs:
   build:
+    # See https://github.com/actions/runner-images for available runners
+    #! No runner for windows and linux arm64
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        include:
+          # Windows x64
+          - os: windows-latest
+            architecture: x64
+            artifact_name: windows-x64-binary
+          # Linux x64
+          - os: ubuntu-latest
+            architecture: x64
+            artifact_name: linux-x64-binary
+          # macOS x64
+          - os: macos-26-large
+            architecture: x64 
+            artifact_name: macos-x64-binary
+          # macOS arm
+          - os: macos-26
+            architecture: arm64
+            artifact_name: macos-arm64-binary
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    # Windows uses python directly from python.org
+    # Linux/Darwin See https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.10.19
+        python-version: '3.10'
+        architecture: ${{ matrix.architecture }}
 
     - name: Install Python dependencies
       run: |
@@ -44,25 +65,10 @@ jobs:
         pyinstaller --noconsole --onefile ./gui/build/gui.py
       working-directory: ./
 
-    - name: Create Artifact (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Upload Artifact
       uses: actions/upload-artifact@v6
       with:
-        name: windows-binary
-        path: dist/
-
-    - name: Create Artifact (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v6
-      with:
-        name: linux-binary
-        path: dist/
-
-    - name: Create Artifact (macOS)
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v6
-      with:
-        name: macos-binary
+        name: ${{ matrix.artifact_name }}
         path: dist/
 
     - name: List files in dist folder
