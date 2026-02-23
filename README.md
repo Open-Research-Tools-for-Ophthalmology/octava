@@ -1,4 +1,42 @@
-# Octava
+
+
+<div align="center">
+  <h3>
+    OCTAVA
+  </h3>
+
+  ![PyPI - License](https://img.shields.io/badge/license-MIT-blue)
+</div>
+
+This respoitory contains all the sourcecode required to run the OCTAVA software OCTAVA is available free for use under an MIT licence. If you use this software in your research, please cite the following papers:
+
+xxx. https://doi.org/xxx/xxx
+
+![](assets/doc_images/gui.png)
+| _`OCTAVA` processing OCTA images with binarisation, skeletaization, FAZ segmentation and microvascular analysis_
+
+# Quick Start
+Find the latest distrbution in the [releases](https://github.com/milanaveed/octava/releases) page that is suitable for your Operating System (Windows/MacOS/Linux) and Hardware Architecture (x86_64/arm64). 
+
+Some distributions are not available due to limited resources, in this case you can try to install on your own by following the guide down below.
+
+## Installation
+Install python [3.10.19](https://www.python.org/downloads/release/python-31019/) or later versions. 
+Once installed, run the following command with pip to install necessary packages:
+```
+pip install -r requirements.txt
+```
+**For Conda Users:** ```conda env create -f environment.yml```\
+(update as often as possible)
+
+## Start the App
+Run ```python gui/build/gui.py``` to launch the application
+
+
+
+
+
+
 ## Set-up
 Hi everyone, welcome to the repository, please clone the repository to your device first. When developing, please create a new feature branch from `main`. Before you resume your work, run `git pull origin main` to download updates from `main` to your feature branch. And when creating pull requests, merge your feature branch into `main`. 
 
