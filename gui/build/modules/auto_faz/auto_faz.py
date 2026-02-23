@@ -1,21 +1,22 @@
 import cv2
-import yaml
 import os
 
 from .util_image import *
 from .faz import process_image
 from .context import Context
-
+from .config import config
 
 def load_config():
     """
     Load config file
     """
-    module_dir = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(module_dir, 'config.yml')
+    # This won't work when bundled to single file executable with no access to config.yml
+    # module_dir = os.path.dirname(os.path.abspath(__file__))
+    # path = os.path.join(module_dir, 'config.yml')
     
-    with open(path, 'r') as f:
-        return yaml.safe_load(f)
+    # with open(path, 'r') as f:
+    #     return yaml.safe_load(f)
+    return config
 
 def load_dataset_file(filepath, crop_bottom):
     """
