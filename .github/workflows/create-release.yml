@@ -71,6 +71,34 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         run-id: ${{ steps.find-build.outputs.run_id }}
 
+    - name: Package raw artifacts into compressed assets
+      run: |
+        mkdir -p ./assets
+        
+        # Package Windows x64
+        if [ -d "./artifacts/windows-x64-binary" ]; then
+          echo "Packaging Windows x64..."
+          cd ./artifacts/windows-x64-binary
+          zip -r ../../assets/windows-x64-binary.zip .
+          cd ../..
+        fi
+        
+        # Package Linux x64
+        if [ -d "./artifacts/linux-x64-binary" ]; then
+          echo "Packaging Linux x64..."
+          cd ./artifacts/linux-x64-binary
+          tar -czf ../../assets/linux-x64-binary.tar.gz .
+          cd ../..
+        fi
+        
+        # Package macOS ARM64
+        if [ -d "./artifacts/macos-arm64-binary" ]; then
+          echo "Packaging macOS ARM64..."
+          cd ./artifacts/macos-arm64-binary
+          zip -r ../../assets/macos-arm64-binary.zip .
+          cd ../..
+        fi
+
     - name: Upload artifacts to current release
       env:
         GH_TOKEN: ${{ github.token }}
@@ -78,7 +106,6 @@ jobs:
         TAG_NAME="${{ github.event.release.tag_name }}"
         echo "Uploading artifacts to release ${TAG_NAME}..."
         
-        # Upload the entire artifacts directory
+        # Upload the entire assets directory
         #! clobber to directly overwrite
-        find ./artifacts -type f -exec gh release upload "${TAG_NAME}" {} --clobber \;
-        
+        gh release upload "${TAG_NAME}" ./assets/* --clobber
