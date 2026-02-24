@@ -71,13 +71,13 @@ jobs:
 
     - name: Package raw artifacts into compressed assets
       run: |
-        mkdir -p ./assets
+        mkdir -p ./release-assets
         
         # Package Windows x64
         if [ -d "./artifacts/windows-x64-binary" ]; then
           echo "Packaging Windows x64..."
           cd ./artifacts/windows-x64-binary
-          zip -r ../../assets/windows-x64-binary.zip .
+          zip -r ../../release-assets/windows-x64-binary.zip .
           cd ../..
         fi
         
@@ -85,7 +85,7 @@ jobs:
         if [ -d "./artifacts/linux-x64-binary" ]; then
           echo "Packaging Linux x64..."
           cd ./artifacts/linux-x64-binary
-          tar -czf ../../assets/linux-x64-binary.tar.gz .
+          tar -czf ../../release-assets/linux-x64-binary.tar.gz .
           cd ../..
         fi
         
@@ -93,7 +93,7 @@ jobs:
         if [ -d "./artifacts/macos-arm64-binary" ]; then
           echo "Packaging macOS ARM64..."
           cd ./artifacts/macos-arm64-binary
-          zip -r ../../assets/macos-arm64-binary.zip .
+          zip -r ../../release-assets/macos-arm64-binary.zip .
           cd ../..
         fi
 
@@ -104,6 +104,6 @@ jobs:
         TAG_NAME="${{ github.event.release.tag_name }}"
         echo "Uploading artifacts to release ${TAG_NAME}..."
         
-        # Upload the entire assets directory
+        # Upload the packaged release assets
         #! clobber to directly overwrite
-        gh release upload "${TAG_NAME}" ./assets/* --clobber
+        gh release upload "${TAG_NAME}" ./release-assets/* --clobber

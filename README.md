@@ -1,45 +1,17 @@
-<style>
-  a {
-    margin-right: 5px;
-  }
-</style>
-
 <div align="center">
-  <h3>
-    OCTAVA
-  </h3>
 
-<p style="display: flex; justify-content: center;">
-  <a href="https://github.com/milanaveed/octava/releases" target="_blank">
-    <img alt="Latest GitHub release" src="https://img.shields.io/github/release/milanaveed/octava.svg" />
-  </a>
+# OCTAVA
 
-  <a href="https://github.com/milanaveed/octava/releases" target="_blank">
-    <img alt="All releases" src="https://img.shields.io/github/downloads/milanaveed/octava/total.svg" />
-  </a>
-
-  <a href="https://github.com/milanaveed/octava/issues" target="_blank">
-    <img alt="Issues" src="https://img.shields.io/github/issues/milanaveed/octava.svg" />
-  </a>
-
-  <a href="https://github.com/milanaveed/octava/stargazers" target="_blank">
-    <img alt="GitHub stars" src="https://img.shields.io/github/stars/milanaveed/octava.svg" />
-  </a>
-
-
-  <a href="https://github.com/milanaveed/octava/LICENSE" target="_blank">
-    <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue" />
-  </a>
-</p>
+[![Latest GitHub release](https://img.shields.io/github/release/milanaveed/octava.svg)](https://github.com/milanaveed/octava/releases) [![All releases](https://img.shields.io/github/downloads/milanaveed/octava/total.svg)](https://github.com/milanaveed/octava/releases) [![Issues](https://img.shields.io/github/issues/milanaveed/octava.svg)](https://github.com/milanaveed/octava/issues)[![GitHub stars](https://img.shields.io/github/stars/milanaveed/octava.svg)](https://github.com/milanaveed/octava/stargazers) [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/milanaveed/octava/LICENSE)
 
 </div>
 
-This respoitory contains all the sourcecode required to run the OCTAVA software OCTAVA is available free for use under an MIT licence. If you use this software in your research, please cite the following papers:
+This respoitory contains all the source code required to run the OCTAVA software. OCTAVA is available free for use under an MIT licence. If you use this software in your research, please cite the following papers:
 
 xxx. https://doi.org/xxx/xxx
 
 ![](assets/doc_images/gui.png)
-| _`OCTAVA` processing OCTA images with binarisation, skeletaization, FAZ segmentation and microvascular analysis_
+| _`OCTAVA` processing OCTA images with binarisation, skeletonisation, FAZ segmentation and microvascular analysis_
 
 # Getting Started
 ## Quick Download
