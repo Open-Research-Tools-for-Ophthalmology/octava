@@ -4,7 +4,7 @@ name: Attach artifacts of latest sucessful build to newly created release
 
 on:
   release:
-    types: [created, published]
+    types: [published]
 
 jobs:
   attach-artifacts:
@@ -14,6 +14,9 @@ jobs:
       actions: read
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+    
     - name: Find latest successful build
       id: find-build
       uses: actions/github-script@v8
