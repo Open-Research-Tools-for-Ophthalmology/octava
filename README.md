@@ -61,6 +61,7 @@ python build_executable.py
 
 ## Develop Locally
 For those who read source code for fun or would like to apply your own changes. The following steps describe the process for running the project locally.
+
 Run the following command to install necessary packages:
 ```
 pip install -r requirements.txt
