@@ -1,0 +1,81 @@
+# See https://github.com/actions/download-artifact
+
+name: Attach artifacts of latest sucessful build to newly created release
+
+on:
+  release:
+    types: [created, published]
+
+jobs:
+  attach-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Find latest successful build
+      id: find-build
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const workflow_file = 'build-executables.yml';
+          
+          console.log(`Looking for successful runs of ${workflow_file}...`);
+          
+          const runs = await github.rest.actions.listWorkflowRunsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: workflow_file,
+            status: 'success',
+            per_page: 1
+          });
+          
+          if (runs.data.workflow_runs.length === 0) {
+            core.setFailed(`No successful runs found for ${workflow_file}`);
+            return;
+          }
+          
+          const latestRun = runs.data.workflow_runs[0];
+          console.log(`Found run ${latestRun.id} from commit ${latestRun.head_sha.substring(0, 7)}`);
+          
+          core.setOutput('run_id', latestRun.id);
+
+    - name: Download Windows x64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: windows-x64-binary
+        path: ./artifacts/windows-x64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+    
+    - name: Download Linux x64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: linux-x64-binary
+        path: ./artifacts/linux-x64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+    
+    - name: Download macOS ARM64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: macos-arm64-binary
+        path: ./artifacts/macos-arm64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+
+    - name: Upload artifacts to current release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG_NAME="${{ github.event.release.tag_name }}"
+        echo "Uploading artifacts to release ${TAG_NAME}..."
+        
+        # Upload the entire artifacts directory
+        #! clobber to directly overwrite
+        find ./artifacts -type f -exec gh release upload "${TAG_NAME}" {} --clobber \;
+        

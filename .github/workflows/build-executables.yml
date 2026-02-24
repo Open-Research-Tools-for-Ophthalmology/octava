@@ -2,7 +2,7 @@
 # See https://github.com/actions/setup-python
 # See https://github.com/actions/upload-artifact
 
-name: Create Releases with Windows/MacOS/Linux builds
+name: Build executables to Windows/MacOS/Linux
 
 on:
   push:
