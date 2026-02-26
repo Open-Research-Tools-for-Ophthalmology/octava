@@ -17,8 +17,8 @@ RIGHT_EYE = "Right Eye"
 class GridType(Enum):
 	SQUARE_GRID = "Square grid"
 	ETDRS_GRID = "ETDRS grid"
-	EXTENDED_ETDRS_GRID = "Extended ETDRS grid"
-	ONH = "Optic nerve head"
+	EXTENDED_ETDRS_GRID = "Extended"
+	ONH = "ONH"
 	FOVEAL_RING = "Foveal rings"
 
 def run_regional_analysis(canvas):
