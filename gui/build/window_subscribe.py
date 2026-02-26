@@ -48,7 +48,7 @@ def open_subscribe_window(canvas: Canvas):
       50.0,
       30.0,
       anchor="nw",
-      text="We'll notify you when new updates are available. You only need to subscribe once. Please enter your contact email address:",
+      text="We'll notify you when new updates are available. You only need to subscribe once. Please enter your name:",
       fill="#10203F",
       font=("Roboto", 16),
       width=400,
@@ -65,7 +65,7 @@ def open_subscribe_window(canvas: Canvas):
                                 border_width=1,
                                 border_color=text_colour,
                                 corner_radius=10)
-  name_box.place(x=50, y=100)
+  name_box.place(x=50, y=110)
 
 
   #contact email address
@@ -73,7 +73,7 @@ def open_subscribe_window(canvas: Canvas):
       50.0,
       170.0,
       anchor="nw",
-      text="Please enter your contact email address:",
+      text="Please enter your email address:",
       fill="#10203F",
       font=("Roboto", 16),
       width=400,
