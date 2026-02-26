@@ -15,11 +15,11 @@ import cv2
 RIGHT_EYE = "Right Eye"
 
 class GridType(Enum):
-	SQUARE_GRID = "Square Grid"
-	ETDRS_GRID = "ETDRS Grid"
-	EXTENDED_ETDRS_GRID = "Extended ETDRS"
-	ONH = "ONH"
-	FOVEAL_RING = "Foveal Ring"
+	SQUARE_GRID = "Square grid"
+	ETDRS_GRID = "ETDRS grid"
+	EXTENDED_ETDRS_GRID = "Extended ETDRS grid"
+	ONH = "Optic nerve head"
+	FOVEAL_RING = "Foveal rings"
 
 def run_regional_analysis(canvas):
 	change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
@@ -808,8 +808,7 @@ def run_analysis_on_regions(
 						display=False,
 				)
 
-				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]))
-				region_name = re.sub(r'[^\w]', '', region_name)
+				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
 				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
 
 				cv2.imwrite(
@@ -1035,71 +1034,6 @@ def compute_branch_point_density(branchpoint_count, total_length_mm):
 	else:
 			branchpoint_density = 0.0
 	return branchpoint_density
-
-
-# def compute_fractal_dimension(canvas):
-# 	"""
-# 	Compute fractal dimension using box-counting method.
-
-# 	Parameters
-# 	----------
-# 	canvas : object
-# 			Canvas holding skeleton image.
-
-# 	Returns
-# 	-------
-# 	float
-# 			Fractal dimension (slope of log-log plot).
-# 	"""
-# 	skeleton = canvas.skeleton_image.astype(bool)
-
-# 	Z = (skeleton > 0)
-
-# 	h, w = Z.shape
-# 	Nx = max(h, w)
-
-# 	if Nx < 2:
-# 			fractal_dim = 0.0
-# 	else:
-# 			exponent = math.ceil(math.log2(Nx))
-# 			width = 2 ** exponent
-
-# 			Z_pad = np.zeros((width, width), dtype=bool)
-# 			Z_pad[:h, :w] = Z
-
-# 			counts = []
-# 			r_values = []
-
-# 			counts.append(np.sum(Z_pad))
-# 			r_values.append(1)
-
-# 			current_img = Z_pad
-
-# 			for i in range(1, exponent + 1):
-# 					rows, cols = current_img.shape
-# 					if rows < 2 or cols < 2:
-# 							break
-
-# 					shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
-
-# 					n_box = np.sum(shrunk_img)
-# 					counts.append(n_box)
-# 					r_values.append(2 ** i)
-
-# 					current_img = shrunk_img
-
-# 			valid_indices = [i for i, c in enumerate(counts) if c > 0]
-
-# 			if len(valid_indices) >= 2:
-# 					x = np.log([r_values[i] for i in valid_indices])
-# 					y = -np.log([counts[i] for i in valid_indices])
-
-# 					coeffs = np.polyfit(x, y, 1)
-# 					fractal_dim = float(coeffs[0])
-# 			else:
-# 					fractal_dim = 0.0
-	
-# 	return fractal_dim
 
 
 def compute_fractal_dimension(canvas):
