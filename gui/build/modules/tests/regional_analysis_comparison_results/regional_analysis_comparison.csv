@@ -26,6 +26,9 @@ region_name,type,strict_agreement
 5000_Square grid_R09_Infero-nasal,imgRegion,1.0
 5000_Square grid_R09_Infero-nasal,binaryRegion,1.0
 5000_Square grid_R09_Infero-nasal,skelRegion,0.9581473365257149
+5000_ETDRS grid_R01_Foveal_circle,imgRegion,0.0
+5000_ETDRS grid_R01_Foveal_circle,binaryRegion,0.0
+5000_ETDRS grid_R01_Foveal_circle,skelRegion,0.0
 5000_ETDRS grid_R02_Parafoveal_rim,imgRegion,0.998333
 5000_ETDRS grid_R02_Parafoveal_rim,binaryRegion,0.999424
 5000_ETDRS grid_R02_Parafoveal_rim,skelRegion,0.974127
@@ -47,33 +50,87 @@ region_name,type,strict_agreement
 5000_ETDRS grid_R08_Inferior_parafoveal_rim,imgRegion,0.998734
 5000_ETDRS grid_R08_Inferior_parafoveal_rim,binaryRegion,0.999556
 5000_ETDRS grid_R08_Inferior_parafoveal_rim,skelRegion,0.990812
+5000_Extended_R01_Super_nasal,imgRegion,0.0
+5000_Extended_R01_Super_nasal,binaryRegion,0.0
+5000_Extended_R01_Super_nasal,skelRegion,0.0
+5000_Extended_R02_Nasal_superior,imgRegion,0.0
+5000_Extended_R02_Nasal_superior,binaryRegion,0.0
+5000_Extended_R02_Nasal_superior,skelRegion,0.0
 5000_Extended_R03_Temporal_superior,imgRegion,0.998804
 5000_Extended_R03_Temporal_superior,binaryRegion,0.999584
 5000_Extended_R03_Temporal_superior,skelRegion,0.988668
 5000_Extended_R04_Super_temporal,imgRegion,0.998312
 5000_Extended_R04_Super_temporal,binaryRegion,0.999556
 5000_Extended_R04_Super_temporal,skelRegion,0.987604
+5000_Extended_R05_Inferio_temporal,imgRegion,0.0
+5000_Extended_R05_Inferio_temporal,binaryRegion,0.0
+5000_Extended_R05_Inferio_temporal,skelRegion,0.0
+5000_Extended_R06_Temporal_inferior,imgRegion,0.0
+5000_Extended_R06_Temporal_inferior,binaryRegion,0.0
+5000_Extended_R06_Temporal_inferior,skelRegion,0.0
+5000_Extended_R07_Nasal_inferior,imgRegion,0.0
+5000_Extended_R07_Nasal_inferior,binaryRegion,0.0
+5000_Extended_R07_Nasal_inferior,skelRegion,0.0
+5000_Extended_R08_Inferio_nasal,imgRegion,0.0
+5000_Extended_R08_Inferio_nasal,binaryRegion,0.0
+5000_Extended_R08_Inferio_nasal,skelRegion,0.0
+5000_Extended_R09_Nasal_wedge,imgRegion,0.0
+5000_Extended_R09_Nasal_wedge,binaryRegion,0.0
+5000_Extended_R09_Nasal_wedge,skelRegion,0.0
 5000_Extended_R10_Temporal_wedge,imgRegion,0.998392
 5000_Extended_R10_Temporal_wedge,binaryRegion,0.999488
 5000_Extended_R10_Temporal_wedge,skelRegion,0.987434
+5000_ONH_R01_NS,imgRegion,0.0
+5000_ONH_R01_NS,binaryRegion,0.0
+5000_ONH_R01_NS,skelRegion,0.0
+5000_ONH_R02_SN,imgRegion,0.0
+5000_ONH_R02_SN,binaryRegion,0.0
+5000_ONH_R02_SN,skelRegion,0.0
 5000_ONH_R03_ST,imgRegion,0.9984
 5000_ONH_R03_ST,binaryRegion,0.999524
 5000_ONH_R03_ST,skelRegion,0.98964
 5000_ONH_R04_TS,imgRegion,0.997968
 5000_ONH_R04_TS,binaryRegion,0.999312
 5000_ONH_R04_TS,skelRegion,0.985548
+5000_ONH_R05_TI,imgRegion,0.0
+5000_ONH_R05_TI,binaryRegion,0.0
+5000_ONH_R05_TI,skelRegion,0.0
+5000_ONH_R06_IT,imgRegion,0.0
+5000_ONH_R06_IT,binaryRegion,0.0
+5000_ONH_R06_IT,skelRegion,0.0
+5000_ONH_R07_IN,imgRegion,0.0
+5000_ONH_R07_IN,binaryRegion,0.0
+5000_ONH_R07_IN,skelRegion,0.0
+5000_ONH_R08_NI,imgRegion,0.0
+5000_ONH_R08_NI,binaryRegion,0.0
+5000_ONH_R08_NI,skelRegion,0.0
 5000_ONH_R09_S_hemi,imgRegion,0.99884
 5000_ONH_R09_S_hemi,binaryRegion,0.999584
 5000_ONH_R09_S_hemi,skelRegion,0.976708
+5000_ONH_R10_I_hemi,imgRegion,0.0
+5000_ONH_R10_I_hemi,binaryRegion,0.0
+5000_ONH_R10_I_hemi,skelRegion,0.0
 5000_ONH_R11_S,imgRegion,0.998608
 5000_ONH_R11_S,binaryRegion,0.999598
 5000_ONH_R11_S,skelRegion,0.988556
+5000_ONH_R12_I,imgRegion,0.0
+5000_ONH_R12_I,binaryRegion,0.0
+5000_ONH_R12_I,skelRegion,0.0
 5000_ONH_R13_T,imgRegion,0.998358
 5000_ONH_R13_T,binaryRegion,0.999426
 5000_ONH_R13_T,skelRegion,0.985886
+5000_ONH_R14_N,imgRegion,0.0
+5000_ONH_R14_N,binaryRegion,0.0
+5000_ONH_R14_N,skelRegion,0.0
 5000_ONH_R15_PP,imgRegion,0.998843
 5000_ONH_R15_PP,binaryRegion,0.999583
 5000_ONH_R15_PP,skelRegion,0.975353
+5000_Foveal rings_R01_FAZ_circle,imgRegion,0.0
+5000_Foveal rings_R01_FAZ_circle,binaryRegion,0.0
+5000_Foveal rings_R01_FAZ_circle,skelRegion,0.0
+5000_Foveal rings_R02_Inner_0.5mm_ring_around_FAZ,imgRegion,0.0
+5000_Foveal rings_R02_Inner_0.5mm_ring_around_FAZ,binaryRegion,0.0
+5000_Foveal rings_R02_Inner_0.5mm_ring_around_FAZ,skelRegion,0.0
 5000_Foveal rings_R03_Outer_0.5mm_ring,imgRegion,0.997867
 5000_Foveal rings_R03_Outer_0.5mm_ring,binaryRegion,0.999258
 5000_Foveal rings_R03_Outer_0.5mm_ring,skelRegion,0.984473

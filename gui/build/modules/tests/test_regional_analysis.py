@@ -84,79 +84,89 @@ def compare_and_plot(
     """
 
     # Ensure arrays are comparable shapes
+    # if Y_mat.shape != Y_py.shape:
+    #     raise ValueError(f"Shape mismatch: MATLAB {Y_mat.shape} vs Python {Y_py.shape}")
+
+
     if Y_mat.shape != Y_py.shape:
-        raise ValueError(f"Shape mismatch: MATLAB {Y_mat.shape} vs Python {Y_py.shape}")
-
-    # --- 1) Strict equality ---
-    strict_equal = (Y_mat == Y_py)
-    strict_agreement = float(strict_equal.mean())
-    strict_diff = int(np.sum(~strict_equal))
-
-    # --- 2) Tolerance-based equality ---
-    # Use float32 for stable numeric comparison
-    float_close = np.isclose(
-        Y_mat.astype(np.float32),
-        Y_py.astype(np.float32),
-        atol=tol,
-        rtol=0.0
-    )
-    float_agreement = float(float_close.mean())
-    float_diff = int(np.sum(~float_close))
-
-    # Mismatch mask for plotting (True = mismatch)
-    mismatch = ~float_close
-
-    # --- Plot ---
-    plt.figure(figsize=(12, 6))
-    plt.suptitle(title, y=0.95, fontsize=16)
-
-    plt.subplot(1, 3, 1)
-    plt.imshow(Y_mat, cmap="gray")
-    plt.title("MATLAB output")
-    plt.axis("off")
-
-    plt.subplot(1, 3, 2)
-    plt.imshow(Y_py, cmap="gray")
-    plt.title("Python output")
-    plt.axis("off")
-
-    plt.subplot(1, 3, 3)
-    plt.imshow(mismatch, cmap="hot")
-    plt.title("Difference mask (mismatches in white)")
-    plt.axis("off")
-
-    plt.tight_layout(rect=[0, 0.12, 1, 1])  # leave space at bottom for stats text
-
-    accuracy_text = (
-        f"Strict equality agreement: {strict_agreement:.6f}  |  Diff pixels: {strict_diff}\n"
-        f"Tolerance |Δ| <= {tol:.1e} agreement: {float_agreement:.6f}  |  Diff pixels: {float_diff}"
-    )
-
-    plt.figtext(
-        0.5, 0.04,
-        accuracy_text,
-        ha="center",
-        va="bottom",
-        fontsize=11
-    )
-
-    # out_name = safe_filename(title) + ".png"
-    out_path = os.path.join(comparison_results_path, title+".png")
-    plt.savefig(out_path, dpi=300, bbox_inches="tight", pad_inches=0.05)
-
-    if show:
-        plt.show()
+        mismatch = np.ones((max(Y_mat.shape[0], Y_py.shape[0]), max(Y_mat.shape[1], Y_py.shape[1])), dtype=bool)
+        print(f"For {title}, shape mismatch: MATLAB {Y_mat.shape} vs Python {Y_py.shape}")
+        strict_agreement = 0.0
     else:
-        plt.close()
+        # --- 1) Strict equality ---
+        strict_equal = (Y_mat == Y_py)
+        strict_agreement = float(strict_equal.mean())
+        strict_diff = int(np.sum(~strict_equal))
 
-    print("\n=== Strict Equality ===")
-    print(f"Pixelwise agreement: {strict_agreement:.6f}")
-    print(f"Different pixels:    {strict_diff}")
+        # --- 2) Tolerance-based equality ---
+        # Use float32 for stable numeric comparison
+        float_close = np.isclose(
+            Y_mat.astype(np.float32),
+            Y_py.astype(np.float32),
+            atol=tol,
+            rtol=0.0
+        )
+        float_agreement = float(float_close.mean())
+        float_diff = int(np.sum(~float_close))
 
-    print(f"\n=== Float Tolerance |Δ| <= {tol:.1e} ===")
-    print(f"Agreement:           {float_agreement:.6f}")
-    print(f"Different pixels:    {float_diff}")
+        # Mismatch mask for plotting (True = mismatch)
+        mismatch = ~float_close
 
+    try:
+        # --- Plot ---
+        plt.figure(figsize=(12, 6))
+        plt.suptitle(title, y=0.95, fontsize=16)
+
+        plt.subplot(1, 3, 1)
+        plt.imshow(Y_mat, cmap="gray")
+        plt.title("MATLAB output")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 2)
+        plt.imshow(Y_py, cmap="gray")
+        plt.title("Python output")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 3)
+        plt.imshow(mismatch, cmap="hot")
+        plt.title("Difference mask (mismatches in white)")
+        plt.axis("off")
+
+        plt.tight_layout(rect=[0, 0.12, 1, 1])  # leave space at bottom for stats text
+
+        if Y_mat.shape == Y_py.shape:
+            accuracy_text = (
+                f"Strict equality agreement: {strict_agreement:.6f}  |  Diff pixels: {strict_diff}\n"
+                f"Tolerance |Δ| <= {tol:.1e} agreement: {float_agreement:.6f}  |  Diff pixels: {float_diff}"
+            )
+
+            plt.figtext(
+                0.5, 0.04,
+                accuracy_text,
+                ha="center",
+                va="bottom",
+                fontsize=11
+            )
+
+            print("\n=== Strict Equality ===")
+            print(f"Pixelwise agreement: {strict_agreement:.6f}")
+            print(f"Different pixels:    {strict_diff}")
+
+            print(f"\n=== Float Tolerance |Δ| <= {tol:.1e} ===")
+            print(f"Agreement:           {float_agreement:.6f}")
+            print(f"Different pixels:    {float_diff}") 
+
+        # out_name = safe_filename(title) + ".png"
+        out_path = os.path.join(comparison_results_path, title+".png")
+        plt.savefig(out_path, dpi=300, bbox_inches="tight", pad_inches=0.05)
+
+        if show:
+            plt.show()
+        else:
+            plt.close()
+    except Exception as e:
+        print(f"Error during plotting/saving for {title}: {e}")
+      
     return {
         "strict_agreement": strict_agreement,
         "saved_path": out_path
@@ -195,10 +205,10 @@ for grid_type in GridType:
           if Y_mat.dtype != np.uint8 and np.nanmax(Y_mat) <= 1.0:
               Y_mat = (np.clip(Y_mat, 0, 1) * 255).astype(np.uint8)
 
-          # If shapes mismatch, you’ll need to debug your cropping rules.
-          if Y_py.shape != Y_mat.shape:
-              print(f"SHAPE MISMATCH for {npz_name} vs {mat_name}: py={Y_py.shape}, mat={Y_mat.shape}")
-              continue
+          # # If shapes mismatch, you’ll need to debug your cropping rules.
+          # if Y_py.shape != Y_mat.shape:
+          #     print(f"SHAPE MISMATCH for {npz_name} vs {mat_name}: py={Y_py.shape}, mat={Y_mat.shape}")
+          #     continue
 
           result=compare_and_plot(Y_mat, Y_py, title=f"{region_name}_{type}_Comparison", show=False)
 
