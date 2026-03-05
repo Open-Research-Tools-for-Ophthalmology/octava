@@ -12,6 +12,8 @@ import threading
 import os
 import datetime
 
+skipped_images = []  # List to track images that failed to load during batch processing
+
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
 
@@ -68,56 +70,50 @@ def make_save_folder(canvas: Canvas):
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
-    if is_regional_analysis_enabled(canvas):
-        if not is_prebinary_enabled(canvas):
-            print("Starting binarising...")
-            binarise_image(canvas)  # long-running
-
-        print("Binarisation completed. Running regional analysis...")
-        run_regional_analysis(canvas)
-        print("Regional analysis completed.")
-    else:
-      if not is_prebinary_enabled(canvas):
+    if not is_prebinary_enabled(canvas):
         print("Starting binarising...")
         binarise_image(canvas)  # long-running
-
         print("Binarisation completed. Starting skeletonisation...")
-      # display = not batch  # only display skeleton in single image mode
-      display = True
-      skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
-      print("Skeletonisation completed.")
+        
+    # display = not batch  # only display skeleton in single image mode
+    display = True
+    skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
+    print("Skeletonisation completed.")
 
-      BiomarkerAnalyzer.process(canvas)
+    BiomarkerAnalyzer.process(canvas)
 
-      # Refresh histogram on main thread
-      def refresh_histogram_ui():
-          if hasattr(canvas, "hist_plotter"):
-              diameters = getattr(canvas, "vessel_diameters_um", [])
-              canvas.hist_plotter.set_data(diameters)
-              canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
-              images_dir = os.path.join(canvas.current_save_folder, "images")
-              os.makedirs(images_dir, exist_ok=True)
+    # Refresh histogram on main thread
+    def refresh_histogram_ui():
+        if hasattr(canvas, "hist_plotter"):
+            diameters = getattr(canvas, "vessel_diameters_um", [])
+            canvas.hist_plotter.set_data(diameters)
+            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+            images_dir = os.path.join(canvas.current_save_folder, "images")
+            os.makedirs(images_dir, exist_ok=True)
 
-              bin_size = int(canvas.bin_size_var.get())
-              hist_path = os.path.join(
-                  images_dir,
-                  f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
-              )
-              canvas.hist_plotter.save_to_file(hist_path)
+            bin_size = int(canvas.bin_size_var.get())
+            hist_path = os.path.join(
+                images_dir,
+                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
+            )
+            canvas.hist_plotter.save_to_file(hist_path)
 
-      canvas.after(0, refresh_histogram_ui)
+    canvas.after(0, refresh_histogram_ui)
 
-      print("Biomarker analyzer processing completed.")
-      
-      # Additional processing if batch mode is on
-      if batch:
-          if canvas.bp_segment_faz_var.get() == 1:
-              generate_faz_mask(canvas, batch=True)
-              display_faz_image(canvas)
-              measure_faz(canvas)
-              print("FAZ generation and metrics measurement completed.")
-          # TODO
-          # if regional_analysis xxx
+    print("Biomarker analyzer processing completed.")
+    
+    # Additional processing if batch mode is on
+    if batch:
+        if canvas.bp_segment_faz_var.get() == 1:
+            generate_faz_mask(canvas, batch=True)
+            display_faz_image(canvas)
+            measure_faz(canvas)
+            print("FAZ generation and metrics measurement completed.")
+
+    if is_regional_analysis_enabled(canvas):
+        print("Running regional analysis...")
+        run_regional_analysis(canvas)
+        print("Regional analysis completed.")
 
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))

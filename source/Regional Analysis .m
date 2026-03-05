@@ -414,7 +414,7 @@ function regionalmetrics = regionalAnalysis(app)
                 
 
                 
-                if ~isempty(app.Glinks) % see Joshua's biomarker.py
+                if ~isempty(app.Glinks) 
                     regionalmetrics(i).nodes = sum(~[app.Gnodes.ep]);
                     regionalmetrics(i).VAD = round(sum(sum(binaryReg{i}))/255/imgArea_pix,4)*100;
                     regionalmetrics(i).totalLength = round(sum([app.Glinks.pixLength]*pix_to_mm),2); %In mm

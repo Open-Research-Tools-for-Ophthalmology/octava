@@ -150,6 +150,7 @@ def measure_faz(canvas: Canvas):
 
     # 2. Centroid: Calculate centroid
     Cx, Cy = get_central(cnt[:, 0], cnt[:, 1])
+    canvas.FAZ_ctr = np.array([Cy, Cx])
 
     # 3. Convert contour to polar coordinates relative to centroid
     cnt_x = cnt[:, 0] - Cx
