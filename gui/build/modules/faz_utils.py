@@ -34,7 +34,7 @@ def load_faz_grayscale_arr(canvas: Canvas):
     print("contours found:", len(contours))
 
     if len(contours) == 0:
-        return messagebox.showwarning("No FAZ contours found")
+        return messagebox.showwarning("No FAZ contours found", "Failed to find any FAZ contours.")
     
     cnt = max(contours, key=cv2.contourArea)
     cnt = cnt.reshape(-1, 2)  # Shape: (N, 2)
@@ -141,7 +141,7 @@ def measure_faz(canvas: Canvas):
     print("contours found:", len(contours))
 
     if len(contours) == 0:
-        return messagebox.showwarning("No FAZ contours found")
+        return messagebox.showwarning("No FAZ contours found", "Failed to find any FAZ contours.")
     
     # 1. Inner contour: Get the largest contour
     cnt = max(contours, key=cv2.contourArea)

@@ -7,6 +7,31 @@ import numpy as np
 import os
 from modules.change_status import *
 from modules.clear import *
+from modules.binarise_image import *
+
+def resize_from_spinbox(canvas):
+    """Resize the full-resolution image based on the current spinbox value and update preview."""
+    if not hasattr(canvas, "full_res_img"):
+        return
+
+    mm_value = canvas.image_size_var.get()
+    target_pixels = size_to_pixels(mm_value)
+
+    # Resize from the original full-resolution image
+    resized_img = resize_image(canvas.full_res_img.copy(), (target_pixels, target_pixels))
+    
+    canvas.original_img = np.array(resized_img).astype(np.float64)
+    canvas.fullImSizePix = (resized_img.height, resized_img.width)
+    canvas.FAZ_ctr = np.array([resized_img.height // 2, resized_img.width // 2])
+
+    # Update preview (200x200)
+    preview = resize_image(resized_img.copy(), (200, 200))
+    img_tk = ImageTk.PhotoImage(preview)
+
+    canvas.itemconfigure(canvas.original_img_id, image=img_tk)
+    canvas._image_refs["original_img"] = img_tk
+
+    print(f"[Spinbox Resize] mm={mm_value}, pixels={target_pixels}, resized shape={resized_img.size}")
 
 # Load an image for processing
 # @param {Boolean} silent = True for automated batch processing/image subset
@@ -47,19 +72,35 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
             change_status_to_ready(canvas)
             return None
 
-        # Store the full-resolution grayscale image
-        canvas.original_img = np.array(original_img)
     else:
         # Method 2: Load from given image array (image subset)
-        canvas.original_img = imgArr
         original_img = Image.fromarray(imgArr.astype(np.uint8))
-        path = Path(canvas.filePath)  # Keep original path info
+        path = Path(canvas.filePath) if hasattr(canvas, "filePath") else Path("unknown")
+    
+    # Store full-resolution original
+    canvas.full_res_img = original_img.copy()
 
-    canvas.original_img = canvas.original_img.astype(np.int16).astype(np.float64)
-    orig_w, orig_h = original_img.size
+    # resize image according to spinbox value
+    mm_value = canvas.image_size_var.get() # current spinbox value
+    print("---- Resize debug info ----")
+    print("Spinbox value (mm):", mm_value)
+
+    target_pixels = size_to_pixels(mm_value) # convert from mm to pixels
+    print("Target pixel size:", target_pixels)
+
+    resized_img = resize_image(original_img, (target_pixels, target_pixels))
+    print("Resized image size (W, H):", resized_img.size)
+
+    canvas.original_img = np.array(resized_img).astype(np.float64)
+
+    # Update metadata
+    canvas.fullImSizePix = (resized_img.height, resized_img.width)  # H x W
+    canvas.FAZ_ctr = np.array([resized_img.height // 2, resized_img.width // 2])
+    print("Stored fullImSizePix:", canvas.fullImSizePix)
+    print("Stored FAZ_ctr:", canvas.FAZ_ctr)
 
     # Create a 200x200 resized version for display
-    preview = resize_image(original_img)
+    preview = resize_image(resized_img, (200, 200))
     img_tk = ImageTk.PhotoImage(preview)
 
     # Remove previous preview/text if present
@@ -81,23 +122,34 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
         canvas._image_refs = {}
     canvas._image_refs["original_img"] = img_tk
 
+    # Prebinary, load original image as binarized if prebinary is toggled on
+    if canvas.prebinary_var.get():    # --- Store result back to canvas ---
+        canvas.binary_image = canvas.original_img.copy()
+        canvas.inverted_image = canvas.binary_image.copy()
+
+        # --- Display binarised image ---
+        display_binarised_image(canvas, canvas.binary_image)
+
     # Store metadata similar to MATLAB version
     canvas.filePath = str(path)
-    canvas.FileLabelName = path.stem.replace("_", "")
+    canvas.FileLabelName = path.stem # match input/output naming convention
     canvas.lastPath = str(path.parent)
-    canvas.fullImSizePix = (orig_h, orig_w)   # match MATLAB HxW style
-    canvas.FAZ_ctr = np.array([orig_h // 2, orig_w // 2])
 
     # Remember last drawn items
     canvas.original_img_id = img_id
     canvas.filename_text_id = text_id
+
+    # Attach spinbox trace to dynamically resize
+    if hasattr(canvas, "image_size_var"):
+        canvas.image_size_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))
+
 
     change_status_to_ready(canvas)
 
     return {
         "path": path,
         "filename": path.name,
-        "size": (orig_w, orig_h),
+        "size": (resized_img.width, resized_img.height),
         "img_id": img_id,
         "text_id": text_id,
     }
