@@ -277,18 +277,6 @@ Conceptually, the ETDRS grid consists of:
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
 
-	# plt.imshow(canvas.original_img, cmap="gray")
-	# colors = ["r","g","b","y","c","m"]
-
-	# for i in range(6):
-	# 		mask = sector_masks[:, :, i]
-	# 		plt.contour(mask, colors=colors[i], linewidths=1)
-	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
-
-	# plt.axis('off')
-	# plt.scatter(cx, cy, c="white")
-	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
-
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	"""
@@ -459,34 +447,6 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 		pix_to_mm=pix_to_mm,
 		grid_type=GridType.EXTENDED_ETDRS_GRID,   # change per function
 	) 
-
-	plt.figure(figsize=(6, 6))
-	plt.imshow(canvas.original_img, cmap="gray")
-
-	colors = ["r", "g", "b", "y", "c", "m", "orange", "lime"]
-
-	for i in range(8):
-			mask = sector_masks[:, :, i]
-			plt.contour(mask, colors=[colors[i]], linewidths=1.5)
-			plt.text(
-					cx + 10 * np.cos(np.deg2rad(-45*i)),
-					cy + 10 * np.sin(np.deg2rad(-45*i)),
-					f"S{i+1}",
-					color=colors[i],
-					fontsize=10,
-					weight="bold",
-			)
-
-	plt.scatter(cx, cy, c="white", s=20)  # FAZ center
-	plt.axis("off")
-
-	plt.savefig(
-			"extended_etdrs_wedge_orientation_debug.png",
-			dpi=300,
-			bbox_inches="tight",
-	)
-	plt.close()
-	print("Saved extended ETDRS grid debug image with wedge orientations.")
 
 
 def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
@@ -1113,28 +1073,3 @@ def compute_mean_tortuosity(links, binary):
 	else:
 			mean_tortuosity = 0.0
 	return mean_tortuosity
-
-
-# def mean_tortuosity_from_links(links, image_shape, order="C"):
-#     tortuosity_list = []
-
-#     for link in links:
-#         indices = np.asarray(getattr(link, "path", []), dtype=np.int64)
-#         if indices.size < 2:
-#             continue
-
-#         rows, cols = np.unravel_index(indices, image_shape, order=order)
-#         coords = np.column_stack((rows, cols)).astype(float)
-
-#         diffs = np.diff(coords, axis=0)
-#         arc_length = float(np.sum(np.linalg.norm(diffs, axis=1)))
-
-#         chord_length = float(np.linalg.norm(coords[-1] - coords[0]))
-#         if chord_length <= 1e-6:
-#             continue
-
-#         tort = arc_length / chord_length
-#         if np.isfinite(tort):
-#             tortuosity_list.append(tort)
-
-#     return float(np.mean(tortuosity_list)) if tortuosity_list else 0.0
