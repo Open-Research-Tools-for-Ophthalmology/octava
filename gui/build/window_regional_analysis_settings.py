@@ -49,11 +49,6 @@ def subwindow2(canvas):
       height=30.0
   )
 
-  # def show_selection(event=None):
-  #     print("Selected:", canvas.eye_var.get())
-
-  # eye_combobox.bind("<<ComboboxSelected>>", show_selection)
-
   # square grid checkbox
   square_grid_checkbox = Checkbutton(
       subwindow,
@@ -67,7 +62,6 @@ def subwindow2(canvas):
       x=40.0,
       y=100.0
   )
-
 
   # etdrs grid checkbox
   etdrs_grid_checkbox = Checkbutton(
