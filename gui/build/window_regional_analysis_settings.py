@@ -119,20 +119,6 @@ def subwindow2(canvas):
       y=220.0
   )
 
-  # apply regional analysis  checkbox
-  apply_regional_analysis_checkbox = Checkbutton(
-      subwindow,
-      text="Apply regional analysis",
-      variable=canvas.apply_regional_analysis_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  apply_regional_analysis_checkbox.place(
-      x=40.0,
-      y=250.0
-  )
-
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow),
