@@ -54,21 +54,6 @@ def subwindow2(canvas):
 
   # eye_combobox.bind("<<ComboboxSelected>>", show_selection)
 
-
-  # load faz checkbox
-  load_faz_checkbox = Checkbutton(
-      subwindow,
-      text="Load FAZ masks",
-      variable=canvas.load_faz_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  load_faz_checkbox.place(
-      x=40.0,
-      y=70.0
-  )
-
   # square grid checkbox
   square_grid_checkbox = Checkbutton(
       subwindow,
