@@ -758,8 +758,6 @@ def run_analysis_on_regions(
 		os.makedirs(validation_folder, exist_ok=True)
 
 		for i in range(len(binaryReg)):
-				change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
-
 				# Skeletonize this region
 				skeletonise(
 						canvas,
@@ -767,6 +765,8 @@ def run_analysis_on_regions(
 						binaryReg[i],
 						display=False,
 				)
+				
+				change_status_to_waiting(canvas, status="🔴 Running regional analysis")
 
 				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
 				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
