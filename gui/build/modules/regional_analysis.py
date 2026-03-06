@@ -758,7 +758,7 @@ def run_analysis_on_regions(
 		os.makedirs(validation_folder, exist_ok=True)
 
 		for i in range(len(binaryReg)):
-				# change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+				change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
 
 				# Skeletonize this region
 				skeletonise(

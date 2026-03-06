@@ -18,7 +18,7 @@ def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
 
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
-    return hasattr(canvas, "apply_regional_analysis_bool") and canvas.apply_regional_analysis_bool.get() == 1
+    return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()
 
 def is_prebinary_enabled(canvas:Canvas) ->bool:
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
