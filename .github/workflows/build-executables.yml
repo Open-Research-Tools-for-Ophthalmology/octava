@@ -6,9 +6,8 @@ name: Build executables to Windows/MacOS/Linux
 
 on:
   push:
-    # TODO change to main after done testing
     branches:
-      - proofreading
+      - main
 
 jobs:
   build:
