@@ -277,6 +277,18 @@ Conceptually, the ETDRS grid consists of:
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
 
+	# plt.imshow(canvas.original_img, cmap="gray")
+	# colors = ["r","g","b","y","c","m"]
+
+	# for i in range(6):
+	# 		mask = sector_masks[:, :, i]
+	# 		plt.contour(mask, colors=colors[i], linewidths=1)
+	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
+
+	# plt.axis('off')
+	# plt.scatter(cx, cy, c="white")
+	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
+
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	"""
