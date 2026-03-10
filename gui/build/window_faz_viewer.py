@@ -513,4 +513,4 @@ def subwindow4(canvas, editable=False):
 
     subwindow4.protocol("WM_DELETE_WINDOW", on_close)
     subwindow4.resizable(True, True)
-    subwindow4.mainloop()
+    return subwindow4

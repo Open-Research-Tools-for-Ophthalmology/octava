@@ -24,6 +24,31 @@ from test import *
 
 OUTPUT_PATH = Path(__file__).parent
 
+# Global window registry
+OPEN_WINDOWS = {}
+
+# If window exists, bring to front, otherwise create
+def open_window(key, callback, *args, **kwargs):
+    global OPEN_WINDOWS
+    
+    # Check if window already exists
+    if key in OPEN_WINDOWS:
+        try:
+            if OPEN_WINDOWS[key].winfo_exists():
+                OPEN_WINDOWS[key].lift()
+                OPEN_WINDOWS[key].focus()
+                return OPEN_WINDOWS[key]
+        except:
+            # Delete from dict if window no longer exists (either normal closure or programmatically handled closure e.g. FAZ editor)
+            del OPEN_WINDOWS[key]
+    
+    # Spawn new window
+    new_window = callback(*args, **kwargs)
+    
+    if new_window is not None:
+        OPEN_WINDOWS[key] = new_window    
+    return new_window
+
 window = Tk()
 window.title("OCTAVA")
 window.geometry("1210x750")
@@ -76,8 +101,8 @@ canvas.create_text(
     font=("Roboto", 26 * -1)
 )
 
-button01 = ctk.CTkButton(window, text="Save",
-                        command=lambda: canvas.hist_plotter.save_plot(),
+button01 = ctk.CTkButton(window, text="Clear",
+                        command=lambda: clear_screen(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -87,19 +112,19 @@ button01 = ctk.CTkButton(window, text="Save",
                         border_color=button_border_colour)
 button01.place(x=155, y=35)
 
-button02 = ctk.CTkButton(window, text="Clear",
-                        command=lambda: clear_screen(canvas),
+button02 = ctk.CTkButton(window, text="Help",
+                        command=lambda: open_window('help', open_help_window, canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
-                        border_color=button_border_colour)
+    border_color=button_border_colour)
 button02.place(x=225, y=35)
 
-button03 = ctk.CTkButton(window, text="Help",
-                        command=lambda: open_help_window(canvas),
+button03 = ctk.CTkButton(window, text="Feedback",
+                        command=lambda: open_window('feedback', open_feedback_window, canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -109,8 +134,8 @@ button03 = ctk.CTkButton(window, text="Help",
     border_color=button_border_colour)
 button03.place(x=295, y=35)
 
-button04 = ctk.CTkButton(window, text="Feedback",
-                        command=lambda: open_feedback_window(canvas),
+button04 = ctk.CTkButton(window, text="Subscribe to Updates",
+                        command=lambda: open_window('subscribe', open_subscribe_window, canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -119,17 +144,6 @@ button04 = ctk.CTkButton(window, text="Feedback",
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
 button04.place(x=365, y=35)
-
-button05 = ctk.CTkButton(window, text="Subscribe to Updates",
-                        command=lambda: open_subscribe_window(canvas),
-                        width=65,height=25,
-                        font=("Roboto", 12 * -1),
-                        text_color=text_colour,
-                        fg_color=button_blue_colour,
-                        corner_radius=2,border_width=1,
-                        hover_color=button_blue_hover,
-    border_color=button_border_colour)
-button05.place(x=435, y=35)
 
 canvas.status_id = canvas.create_text(
     950.0,
@@ -233,7 +247,7 @@ round_rectangle(canvas, 160, 210, 250, 40, radius=8)
 
 
 button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
-                        command=lambda: subwindow1(canvas),
+                        command=lambda: open_window('advanced_settings', subwindow1, canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
@@ -244,7 +258,7 @@ button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Setting
 button_advanced_settings.place(x=30, y=270)
 
 button_point_faz = ctk.CTkButton(window, text="Point FAZ",
-                                command=lambda: subwindow4(canvas, editable=True),
+                                command=lambda: open_window('point_faz', subwindow4, canvas, editable=True),
                                 width=80,height=40,
                                 font=("Roboto", 12 * -1),
                                 text_color=text_colour,
@@ -257,7 +271,7 @@ button_point_faz = ctk.CTkButton(window, text="Point FAZ",
 button_point_faz.place(x=30, y=355)
 
 
-button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: subwindow4(canvas, editable=False),
+button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: open_window('auto_faz', subwindow4, canvas, editable=False),
                                 width=80,height=40,
                                 font=("Roboto", 12 * -1),
                                 text_color=text_colour,
@@ -294,7 +308,7 @@ canvas.img_type_var.trace_add("write", update_faz_buttons_state)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
-                        command=lambda: subwindow2(canvas),
+                        command=lambda: open_window('regional_analysis', subwindow2, canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
@@ -306,7 +320,7 @@ button_regional_analysis.place(x=30, y=415)
 
 
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
-                        command=lambda: subwindow3(canvas),
+                        command=lambda: open_window('batch_processing', subwindow3, canvas),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
