@@ -22,7 +22,7 @@ class GridType(Enum):
 	FOVEAL_RING = "Foveal rings"
 
 def run_regional_analysis(canvas):
-	change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+	change_status_to_waiting(canvas, status="● Wait...running regional analysis")
 
 	# Get image size from canvas
 	image_size_mm = canvas.image_size_var.get()

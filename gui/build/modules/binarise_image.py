@@ -17,7 +17,7 @@ def binarise_image(canvas: Canvas, display:bool=True):
     - Optionally applies Frangi filter (stub).
     Stores result in canvas.binary_image.
     """
-    change_status_to_waiting(canvas, status="🔴 Wait...Binarising")
+    change_status_to_waiting(canvas, status="● Wait...Binarising")
 
     # --- Locate brightest vessel pixel ---
     y = canvas.original_img.max(axis=0)
@@ -84,7 +84,7 @@ def invert_binarised_image(canvas: Canvas):
       )
       return
 
-    change_status_to_waiting(canvas, status="🔴 Wait...Inverting Binarised Image")
+    change_status_to_waiting(canvas, status="● Wait...Inverting Binarised Image")
 
     print ("Inverting binarised image...")
 

@@ -149,7 +149,7 @@ canvas.status_id = canvas.create_text(
     950.0,
     35.0,
     anchor="nw",
-    text="🟢 Ready",
+    text="● Ready",
     fill=theme_blue,
     font=("Roboto", 20 * -1)
 )

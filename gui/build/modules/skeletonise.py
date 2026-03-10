@@ -18,7 +18,7 @@ from scipy.ndimage import binary_dilation
 import os
 
 def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, display: bool = True):
-  change_status_to_waiting(canvas, status="🔴 Wait...Skeletonising")
+  change_status_to_waiting(canvas, status="● Wait...Skeletonising")
 
   twig_size = canvas.twig_size.get()
 

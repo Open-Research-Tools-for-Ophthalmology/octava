@@ -96,7 +96,7 @@ def get_central(x,y):
 
 # Generate FAZ mask from image using auto_faz module
 def generate_faz_mask(canvas: Canvas, batch: bool = False):
-    change_status_to_waiting(canvas, status="🔴 Wait...Segmenting FAZ")
+    change_status_to_waiting(canvas, status="● Wait...Segmenting FAZ")
 
     grayscale_arr = auto_faz(image=canvas.original_img)
 
