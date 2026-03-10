@@ -1,12 +1,18 @@
-/source/5000/*
-/source/5001/*
-/source/5002/*
-/test_images/5000/*
-/test_images/5001/*
-/test_images/5002/*
+/source/*/
+!/source/Scripts/*
+/source/*.xlsx
+
+/test_images/*
+!/test_images/5001.tif
+!/test_images/5002.tif
+!/test_images/5003.tif
+!/test_images/OCTA_batch_template.xlsx
 
 .env
 
 __pycache__/
-tempCodeRunnerFile.py
 *.pyc
+.DS_Store
+
+/dist/
+/build/

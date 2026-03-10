@@ -141,4 +141,4 @@ def open_subscribe_window(canvas: Canvas):
 
 
   subwindow.resizable(False, False)
-  subwindow.mainloop()
+  return subwindow

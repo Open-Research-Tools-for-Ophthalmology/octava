@@ -71,4 +71,4 @@ def open_help_window(canvas):
   button_readme.place(x=200, y=500)
 
   subwindow.resizable(False, False)
-  subwindow.mainloop()
+  return subwindow

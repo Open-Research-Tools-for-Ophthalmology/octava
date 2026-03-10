@@ -57,13 +57,16 @@ def install_pyinstaller():
 def build_executable():
     """Build the executable using PyInstaller."""
     script_path = Path(__file__).parent / "gui" / "build" / "gui.py"
+    assets_path = Path(__file__).parent / "gui" / "build" / "assets"
+
     # PyInstaller command with the same flags as the workflow
     pyinstaller_cmd = (
         f'"{sys.executable}" -m PyInstaller '
         f'--noconsole '
         f'--onefile '
-        f'"{script_path}" '
-        f'--hidden-import=PIL._tkinter_finder'
+        f'--add-data "{assets_path}:assets" '
+        f'--hidden-import=PIL._tkinter_finder '
+        f'"{script_path}"'
     )
     
     return run_command(

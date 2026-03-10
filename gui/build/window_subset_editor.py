@@ -13,6 +13,7 @@ import numpy as np
 from modules.resize_image import *
 from PIL import Image, ImageTk
 from modules.load_image import load_image
+from resource_path import ICONS_PATH
 
 
 def subwindow_subset(canvas):
@@ -118,21 +119,36 @@ def subwindow_subset(canvas):
     # Store button references
     subwindow_subset.tool_buttons = {}
 
+    # Load tool icons
+    try:
+        icon_draw_pil = Image.open(ICONS_PATH / "draw.png")
+        icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
+        icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")
+        
+        # Convert to CTkImage for proper rendering
+        icon_draw = ctk.CTkImage(light_image=icon_draw_pil, dark_image=icon_draw_pil, size=(24, 24))
+        icon_pan = ctk.CTkImage(light_image=icon_pan_pil, dark_image=icon_pan_pil, size=(24, 24))
+        icon_zoom = ctk.CTkImage(light_image=icon_zoom_pil, dark_image=icon_zoom_pil, size=(24, 24))
+    except FileNotFoundError as e:
+        messagebox.showerror("Icons Missing", f"Tool icons not found: {e}\nPlease ensure icons are in {ICONS_PATH}")
+        subwindow_subset.destroy()
+        return
+
     # Draw tool button
     btn_draw = ctk.CTkButton(
-        tools_frame, text="✎", command=lambda: set_active_tool("draw"), **btn_config
+        tools_frame, image=icon_draw, text="", command=lambda: set_active_tool("draw"), **btn_config
     )
     pack_tool_button(btn_draw, "draw")
 
     # Pan tool button
     btn_pan = ctk.CTkButton(
-        tools_frame, text="✋", command=lambda: set_active_tool("pan"), **btn_config
+        tools_frame, image=icon_pan, text="", command=lambda: set_active_tool("pan"), **btn_config
     )
     pack_tool_button(btn_pan, "pan")
 
     # Zoom tool button
     btn_zoom = ctk.CTkButton(
-        tools_frame, text="🔍", command=lambda: set_active_tool("zoom"), **btn_config
+        tools_frame, image=icon_zoom, text="", command=lambda: set_active_tool("zoom"), **btn_config
     )
     pack_tool_button(btn_zoom, "zoom")
 
