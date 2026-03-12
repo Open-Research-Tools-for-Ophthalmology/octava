@@ -34,7 +34,7 @@ def close(subwindow):
 def subwindow3(canvas):
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
-    subwindow.geometry("350x450")
+    subwindow.geometry("350x420")
     subwindow.configure(bg="#FBE3D6")
     
     # Trace checkbox to enable/disable batch resize entry
@@ -43,8 +43,8 @@ def subwindow3(canvas):
     subcanvas3 = Canvas(
         subwindow,
         bg="#FBE3D6",
-        height=381,
-        width=349,
+        height=420,
+        width=350,
         bd=0,
         highlightthickness=0,
         relief="ridge",
@@ -85,7 +85,7 @@ def subwindow3(canvas):
     file_type = Combobox(
         subwindow, textvariable=canvas.bp_file_type_var, values=file_type_list, state="readonly"
     )
-    file_type.place(x=110.0, y=130.0, width=100.0, height=30.0)
+    file_type.place(x=110.0, y=130.0, width=165.0, height=30.0)
 
     # batch resize checkbox
     batch_resize_checkbox = Checkbutton(
@@ -105,6 +105,7 @@ def subwindow3(canvas):
         fg=text_colour,
         font=("Roboto", 14 * -1),
         state="normal" if canvas.bp_batch_resize_bool_var.get() == 1 else "disabled",
+        width=12,
         bd=0.5,
         highlightthickness=0,
     )
@@ -119,7 +120,7 @@ def subwindow3(canvas):
 
     trace_id = canvas.bp_batch_resize_bool_var.trace("w", update_batch_resize_state)
 
-    batch_resize_text.place(x=160.0, y=187.0)
+    batch_resize_text.place(x=160.0, y=188.0)
 
     # variable image size checkbox
     variable_image_size_checkbox = Checkbutton(
@@ -171,7 +172,7 @@ def subwindow3(canvas):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=110, y=394)
+    button_close.place(x=110, y=330)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)
