@@ -289,4 +289,4 @@ def subwindow1(canvas):
   button_close.place(x=114, y=450)
 
   subwindow.resizable(False, False)
-  subwindow.mainloop()
+  return subwindow

@@ -187,4 +187,4 @@ def subwindow3(canvas):
         )
         
     subwindow.resizable(False, False)
-    subwindow.mainloop()
+    return subwindow

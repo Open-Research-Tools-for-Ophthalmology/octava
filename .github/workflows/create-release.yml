@@ -1,0 +1,109 @@
+# See https://github.com/actions/download-artifact
+# See https://octokit.github.io/rest.js/v22/
+name: Attach artifacts of latest sucessful build to newly created release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  attach-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+    
+    - name: Find latest successful build
+      id: find-build
+      uses: actions/github-script@v8
+      with:
+        script: |
+          console.log(`Looking for successful runs for push events`);
+          
+          const runs = await github.rest.actions.listWorkflowRunsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            event: 'push',
+            status: 'success',
+            per_page: 1
+          });
+          
+          if (runs.data.workflow_runs.length === 0) {
+            core.setFailed(`No successful runs found for push events`);
+            return;
+          }
+          
+          const latestRun = runs.data.workflow_runs[0];
+          console.log(`Found run ${latestRun.id} from commit ${latestRun.head_sha.substring(0, 7)}`);
+          
+          core.setOutput('run_id', latestRun.id);
+
+    - name: Download Windows x64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: windows-x64-binary
+        path: ./artifacts/windows-x64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+    
+    - name: Download Linux x64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: linux-x64-binary
+        path: ./artifacts/linux-x64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+    
+    - name: Download macOS ARM64 artifact
+      uses: actions/download-artifact@v7
+      continue-on-error: true
+      with:
+        name: macos-arm64-binary
+        path: ./artifacts/macos-arm64-binary
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ steps.find-build.outputs.run_id }}
+
+    - name: Package raw artifacts into compressed assets
+      run: |
+        mkdir -p ./release-assets
+        
+        # Package Windows x64
+        if [ -d "./artifacts/windows-x64-binary" ]; then
+          echo "Packaging Windows x64..."
+          cd ./artifacts/windows-x64-binary
+          zip -r ../../release-assets/windows-x64-binary.zip .
+          cd ../..
+        fi
+        
+        # Package Linux x64
+        if [ -d "./artifacts/linux-x64-binary" ]; then
+          echo "Packaging Linux x64..."
+          cd ./artifacts/linux-x64-binary
+          tar -czf ../../release-assets/linux-x64-binary.tar.gz .
+          cd ../..
+        fi
+        
+        # Package macOS ARM64
+        if [ -d "./artifacts/macos-arm64-binary" ]; then
+          echo "Packaging macOS ARM64..."
+          cd ./artifacts/macos-arm64-binary
+          zip -r ../../release-assets/macos-arm64-binary.zip .
+          cd ../..
+        fi
+
+    - name: Upload artifacts to current release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG_NAME="${{ github.event.release.tag_name }}"
+        echo "Uploading artifacts to release ${TAG_NAME}..."
+        
+        # Upload the packaged release assets
+        #! clobber to directly overwrite
+        gh release upload "${TAG_NAME}" ./release-assets/* --clobber

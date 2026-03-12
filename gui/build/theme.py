@@ -1,4 +1,5 @@
 from pathlib import Path
+from resource_path import ASSETS_PATH
 
 # Main level - Layer 1
 bg_colour = "#F9F9F9"
@@ -17,7 +18,7 @@ theme_grey = "#EFEFEF"
 
 # Top level subwindows
 subwindow_bg_colour = "#FBE3D6"
-ADVANCED_SETTINGS_ASSETS_PATH = Path(Path(__file__).parent, "assets")
+ADVANCED_SETTINGS_ASSETS_PATH = ASSETS_PATH
 
 
 

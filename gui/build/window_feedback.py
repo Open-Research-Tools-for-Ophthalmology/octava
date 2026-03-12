@@ -194,4 +194,4 @@ def open_feedback_window(canvas: Canvas):
   button_submit.place(x=500, y=530)
 
   subwindow.resizable(False, False)
-  subwindow.mainloop()
+  return subwindow

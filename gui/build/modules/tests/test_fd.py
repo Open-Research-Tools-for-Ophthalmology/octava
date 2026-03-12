@@ -663,7 +663,7 @@ if parent_dir not in sys.path:
 # 						display=False,
 # 				)
 
-# 				change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+# 				change_status_to_waiting(canvas, status="● Wait...running regional analysis")
 
 # 				# Image area (MATLAB conditional)
 # 				if grid_type != GridType.SQUARE_GRID:

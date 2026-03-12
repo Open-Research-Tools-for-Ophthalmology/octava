@@ -22,7 +22,7 @@ class GridType(Enum):
 	FOVEAL_RING = "Foveal rings"
 
 def run_regional_analysis(canvas):
-	change_status_to_waiting(canvas, status="🔴 Wait...running regional analysis")
+	change_status_to_waiting(canvas, status="● Wait...running regional analysis")
 
 	# Get image size from canvas
 	image_size_mm = canvas.image_size_var.get()
@@ -276,6 +276,18 @@ Conceptually, the ETDRS grid consists of:
 		pix_to_mm=pix_to_mm,
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
+
+	# plt.imshow(canvas.original_img, cmap="gray")
+	# colors = ["r","g","b","y","c","m"]
+
+	# for i in range(6):
+	# 		mask = sector_masks[:, :, i]
+	# 		plt.contour(mask, colors=colors[i], linewidths=1)
+	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
+
+	# plt.axis('off')
+	# plt.scatter(cx, cy, c="white")
+	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
 
 
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):

@@ -1,0 +1,22 @@
+"""
+Configuration for FAZ segmentation
+"""
+
+config = {
+    'dataset': {
+        'crop_bottom': 0,  # 0 for no crop
+        # suffix to append to image filename (no file extension) to get GT filename
+        # e.g. image is named img_01.png, and GT mask is named img_01_mask.png
+        'gt_suffix': '_mask.png',
+        
+        # Filepath configs placeholders (filepath for single image, image_folder for batch processing) have been integrated to the app
+        # filepath to image for single segmentation relative to datasets/
+        'filepath': '',
+        
+        # filepath to folder for batch segmentation, relative to datasets/
+        'image_folder': ''
+    },
+    'scaling': {
+        'scan_size': 3  # physical scan size 3x3 / 6x6 mm
+    }
+}
