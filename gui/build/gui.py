@@ -72,7 +72,7 @@ canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
 canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
-canvas.image_size_var = DoubleVar(value=5.00)  # Variable for Image Size Spinbox
+canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 # regional analysis settings variables
 canvas.eye_var = StringVar(value="Right Eye")
@@ -101,7 +101,7 @@ canvas.create_text(
     font=("Roboto", 26 * -1)
 )
 
-button01 = ctk.CTkButton(window, text="Clear",
+button02 = ctk.CTkButton(window, text="Clear",
                         command=lambda: clear_screen(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
@@ -110,18 +110,7 @@ button01 = ctk.CTkButton(window, text="Clear",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
                         border_color=button_border_colour)
-button01.place(x=155, y=35)
-
-button02 = ctk.CTkButton(window, text="Help",
-                        command=lambda: open_window('help', open_help_window, canvas),
-                        width=65,height=25,
-                        font=("Roboto", 12 * -1),
-                        text_color=text_colour,
-                        fg_color=button_blue_colour,
-                        corner_radius=2,border_width=1,
-                        hover_color=button_blue_hover,
-    border_color=button_border_colour)
-button02.place(x=225, y=35)
+button02.place(x=190, y=35)
 
 button03 = ctk.CTkButton(window, text="Feedback",
                         command=lambda: open_window('feedback', open_feedback_window, canvas),
@@ -132,7 +121,7 @@ button03 = ctk.CTkButton(window, text="Feedback",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
-button03.place(x=295, y=35)
+button03.place(x=260, y=35)
 
 button04 = ctk.CTkButton(window, text="Subscribe to Updates",
                         command=lambda: open_window('subscribe', open_subscribe_window, canvas),
@@ -143,7 +132,18 @@ button04 = ctk.CTkButton(window, text="Subscribe to Updates",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
-button04.place(x=365, y=35)
+button04.place(x=330, y=35)
+
+button05 = ctk.CTkButton(window, text="Subscribe to Updates",
+                        command=lambda: open_subscribe_window(canvas),
+                        width=65,height=25,
+                        font=("Roboto", 12 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=2,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour)
+button05.place(x=400, y=35)
 
 canvas.status_id = canvas.create_text(
     950.0,
@@ -226,11 +226,11 @@ button_loadimg = ctk.CTkButton(window, text="Load Image",
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour  )
 button_loadimg.place(x=30, y=150)
-round_rectangle(canvas, 160, 150, 250, 40, radius=8)
+round_rectangle(canvas, 160, 150, 250, 40, radius=6)
 
 
 button_save_folder = ctk.CTkButton(window, text="Save Folder",
@@ -239,11 +239,11 @@ button_save_folder = ctk.CTkButton(window, text="Save Folder",
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour  )
 button_save_folder.place(x=30, y=210)
-round_rectangle(canvas, 160, 210, 250, 40, radius=8)
+round_rectangle(canvas, 160, 210, 250, 40, radius=6)
 
 
 button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Settings",
@@ -252,7 +252,7 @@ button_advanced_settings = ctk.CTkButton(window, text="Optional Advanced Setting
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
 button_advanced_settings.place(x=30, y=270)
@@ -263,7 +263,7 @@ button_point_faz = ctk.CTkButton(window, text="Point FAZ",
                                 font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
-                                corner_radius=8,border_width=1,
+                                corner_radius=6,border_width=1,
                                 hover_color=button_green_hover,
                                 border_color=button_border_colour,
                                 # state="disabled" if canvas.img_type_var.get()=="Skin" else "normal"
@@ -276,7 +276,7 @@ button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: open_win
                                 font=("Roboto", 12 * -1),
                                 text_color=text_colour,
                                 fg_color=button_green_colour,
-                                corner_radius=8,border_width=1,
+                                corner_radius=6,border_width=1,
                                 hover_color=button_green_hover,
     border_color=button_border_colour  )
 button_auto_faz.place(x=125, y=355)
@@ -287,7 +287,7 @@ button_measure_faz = ctk.CTkButton(window, text="Measure FAZ",
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_green_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_green_hover,
     border_color=button_border_colour  )
 button_measure_faz.place(x=220, y=355)
@@ -313,7 +313,7 @@ button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysi
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
 button_regional_analysis.place(x=30, y=415)
@@ -325,7 +325,7 @@ button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing 
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_yellow_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_yellow_hover,
     border_color=button_border_colour  )
 button_batch_processing.place(x=30, y=500)
@@ -337,7 +337,7 @@ button_process = ctk.CTkButton(window, text="Start Processing",
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
                         fg_color=button_blue_colour,
-                        corner_radius=8,border_width=1,
+                        corner_radius=6,border_width=1,
                         hover_color=button_blue_hover,
                         border_color=button_border_colour)
 button_process.place(x=30, y=585)

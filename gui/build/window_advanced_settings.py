@@ -21,8 +21,8 @@ def relative_to_assets(path: str) -> Path:
 def subwindow1(canvas):
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
-  subwindow.geometry("355x520")
-  subwindow.configure(bg = "#FBE3D6")
+  subwindow.geometry("360x515")
+  subwindow.configure(bg = subwindow_bg_colour)
 
   large_vessels_var = IntVar(value=0)
   small_vessels_var = IntVar(value=0)
@@ -32,24 +32,24 @@ def subwindow1(canvas):
 
   subcanvas1 = Canvas(
       subwindow,
-      bg = "#FBE3D6",
+      bg = subwindow_bg_colour,
       height = 515,
-      width = 350,
+      width = 360,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
   )
-
   subcanvas1.place(x = 0, y = 0)
 
+  subcanvas1.create_rectangle( 30, 35, 330, 190, fill="#FBE3D6", outline=text_colour)
 
-  image_image_1 = PhotoImage(
-      file=relative_to_assets("image_1.png"))
-  image_1 = subcanvas1.create_image(
-      178.0,
-      100.0,
-      image=image_image_1
-  )
+  # image_image_1 = PhotoImage(
+  #     file=relative_to_assets("image_1.png"))
+  # image_1 = subcanvas1.create_image(
+  #     178.0,
+  #     100.0,
+  #     image=image_image_1
+  # )
 
   image_image_2 = PhotoImage(
       file=relative_to_assets("image_2.png"))
@@ -85,7 +85,7 @@ def subwindow1(canvas):
   # kernel size Spinbox
   subcanvas1.create_text(
       170.0,
-      50.0,
+      75.0,
       anchor="nw",
       text="Kernel size",
       fill="#10203F",
@@ -105,13 +105,13 @@ def subwindow1(canvas):
   )
   kernel_size_spinbox.place(
       x=250.0,
-      y=50.0
+      y=75.0
   )
 
   # twig size Spinbox
   subcanvas1.create_text(
       170.0,
-      75.0,
+      100.0,
       anchor="nw",
       text="Twig size",
       fill="#10203F",
@@ -131,7 +131,7 @@ def subwindow1(canvas):
   )
   twig_size_spinbox.place(
       x=250.0,
-      y=75.0
+      y=100.0
   )
 
   # frangi filter
@@ -145,13 +145,13 @@ def subwindow1(canvas):
   )
   frangi_filt_checkbox.place(
       x=40.0,
-      y=100.0
+      y=125.0
   )
 
   # frangi min Spinbox
   subcanvas1.create_text(
       170.0,
-      105.0,
+      130.0,
       anchor="nw",
       text="Min",
       fill="#10203F",
@@ -171,13 +171,13 @@ def subwindow1(canvas):
   )
   frangi_min_spinbox.place(
       x=210.0,
-      y=105.0
+      y=130.0
   )
 
   # frangi max Spinbox
   subcanvas1.create_text(
       170.0,
-      130.0,
+      155.0,
       anchor="nw",
       text="Max",
       fill="#10203F",
@@ -197,19 +197,19 @@ def subwindow1(canvas):
   )
   frangi_max_spinbox.place(
       x=210.0,
-      y=130.0
+      y=155.0
   )
 
   button1 = ctk.CTkButton(subwindow, text="Image Subset",
                           command=lambda: subwindow_subset(canvas),
-                          width=130,height=45,
+                          width=250,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=button_yellow_colour,
                           corner_radius=8,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=35, y=190)
+  button1.place(x=50, y=205)
 
   subcanvas1.create_text(
       45.0,

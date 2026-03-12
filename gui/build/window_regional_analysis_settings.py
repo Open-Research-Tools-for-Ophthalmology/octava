@@ -12,14 +12,14 @@ def close(subwindow):
 def subwindow2(canvas):
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
-  subwindow.geometry("349x370")
+  subwindow.geometry("350x370")
   subwindow.configure(bg = "#FBE3D6")
 
   subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 380,
-      width = 349,
+      height = 370,
+      width = 350,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
@@ -29,7 +29,7 @@ def subwindow2(canvas):
   # eye type dropdown
   subcanvas2.create_text(
       45.0,
-      35.0,
+      50.0,
       anchor="nw",
       text="Eye",
       fill=text_colour,
@@ -44,29 +44,9 @@ def subwindow2(canvas):
   )
   eye_combobox.place(
       x=80.0,
-      y=30.0,
-      width=120.0,
+      y=45.0,
+      width=150.0,
       height=30.0
-  )
-
-  # def show_selection(event=None):
-  #     print("Selected:", canvas.eye_var.get())
-
-  # eye_combobox.bind("<<ComboboxSelected>>", show_selection)
-
-
-  # load faz checkbox
-  load_faz_checkbox = Checkbutton(
-      subwindow,
-      text="Load FAZ masks",
-      variable=canvas.load_faz_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  load_faz_checkbox.place(
-      x=40.0,
-      y=70.0
   )
 
   # square grid checkbox
@@ -82,7 +62,6 @@ def subwindow2(canvas):
       x=40.0,
       y=100.0
   )
-
 
   # etdrs grid checkbox
   etdrs_grid_checkbox = Checkbutton(
@@ -140,20 +119,6 @@ def subwindow2(canvas):
       y=220.0
   )
 
-  # apply regional analysis  checkbox
-  apply_regional_analysis_checkbox = Checkbutton(
-      subwindow,
-      text="Apply regional analysis",
-      variable=canvas.apply_regional_analysis_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  apply_regional_analysis_checkbox.place(
-      x=40.0,
-      y=250.0
-  )
-
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow),
@@ -164,7 +129,7 @@ def subwindow2(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=100, y=290)
+  button_close.place(x=100, y=285)
 
 
   subwindow.resizable(False, False)
