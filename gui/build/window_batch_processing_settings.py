@@ -172,7 +172,7 @@ def subwindow3(canvas):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=110, y=330)
+    button_close.place(x=110, y=335)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)

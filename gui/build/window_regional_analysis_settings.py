@@ -12,14 +12,14 @@ def close(subwindow):
 def subwindow2(canvas):
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
-  subwindow.geometry("349x370")
+  subwindow.geometry("350x370")
   subwindow.configure(bg = "#FBE3D6")
 
   subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
       height = 370,
-      width = 349,
+      width = 350,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
@@ -129,7 +129,7 @@ def subwindow2(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=100, y=290)
+  button_close.place(x=100, y=285)
 
 
   subwindow.resizable(False, False)
