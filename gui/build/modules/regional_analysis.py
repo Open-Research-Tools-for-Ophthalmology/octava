@@ -766,7 +766,7 @@ def run_analysis_on_regions(
 						display=False,
 				)
 				
-				change_status_to_waiting(canvas, status="🔴 Running regional analysis")
+				change_status_to_waiting(canvas, status="🔴 Regional analysis")
 
 				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
 				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"

@@ -18,7 +18,7 @@ def subwindow2(canvas):
   subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 380,
+      height = 370,
       width = 349,
       bd = 0,
       highlightthickness = 0,
@@ -29,7 +29,7 @@ def subwindow2(canvas):
   # eye type dropdown
   subcanvas2.create_text(
       45.0,
-      35.0,
+      50.0,
       anchor="nw",
       text="Eye",
       fill=text_colour,
@@ -44,8 +44,8 @@ def subwindow2(canvas):
   )
   eye_combobox.place(
       x=80.0,
-      y=30.0,
-      width=120.0,
+      y=45.0,
+      width=150.0,
       height=30.0
   )
 
