@@ -61,7 +61,7 @@ def subwindow_subset(canvas):
     header_label.pack(side="top", padx=5)
 
     # Canvas frame (must be created before set_active_tool function)
-    subcanvas4 = Canvas(
+    subcanvas_subset = Canvas(
         subwindow_subset,
         bg="#FBE3D6",
         bd=0,
@@ -69,7 +69,7 @@ def subwindow_subset(canvas):
         relief="ridge", # elevated style
         cursor="crosshair",
     )
-    subcanvas4.pack(fill="both", expand=True, padx=50, pady=(5, 10))
+    subcanvas_subset.pack(fill="both", expand=True, padx=50, pady=(5, 10))
     
     # Edit: Show tool frame if editable
     def set_active_tool(tool_name):
@@ -87,13 +87,13 @@ def subwindow_subset(canvas):
         # Update cursor
         #! See https://www.tcl-lang.org/man/tcl8.6/TkCmd/cursors.htm (stdlib\tkinter\__init__.pyi), some wont work cross platform
         if tool_name == "draw":
-            subcanvas4.config(cursor="crosshair")
+            subcanvas_subset.config(cursor="crosshair")
         elif tool_name == "pan":
-            subcanvas4.config(cursor="fleur")
+            subcanvas_subset.config(cursor="fleur")
         elif tool_name == "zoom":
-            subcanvas4.config(cursor="double_arrow")
+            subcanvas_subset.config(cursor="double_arrow")
         else:
-            subcanvas4.config(cursor="crosshair")
+            subcanvas_subset.config(cursor="crosshair")
 
     def pack_tool_button(button, text):
         button.pack(side="left", padx=2)
@@ -120,19 +120,14 @@ def subwindow_subset(canvas):
     subwindow_subset.tool_buttons = {}
 
     # Load tool icons
-    try:
-        icon_draw_pil = Image.open(ICONS_PATH / "draw.png")
-        icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
-        icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")
-        
-        # Convert to CTkImage for proper rendering
-        icon_draw = ctk.CTkImage(light_image=icon_draw_pil, dark_image=icon_draw_pil, size=(24, 24))
-        icon_pan = ctk.CTkImage(light_image=icon_pan_pil, dark_image=icon_pan_pil, size=(24, 24))
-        icon_zoom = ctk.CTkImage(light_image=icon_zoom_pil, dark_image=icon_zoom_pil, size=(24, 24))
-    except FileNotFoundError as e:
-        messagebox.showerror("Icons Missing", f"Tool icons not found: {e}\nPlease ensure icons are in {ICONS_PATH}")
-        subwindow_subset.destroy()
-        return
+    icon_draw_pil = Image.open(ICONS_PATH / "draw.png")
+    icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
+    icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")
+    
+    # Convert to CTkImage for proper rendering
+    icon_draw = ctk.CTkImage(light_image=icon_draw_pil, dark_image=icon_draw_pil, size=(24, 24))
+    icon_pan = ctk.CTkImage(light_image=icon_pan_pil, dark_image=icon_pan_pil, size=(24, 24))
+    icon_zoom = ctk.CTkImage(light_image=icon_zoom_pil, dark_image=icon_zoom_pil, size=(24, 24))
 
     # Draw tool button
     btn_draw = ctk.CTkButton(
@@ -158,15 +153,15 @@ def subwindow_subset(canvas):
     # Edit: Update image display after 1. pan 2. zoom 3. draw square
     def update_image_display():
         # Get current canvas size
-        canvas_width = subcanvas4.winfo_width()
-        canvas_height = subcanvas4.winfo_height()
+        canvas_width = subcanvas_subset.winfo_width()
+        canvas_height = subcanvas_subset.winfo_height()
 
         if canvas_width == 0 or canvas_height == 0:
             # Canvas not yet rendered
             return
         else:
             # Clear canvas before redrawing
-            subcanvas4.delete("all")
+            subcanvas_subset.delete("all")
 
         # Fit to canvas
         display_height = int(canvas_height * subwindow_subset.zoom_level)
@@ -205,7 +200,7 @@ def subwindow_subset(canvas):
         # Pan: Add x/y offset
         img_x = canvas_width // 2 + subwindow_subset.pan_offset[0]
         img_y = canvas_height // 2 + subwindow_subset.pan_offset[1]
-        subcanvas4.create_image(
+        subcanvas_subset.create_image(
             img_x, img_y, image=img_tk, anchor="center", tags="image"
         )
 
@@ -229,7 +224,7 @@ def subwindow_subset(canvas):
             #! Stipple won't work on MacOS, and there is no alpha channel for the fill property
             # https://stackoverflow.com/questions/35994986/tkinter-stipple-option-misbehaving-in-os-x
             # 02232026: Remove fill/stipple and leave the square completely transparent
-            subcanvas4.create_rectangle(
+            subcanvas_subset.create_rectangle(
                 x1, y1, x2, y2, 
                 outline=point_blue_colour,
                 # fill=button_blue_colour,
@@ -241,7 +236,7 @@ def subwindow_subset(canvas):
             # Draw corner handles
             handle_size = 6
             for corner_x, corner_y in [(x1, y1), (x2, y1), (x1, y2), (x2, y2)]:
-                subcanvas4.create_rectangle(
+                subcanvas_subset.create_rectangle(
                     corner_x - handle_size, corner_y - handle_size,
                     corner_x + handle_size, corner_y + handle_size,
                     fill=point_blue_colour, 
@@ -250,7 +245,7 @@ def subwindow_subset(canvas):
                 )
 
         # Keep reference to prevent garbage collection
-        subcanvas4.image_ref = img_tk
+        subcanvas_subset.image_ref = img_tk
 
     # Helper function to check if mouse is near a corner within a threshold distance (in pixels)
     def get_corner_at_position(canvas_x, canvas_y, threshold=10):
@@ -304,15 +299,15 @@ def subwindow_subset(canvas):
         if subwindow_subset.active_tool == "draw" and not subwindow_subset.is_drawing:
             corner = get_corner_at_position(event.x, event.y)
             if corner:
-                subcanvas4.config(cursor="hand2")
+                subcanvas_subset.config(cursor="hand2")
             elif is_inside_square(event.x, event.y):
-                subcanvas4.config(cursor="fleur")  # Move cursor for dragging box
+                subcanvas_subset.config(cursor="fleur")  # Move cursor for dragging box
             else:
-                subcanvas4.config(cursor="crosshair")
+                subcanvas_subset.config(cursor="crosshair")
         elif subwindow_subset.active_tool == "pan":
-            subcanvas4.config(cursor="fleur")
+            subcanvas_subset.config(cursor="fleur")
         elif subwindow_subset.active_tool == "zoom":
-            subcanvas4.config(cursor="double_arrow")
+            subcanvas_subset.config(cursor="double_arrow")
 
     # Handle mouse click on canvas
     # @listener left mouse click
@@ -508,20 +503,20 @@ def subwindow_subset(canvas):
                 # Update cursor
                 corner = get_corner_at_position(event.x, event.y)
                 if corner:
-                    subcanvas4.config(cursor="hand2")
+                    subcanvas_subset.config(cursor="hand2")
                 elif is_inside_square(event.x, event.y):
-                    subcanvas4.config(cursor="fleur")
+                    subcanvas_subset.config(cursor="fleur")
                 else:
-                    subcanvas4.config(cursor="crosshair")
+                    subcanvas_subset.config(cursor="crosshair")
             elif subwindow_subset.dragging_box:
                 # Finished dragging box
                 subwindow_subset.dragging_box = False
                 subwindow_subset.drag_box_start = None
                 # Update cursor
                 if is_inside_square(event.x, event.y):
-                    subcanvas4.config(cursor="fleur")
+                    subcanvas_subset.config(cursor="fleur")
                 else:
-                    subcanvas4.config(cursor="crosshair")
+                    subcanvas_subset.config(cursor="crosshair")
             elif subwindow_subset.is_drawing:
                 # Finished drawing new square
                 subwindow_subset.is_drawing = False
@@ -529,7 +524,7 @@ def subwindow_subset(canvas):
     # Handle canvas resize event
     # @listener canvas resize events
     def on_canvas_resize(event):
-        if event.widget == subcanvas4:
+        if event.widget == subcanvas_subset:
             new_width = event.width
             new_height = event.height
             print(f"Canvas resized to: {new_width}x{new_height}")
@@ -580,12 +575,12 @@ def subwindow_subset(canvas):
         subwindow_subset.destroy()
         
     # Key Binding events
-    subcanvas4.bind("<Motion>", on_mouse_motion)
-    subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
-    subcanvas4.bind("<B1-Motion>", on_drag_motion)
-    subcanvas4.bind("<ButtonRelease-1>", on_drag_end)
-    subcanvas4.bind("<MouseWheel>", on_mouse_wheel)
-    subcanvas4.bind("<Configure>", on_canvas_resize)
+    subcanvas_subset.bind("<Motion>", on_mouse_motion)
+    subcanvas_subset.bind("<ButtonPress-1>", on_canvas_click)
+    subcanvas_subset.bind("<B1-Motion>", on_drag_motion)
+    subcanvas_subset.bind("<ButtonRelease-1>", on_drag_end)
+    subcanvas_subset.bind("<MouseWheel>", on_mouse_wheel)
+    subcanvas_subset.bind("<Configure>", on_canvas_resize)
 
     # Close window event
     def on_close():
