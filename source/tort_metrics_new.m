@@ -44,7 +44,8 @@ function [metrics meanMetrics] = tort_metrics_new(links)
         ddy = smoothdata(ddy, 'movmean', windowSize);
 
         % Compute curvature 
-        curvature = dx .* ddy - ddx .* dy ./ ((dx.^2 + dy.^2).^(3/2) + eps);
+        %? curvature = dx .* ddy - ddx .* dy ./ ((dx.^2 + dy.^2).^(3/2) + eps);
+        curvature = (dx .* ddy - ddx .* dy) ./ ((dx.^2 + dy.^2).^(3/2) + eps);  
         curvature = smoothdata(curvature, 'movmean', windowSize);
 
         %find inflection points 
@@ -175,7 +176,8 @@ function [metrics meanMetrics] = tort_metrics_new(links)
         % of the vessel and weights the angle by the average length of the two adjoining segments.
         numPoints = length(vesselX);
         if numPoints < 3
-            SOAM(i) = 0;  % Not enough points to compute an angle.
+            %? SOAM(i) = 0;  % Not enough points to compute an angle.
+            metrics(i).SOAM = 0; % Not enough points to compute an angle.
         else
             totalWeightedAngle = 0;
             totalWeight = 0;
