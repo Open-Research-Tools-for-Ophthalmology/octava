@@ -218,6 +218,9 @@ class BiomarkerAnalyzer:
         
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
+        BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
+
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
             canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct:.2f} %")
@@ -250,7 +253,7 @@ class BiomarkerAnalyzer:
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
 
     @staticmethod
-    def new_torturosity_metrics(canvas: Canvas) -> None:
+    def new_tortuosity_metrics(canvas: Canvas) -> None:
         import numpy as np
 
         links = canvas.skeleton_links
@@ -600,10 +603,10 @@ class BiomarkerAnalyzer:
             meanMetrics[f"{name}_mean"] = np.nanmean(vals)
             meanMetrics[f"{name}_std"] = np.nanstd(vals)
 
-        if not hasattr(canvas,"metrics"):
-            canvas.metrics = {}
+        if not hasattr(canvas,"new_tort_metrics"):
+            canvas.new_tort_metrics = {}
 
-        canvas.metrics.update(meanMetrics)
+        canvas.new_tort_metrics.update(meanMetrics)
 
-        canvas.tortuosity_metrics_per_link = per_link_metrics
-        canvas.tortuosity_mean_metrics = meanMetrics
+        # canvas.tortuosity_metrics_per_link = per_link_metrics
+        # canvas.tortuosity_mean_metrics = meanMetrics
