@@ -1,7 +1,7 @@
 # modules/biomarker.py
 
 import numpy as np
-import math
+import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
 from modules.write_excel import *
@@ -218,6 +218,9 @@ class BiomarkerAnalyzer:
         
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
+        # BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        # write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
+
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
             canvas.itemconfig(canvas.vad_value_id, text=f"{vad_pct:.2f} %")
@@ -248,3 +251,364 @@ class BiomarkerAnalyzer:
 
         if hasattr(canvas, "tortuosity_value_id"):
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
+
+    @staticmethod
+    def new_tortuosity_metrics(canvas: Canvas) -> None:
+        import numpy as np
+
+        links = canvas.skeleton_links
+        binary = canvas.binary_image
+
+        if links is None or len(links) == 0:
+            return
+
+        eps = np.finfo(float).eps
+
+        # Image scale
+        image_size_mm = float(canvas.image_size_var.get())
+        img_height, img_width = canvas.fullImSizePix
+        pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
+
+        image_shape = binary.shape
+
+        metric_names = [
+            "AOC","TSC","TSCN","tortDensity","DT",
+            "PWAOC","ISR","SOAM","tortAngle","VCI1","VCI2"
+        ]
+
+        def movmean(arr, window):
+            arr = np.asarray(arr, dtype=float)
+            n = arr.size
+            if n == 0 or window <= 1:
+                return arr.copy()
+
+            half_left = (window - 1) // 2
+            half_right = window // 2
+
+            csum = np.cumsum(np.insert(arr, 0, 0.0))
+            out = np.empty(n)
+
+            for i in range(n):
+                start = max(0, i - half_left)
+                end = min(n, i + half_right + 1)
+                out[i] = (csum[end] - csum[start]) / (end - start)
+
+            return out
+
+        def trimmean_10(arr):
+            arr = np.asarray(arr)
+            arr = arr[np.isfinite(arr)]
+            if arr.size == 0:
+                return np.nan
+            arr = np.sort(arr)
+            trim = int(np.floor(0.05 * arr.size))
+            if arr.size - 2 * trim <= 0:
+                return np.mean(arr)
+            return np.mean(arr[trim:arr.size - trim])
+
+        per_link_metrics = []
+
+        for link in links:
+
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size < 3:
+                continue
+
+            rows, cols = np.unravel_index(indices, image_shape)
+
+            vesselX = cols.astype(float) * pix2mm
+            vesselY = rows.astype(float) * pix2mm
+            numPoints = len(vesselX)
+
+            ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
+            arcLength = np.sum(ds)
+
+            chordLength = np.sqrt(
+                (vesselX[-1]-vesselX[0])**2 +
+                (vesselY[-1]-vesselY[0])**2
+            )
+
+            if arcLength <= 0:
+                continue
+
+            windowSize = 10
+
+            smoothedX = movmean(vesselX, windowSize)
+            smoothedY = movmean(vesselY, windowSize)
+
+            dx = np.gradient(smoothedX)
+            dy = np.gradient(smoothedY)
+
+            dx = movmean(dx, windowSize)
+            dy = movmean(dy, windowSize)
+
+            ddx = np.gradient(dx)
+            ddy = np.gradient(dy)
+
+            ddx = movmean(ddx, windowSize)
+            ddy = movmean(ddy, windowSize)
+
+            curvature = (dx*ddy - ddx*dy) / ((dx**2 + dy**2)**(3/2) + eps)
+            curvature = movmean(curvature, windowSize)
+
+            signCurv = np.sign(curvature)
+            inflecIdx = np.where(np.diff(signCurv) != 0)[0] + 1
+            nSeg = len(inflecIdx) + 1
+
+            x = np.arange(1, numPoints+1)
+
+            v1 = np.array([
+                vesselY[-1]-vesselY[0],
+                vesselX[-1]-vesselX[0]
+            ])
+
+            v2 = np.array([x[-1]-x[0],0])
+
+            angle = np.arccos(
+                np.clip(
+                    np.dot(v1,v2) /
+                    (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
+                    -1,1
+                )
+            )
+
+            vessel = np.column_stack((smoothedY, smoothedX))
+            vesselSlope = np.sign(v1[1])
+
+            rot = np.array([
+                [np.cos(vesselSlope*angle),-np.sin(vesselSlope*angle)],
+                [np.sin(vesselSlope*angle), np.cos(vesselSlope*angle)]
+            ])
+
+            vessel_rot = vessel @ rot
+            vessel_rot = vessel_rot[:,1]
+
+            gradCurv = np.gradient(vessel_rot)
+            gradCurv = movmean(gradCurv, windowSize)
+
+            signGradCurv = np.sign(gradCurv)
+            extremaIdx = np.where(np.diff(signGradCurv)!=0)[0] + 1
+
+            testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx)>1 else []
+            testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx)>1 else []
+
+            trueExtrema = []
+
+            if len(extremaIdx) >= 1:
+
+                trueExtrema = [extremaIdx[0]]
+                thr = 3*pix2mm
+
+                for kk in range(1,len(extremaIdx)):
+
+                    cond1 = abs(testY[kk-1])>thr and abs(testX[kk-1])>thr
+
+                    cond2 = (
+                        (abs(testY[kk-1])>thr or abs(testX[kk-1])>thr)
+                        and (extremaIdx[kk]-extremaIdx[kk-1] > 100)
+                    )
+
+                    if cond1 or cond2:
+                        trueExtrema.append(extremaIdx[kk])
+
+                nExtrema = max(len(trueExtrema),1)
+
+            else:
+                nExtrema = 1
+
+            AOC = np.nan if chordLength==0 else arcLength/chordLength
+
+            TSC = np.sum((curvature[1:-1]**2)*ds[1:]) if len(curvature)>=3 else np.nan
+            TSCN = np.sum((curvature[1:-1]**2)*ds[1:]/arcLength) if arcLength>0 else np.nan
+
+            segAOCs = []
+            segArcs = []
+
+            segStart = 0
+
+            for k in range(nSeg):
+
+                if k < len(inflecIdx):
+                    segEnd = inflecIdx[k]
+                else:
+                    segEnd = len(vesselX)-1
+
+                segArc = np.sum(
+                    np.sqrt(
+                        np.diff(vesselX[segStart:segEnd+1])**2 +
+                        np.diff(vesselY[segStart:segEnd+1])**2
+                    )
+                )
+
+                segChord = np.sqrt(
+                    (vesselX[segEnd]-vesselX[segStart])**2 +
+                    (vesselY[segEnd]-vesselY[segStart])**2
+                )
+
+                segAOC_val = np.nan if segChord==0 else segArc/segChord
+
+                segAOCs.append(segAOC_val)
+                segArcs.append(segArc)
+
+                segStart = segEnd
+
+            segAOCs = np.asarray(segAOCs)
+            segArcs = np.asarray(segArcs)
+
+            if nSeg>1 and arcLength>0:
+                tortDensity = ((nSeg-1)/nSeg)*(np.sum(segAOCs-1)/arcLength)
+            else:
+                tortDensity = segAOCs[0] if segAOCs.size>0 else np.nan
+
+            DT = np.nansum(segAOCs*segArcs)/arcLength if arcLength>0 else np.nan
+
+            PWAOC = AOC*nExtrema if np.isfinite(AOC) else np.nan
+
+            ISR = np.sum(np.abs(curvature))/numPoints if numPoints>0 else np.nan
+
+            if numPoints<3:
+                SOAM = 0
+            else:
+
+                totalWeightedAngle = 0
+
+                for j in range(1,numPoints-1):
+
+                    v1 = np.array([
+                        vesselX[j]-vesselX[j-1],
+                        vesselY[j]-vesselY[j-1]
+                    ])
+
+                    v2 = np.array([
+                        vesselX[j+1]-vesselX[j],
+                        vesselY[j+1]-vesselY[j]
+                    ])
+
+                    cosTheta = np.clip(
+                        np.dot(v1,v2) /
+                        (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
+                        -1,1
+                    )
+
+                    angleRad = np.arccos(cosTheta)
+                    totalWeightedAngle += angleRad
+
+                SOAM = totalWeightedAngle/arcLength
+
+            segStart = 0
+            angleRads = []
+
+            for k in range(nSeg):
+
+                if k < len(inflecIdx):
+                    segEnd = inflecIdx[k]
+                else:
+                    segEnd = len(vesselX)-1
+
+                midpointIndex = round((segEnd-segStart)/2)+segStart
+
+                v1 = np.array([
+                    vesselX[midpointIndex]-vesselX[segStart],
+                    vesselY[midpointIndex]-vesselY[segStart]
+                ])
+
+                v2 = np.array([
+                    vesselX[segEnd]-vesselX[midpointIndex],
+                    vesselY[segEnd]-vesselY[midpointIndex]
+                ])
+
+                cosTheta = np.clip(
+                    np.dot(v1,v2) /
+                    (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
+                    -1,1
+                )
+
+                angleRads.append(np.arccos(cosTheta))
+
+            angleRads = np.asarray(angleRads)
+
+            tortAngle = np.sum(angleRads*segArcs)/nSeg if nSeg>0 else np.nan
+
+            windowSize = 4
+
+            smoothedX = movmean(vesselX, windowSize)
+            smoothedY = movmean(vesselY, windowSize)
+
+            dx = np.diff(smoothedX)
+            dy = np.diff(smoothedY)
+
+            ds = np.sqrt(dx**2 + dy**2)
+
+            if len(ds)>1:
+
+                arcLength2 = np.sum(ds)
+
+                theta = np.arctan2(dy,dx)
+                dtheta = np.zeros_like(theta)
+
+                for j in range(1,len(theta)-1):
+                    dtheta[j] = (theta[j+1]-theta[j-1])/(ds[j]+ds[j-1])
+
+                dtheta[0] = (theta[1]-theta[0])/ds[0]
+                dtheta[-1] = (theta[-1]-theta[-2])/ds[-1]
+
+                window = 4
+                nPoints = len(smoothedX)
+
+                L_local = np.zeros(nPoints)
+
+                for j in range(nPoints):
+
+                    idxStart = max(0,j-window//2)
+                    idxEnd = min(nPoints,j+window//2+1)
+
+                    localCentroidX = np.mean(smoothedX[idxStart:idxEnd])
+                    localCentroidY = np.mean(smoothedY[idxStart:idxEnd])
+
+                    r_local = np.sqrt(
+                        (smoothedX[j]-localCentroidX)**2 +
+                        (smoothedY[j]-localCentroidY)**2
+                    )
+
+                    L_local[j] = r_local**2
+
+                dL_local = np.abs(np.diff(L_local))
+
+                robust_dL = trimmean_10(dL_local)
+                VCI1 = robust_dL/(arcLength2/len(dL_local))
+
+            else:
+                VCI1 = np.nan
+
+            with np.errstate(divide='ignore',invalid='ignore'):
+                t = np.gradient(1/curvature)
+
+            t[np.isinf(t)] = np.nan
+            VCI2 = np.nansum(t)/numPoints
+
+            per_link_metrics.append({
+                "AOC":AOC,"TSC":TSC,"TSCN":TSCN,
+                "tortDensity":tortDensity,"DT":DT,
+                "PWAOC":PWAOC,"ISR":ISR,
+                "SOAM":SOAM,"tortAngle":tortAngle,
+                "VCI1":VCI1,"VCI2":VCI2
+            })
+
+        meanMetrics = {}
+
+        for name in metric_names:
+
+            vals = np.array([m[name] for m in per_link_metrics],dtype=float)
+
+            meanMetrics[f"{name}_mean"] = np.nanmean(vals)
+            meanMetrics[f"{name}_std"] = np.nanstd(vals)
+
+        if not hasattr(canvas,"new_tort_metrics"):
+            canvas.new_tort_metrics = {}
+
+        canvas.new_tort_metrics.update(meanMetrics)
+
+        # canvas.tortuosity_metrics_per_link = per_link_metrics
+        # canvas.tortuosity_mean_metrics = meanMetrics
+
+ 
