@@ -1,6 +1,7 @@
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
+from window_onh_editor import *
 from window_advanced_settings import *
 from window_regional_analysis_settings import *
 from window_batch_processing_settings import *
@@ -270,7 +271,6 @@ button_point_faz = ctk.CTkButton(window, text="Point FAZ",
                                 )
 button_point_faz.place(x=30, y=355)
 
-
 button_auto_faz = ctk.CTkButton(window, text="Auto FAZ",command=lambda: open_window('auto_faz', subwindow4, canvas, editable=False),
                                 width=80,height=40,
                                 font=("Roboto", 12 * -1),
@@ -292,7 +292,24 @@ button_measure_faz = ctk.CTkButton(window, text="Measure FAZ",
     border_color=button_border_colour  )
 button_measure_faz.place(x=220, y=355)
 
-def update_faz_buttons_state(*args):
+button_onh_mask = ctk.CTkButton(window, text="ONH Mask",
+                        command=lambda: open_window('onh_mask', window_onh_editor, canvas),
+                        width=380,height=40,
+                        font=("Roboto", 14 * -1),
+                        text_color=text_colour,
+                        fg_color=button_green_colour,
+                        corner_radius=6,border_width=1,
+                        hover_color=button_green_hover,
+    border_color=button_border_colour  )
+
+def update_optional_buttons_state(*args):
+    # ONH mask editor
+    if canvas.img_type_var.get()=="ONH":
+        return button_onh_mask.place(x=30, y=355)
+    else:
+        button_onh_mask.place_forget()
+
+    # FAZ button disabling
     if canvas.img_type_var.get()=="Skin":
         button_point_faz.configure(state="disabled")
         button_auto_faz.configure(state="disabled")
@@ -302,9 +319,9 @@ def update_faz_buttons_state(*args):
         button_auto_faz.configure(state="normal")
         button_measure_faz.configure(state="normal")
 
-update_faz_buttons_state()
+update_optional_buttons_state()
 
-canvas.img_type_var.trace_add("write", update_faz_buttons_state)
+canvas.img_type_var.trace_add("write", update_optional_buttons_state)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",

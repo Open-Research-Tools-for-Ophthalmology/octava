@@ -17,7 +17,6 @@ from modules.faz_utils import display_faz_image, load_faz_grayscale_arr
 from modules.auto_faz.auto_faz import auto_faz
 from resource_path import ICONS_PATH
 
-
 def subwindow4(canvas, editable=False):
     # Check if an image is loaded
     if not hasattr(canvas, "original_img"):
@@ -72,7 +71,7 @@ def subwindow4(canvas, editable=False):
         header_label.pack(side="top", padx=5)
     
     # Canvas frame (must be created before set_active_tool function)
-    subcanvas4 = Canvas(
+    subcanvas_faz = Canvas(
         subwindow4,
         bg="#FBE3D6",
         bd=0,
@@ -80,7 +79,7 @@ def subwindow4(canvas, editable=False):
         relief="ridge", # elevated style
         cursor="crosshair" if editable else "arrow",
     )
-    subcanvas4.pack(fill="both", expand=True, padx=50, pady=(5, 10))
+    subcanvas_faz.pack(fill="both", expand=True, padx=50, pady=(5, 10))
     
     # Edit: Show tool frame if editable
     if editable:
@@ -99,15 +98,15 @@ def subwindow4(canvas, editable=False):
             # Update cursor
             #! See https://www.tcl-lang.org/man/tcl8.6/TkCmd/cursors.htm (stdlib\tkinter\__init__.pyi), some wont work cross platform
             if tool_name == "draw":
-                subcanvas4.config(cursor="crosshair")
+                subcanvas_faz.config(cursor="crosshair")
             elif tool_name == "drag":
-                subcanvas4.config(cursor="hand2")
+                subcanvas_faz.config(cursor="hand2")
             elif tool_name == "pan":
-                subcanvas4.config(cursor="fleur")
+                subcanvas_faz.config(cursor="fleur")
             elif tool_name == "zoom":
-                subcanvas4.config(cursor="double_arrow")
+                subcanvas_faz.config(cursor="double_arrow")
             else:
-                subcanvas4.config(cursor="crosshair")
+                subcanvas_faz.config(cursor="crosshair")
 
         def pack_tool_button(button, text):
             button.pack(side="left", padx=2)
@@ -134,21 +133,16 @@ def subwindow4(canvas, editable=False):
         subwindow4.tool_buttons = {}
 
         # Load tool icons
-        try:
-            icon_draw_pil = Image.open(ICONS_PATH / "draw.png")
-            icon_drag_pil = Image.open(ICONS_PATH / "drag.png")
-            icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
-            icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")
-            
-            # Convert to CTkImage for proper rendering
-            icon_draw = ctk.CTkImage(light_image=icon_draw_pil, dark_image=icon_draw_pil, size=(24, 24))
-            icon_drag = ctk.CTkImage(light_image=icon_drag_pil, dark_image=icon_drag_pil, size=(24, 24))
-            icon_pan = ctk.CTkImage(light_image=icon_pan_pil, dark_image=icon_pan_pil, size=(24, 24))
-            icon_zoom = ctk.CTkImage(light_image=icon_zoom_pil, dark_image=icon_zoom_pil, size=(24, 24))
-        except FileNotFoundError as e:
-            messagebox.showerror("Icons Missing", f"Tool icons not found: {e}\nPlease ensure icons are in {ICONS_PATH}")
-            subwindow4.destroy()
-            return
+        icon_draw_pil = Image.open(ICONS_PATH / "draw.png")
+        icon_drag_pil = Image.open(ICONS_PATH / "drag.png")
+        icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
+        icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")
+        
+        # Convert to CTkImage for proper rendering
+        icon_draw = ctk.CTkImage(light_image=icon_draw_pil, dark_image=icon_draw_pil, size=(24, 24))
+        icon_drag = ctk.CTkImage(light_image=icon_drag_pil, dark_image=icon_drag_pil, size=(24, 24))
+        icon_pan = ctk.CTkImage(light_image=icon_pan_pil, dark_image=icon_pan_pil, size=(24, 24))
+        icon_zoom = ctk.CTkImage(light_image=icon_zoom_pil, dark_image=icon_zoom_pil, size=(24, 24))
 
         if draggable:
             # Drag tool button
@@ -179,16 +173,17 @@ def subwindow4(canvas, editable=False):
         set_active_tool("drag" if draggable else "draw")
 
     # Edit: Update image display after 1. pan 2. zoom
-    def update_image_display():        # Get current canvas size
-        canvas_width = subcanvas4.winfo_width()
-        canvas_height = subcanvas4.winfo_height()
+    def update_image_display():
+        # Get current canvas size
+        canvas_width = subcanvas_faz.winfo_width()
+        canvas_height = subcanvas_faz.winfo_height()
 
         if canvas_width == 0 or canvas_height == 0:
             # Canvas not yet rendered
             return
         else:
             # Clear canvas before redrawing
-            subcanvas4.delete("all")
+            subcanvas_faz.delete("all")
 
         # Fit to canvas
         display_height = int(canvas_height * subwindow4.zoom_level)
@@ -217,7 +212,7 @@ def subwindow4(canvas, editable=False):
         # Pan: Add x/y offset
         img_x = canvas_width // 2 + subwindow4.pan_offset[0] * subwindow4.zoom_level
         img_y = canvas_height // 2 + subwindow4.pan_offset[1] * subwindow4.zoom_level
-        subcanvas4.create_image(
+        subcanvas_faz.create_image(
             img_x, img_y, image=img_tk, anchor="center", tags="image"
         )
 
@@ -238,13 +233,13 @@ def subwindow4(canvas, editable=False):
                 x = subwindow4.img_position[0] + point[0] * subwindow4.zoom_level
                 y = subwindow4.img_position[1] + point[1] * subwindow4.zoom_level
                 flat_points.extend([x, y])
-            subcanvas4.create_polygon(*flat_points, fill='#800080', outline="black", tags="polygon")
+            subcanvas_faz.create_polygon(*flat_points, fill='#800080', outline="black", tags="polygon")
         
         # Lines: if polygon hasn't been enclosed yet
         for i, point in enumerate(subwindow4.polygon_points):
             x = subwindow4.img_position[0] + point[0] * subwindow4.zoom_level
             y = subwindow4.img_position[1] + point[1] * subwindow4.zoom_level
-            subcanvas4.create_oval( # I know it says oval but it's our circle
+            subcanvas_faz.create_oval( # I know it says oval but it's our circle
                 x - 4, y - 4, x + 4, y + 4, fill=point_blue_colour, outline="black", tags="point"
             )
 
@@ -253,12 +248,12 @@ def subwindow4(canvas, editable=False):
                 prev_point = subwindow4.polygon_points[i - 1]
                 prev_x = subwindow4.img_position[0] + prev_point[0] * subwindow4.zoom_level
                 prev_y = subwindow4.img_position[1] + prev_point[1] * subwindow4.zoom_level
-                subcanvas4.create_line(
+                subcanvas_faz.create_line(
                     prev_x, prev_y, x, y, fill=point_blue_colour, width=3, tags="line"
                 )
 
         # Keep reference to prevent garbage collection
-        subcanvas4.image_ref = img_tk
+        subcanvas_faz.image_ref = img_tk
 
     # View: Display fixed image without interaction
     # the result from auto faz is binary mask, lets show the FAZ overlay on original image instead
@@ -290,8 +285,8 @@ def subwindow4(canvas, editable=False):
         # canvas.faz_transparent_img = transparent_img
 
         # Fit to canvas
-        canvas_width = subcanvas4.winfo_width()
-        canvas_height = subcanvas4.winfo_height()
+        canvas_width = subcanvas_faz.winfo_width()
+        canvas_height = subcanvas_faz.winfo_height()
         display_height = canvas_height
         display_width = display_height
 
@@ -319,12 +314,12 @@ def subwindow4(canvas, editable=False):
         # Center image
         img_x = canvas_width // 2
         img_y = canvas_height // 2
-        subcanvas4.create_image(
+        subcanvas_faz.create_image(
             img_x, img_y, image=img_tk, anchor="center", tags="image"
         )
 
         # Keep reference to prevent garbage collection
-        subcanvas4.image_ref = img_tk
+        subcanvas_faz.image_ref = img_tk
 
     # Handle mouse click on canvas
     # @listener left mouse click
@@ -444,7 +439,7 @@ def subwindow4(canvas, editable=False):
     # Handle canvas resize event
     # @listener canvas resize events
     def on_canvas_resize(event):
-        if event.widget == subcanvas4:
+        if event.widget == subcanvas_faz:
             new_width = event.width
             new_height = event.height
             print(f"Canvas resized to: {new_width}x{new_height}")
@@ -491,11 +486,11 @@ def subwindow4(canvas, editable=False):
             update_image_display()
 
     # Key Binding events
-    subcanvas4.bind("<ButtonPress-1>", on_canvas_click)
-    subcanvas4.bind("<B1-Motion>", on_drag_motion)
-    subcanvas4.bind("<ButtonRelease-1>", on_drag_end)
-    subcanvas4.bind("<MouseWheel>", on_mouse_wheel)
-    subcanvas4.bind("<Configure>", on_canvas_resize)
+    subcanvas_faz.bind("<ButtonPress-1>", on_canvas_click)
+    subcanvas_faz.bind("<B1-Motion>", on_drag_motion)
+    subcanvas_faz.bind("<ButtonRelease-1>", on_drag_end)
+    subcanvas_faz.bind("<MouseWheel>", on_mouse_wheel)
+    subcanvas_faz.bind("<Configure>", on_canvas_resize)
     
     # Close window event
     def on_close():
@@ -519,8 +514,8 @@ def subwindow4(canvas, editable=False):
         def load_existing_polygon():
             polygon_points = load_faz_grayscale_arr(canvas)
             # TODO Scale polygon_points to current image display size
-            scale_ratio = subcanvas4.winfo_height() / canvas.faz_grayscale_arr.shape[1]
-            print("draggable subcanvas4.winfo_height(), canvas.faz_grayscale_arr.height, image scale_ratio:", subcanvas4.winfo_height(), canvas.faz_grayscale_arr.shape[1], scale_ratio)
+            scale_ratio = subcanvas_faz.winfo_height() / canvas.faz_grayscale_arr.shape[1]
+            print("draggable subcanvas_faz.winfo_height(), canvas.faz_grayscale_arr.height, image scale_ratio:", subcanvas_faz.winfo_height(), canvas.faz_grayscale_arr.shape[1], scale_ratio)
             polygon_points = [(pt[0] * scale_ratio, pt[1] * scale_ratio) for pt in polygon_points]
             polygon_points.append(polygon_points[0]) # close the polygon
             subwindow4.polygon_points = polygon_points
