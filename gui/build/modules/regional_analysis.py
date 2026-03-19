@@ -5,6 +5,7 @@ from skimage.draw import disk, polygon
 import pandas as pd
 from modules.skeletonise import *
 from modules.change_status import *
+from modules.write_excel import *
 from enum import Enum
 import math
 from scipy.ndimage import distance_transform_edt
@@ -33,19 +34,6 @@ def run_regional_analysis(canvas):
 	binary = canvas.binary_image
 	original = canvas.original_img
 	
-	#create/reset Excel file when performing regional analysis
-	excel_filename = (
-			f"{canvas.current_save_folder}/"
-			f"{canvas.FileLabelName} - Regional Analysis.xlsx"
-	)
-
-	# Remove existing file so we start fresh (MATLAB-like)
-	if os.path.exists(excel_filename):
-			os.remove(excel_filename)
-
-	# Store path on canvas so sub-functions can reuse it
-	canvas.regional_excel_path = excel_filename
-
 	if canvas.square_grid_bool.get():
 		apply_square_grid(canvas, binary, original, pix_to_mm)
 
@@ -778,7 +766,7 @@ def run_analysis_on_regions(
 						display=False,
 				)
 				
-				change_status_to_waiting(canvas, status="🔴 Regional analysis")
+				change_status_to_waiting(canvas, status="● Regional analysis")
 
 				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
 				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
@@ -890,20 +878,11 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
 
-
-		# Save Excel file (MATLAB: struct2table + writetable)
+		# Save Excel to local
 		df = pd.DataFrame(canvas.regional_metrics)
-		excel_filename = canvas.regional_excel_path
-		mode = "a" if os.path.exists(excel_filename) else "w"
 		sheet_name = f"Regional analysis_{grid_type.value}"
 		sheet_name = re.sub(r'[:\\/?*\[\]]', '_', sheet_name)[:31]
-
-		with pd.ExcelWriter(excel_filename, engine="openpyxl", mode=mode, if_sheet_exists="replace" if mode == "a" else None) as writer:
-				df.to_excel(
-						writer,
-						index=False,
-						sheet_name=sheet_name,
-				)
+		write_excel(df, canvas.lastMetricsPath, sheet_name)
 
 		return df
 
