@@ -610,3 +610,5 @@ class BiomarkerAnalyzer:
 
         # canvas.tortuosity_metrics_per_link = per_link_metrics
         # canvas.tortuosity_mean_metrics = meanMetrics
+
+ 

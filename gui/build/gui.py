@@ -102,7 +102,7 @@ canvas.create_text(
     font=("Roboto", 26 * -1)
 )
 
-button02 = ctk.CTkButton(window, text="Clear",
+button01 = ctk.CTkButton(window, text="Clear",
                         command=lambda: clear_screen(canvas),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
@@ -111,7 +111,18 @@ button02 = ctk.CTkButton(window, text="Clear",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
                         border_color=button_border_colour)
-button02.place(x=190, y=35)
+button01.place(x=190, y=35)
+
+button02 = ctk.CTkButton(window, text="Help",
+                        command=lambda: open_window('help', open_help_window, canvas),
+                        width=65,height=25,
+                        font=("Roboto", 12 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=2,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour)
+button02.place(x=260, y=35)
 
 button03 = ctk.CTkButton(window, text="Feedback",
                         command=lambda: open_window('feedback', open_feedback_window, canvas),
@@ -122,7 +133,7 @@ button03 = ctk.CTkButton(window, text="Feedback",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
-button03.place(x=260, y=35)
+button03.place(x=330, y=35)
 
 button04 = ctk.CTkButton(window, text="Subscribe to Updates",
                         command=lambda: open_window('subscribe', open_subscribe_window, canvas),
@@ -133,18 +144,8 @@ button04 = ctk.CTkButton(window, text="Subscribe to Updates",
                         corner_radius=2,border_width=1,
                         hover_color=button_blue_hover,
     border_color=button_border_colour)
-button04.place(x=330, y=35)
+button04.place(x=400, y=35)
 
-button05 = ctk.CTkButton(window, text="Subscribe to Updates",
-                        command=lambda: open_subscribe_window(canvas),
-                        width=65,height=25,
-                        font=("Roboto", 12 * -1),
-                        text_color=text_colour,
-                        fg_color=button_blue_colour,
-                        corner_radius=2,border_width=1,
-                        hover_color=button_blue_hover,
-    border_color=button_border_colour)
-button05.place(x=400, y=35)
 
 canvas.status_id = canvas.create_text(
     950.0,
