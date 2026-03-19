@@ -218,8 +218,8 @@ class BiomarkerAnalyzer:
         
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
-        BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
-        write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
+        # BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        # write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
 
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
