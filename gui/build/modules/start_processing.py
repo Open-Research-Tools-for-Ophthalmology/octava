@@ -23,6 +23,9 @@ def is_regional_analysis_enabled(canvas:Canvas) ->bool:
 def is_prebinary_enabled(canvas:Canvas) ->bool:
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
 
+def get_image_type(canvas: Canvas) -> str:
+    return canvas.img_type_var.get()
+
 def start_processing(canvas: Canvas):
     """
     Start the image processing pipeline on the loaded image in the canvas.
@@ -68,10 +71,24 @@ def make_save_folder(canvas: Canvas):
     canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
 
 # Single image processing
-# @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
+    img_type = get_image_type(canvas)
+
+    print(f"Image type selected: {img_type}")
+
+    if img_type == "Retina":
+        start_retina_processing_threaded(canvas, batch)
+    elif img_type == "ONH":
+        start_onh_processing_threaded(canvas, batch)
+    elif img_type == "Skin":
+        start_skin_processing_threaded(canvas, batch)
+    else:
+        raise ValueError(f"Unsupported image type: {img_type}")
+# @param {batch} bool = True for batch processing (will additionally process FAZ)
+def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting Retina processing...")
     if not is_prebinary_enabled(canvas):
-        print("Starting binarising...")
+        print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
         
@@ -116,6 +133,28 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
         print("Regional analysis completed.")
 
     # Switch back to READY (must be done on main thread)
+    canvas.after(0, lambda: change_status_to_ready(canvas))
+
+# ONH pipeline not implemented yet
+def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting ONH processing...")
+    print("ONH processing pipeline is not implemented yet.")
+
+    canvas.after(0, lambda: messagebox.showinfo(
+        "ONH Processing",
+        "ONH processing pipeline has not been implemented yet."
+    ))
+    canvas.after(0, lambda: change_status_to_ready(canvas))
+
+# Skin pipeline not implemented yet
+def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting Skin processing...")
+    print("Skin processing pipeline is not implemented in the current project scope.")
+
+    canvas.after(0, lambda: messagebox.showinfo(
+        "Skin Processing",
+        "Skin processing pipeline is not implemented in the current project scope."
+    ))
     canvas.after(0, lambda: change_status_to_ready(canvas))
 
 # batch processing
