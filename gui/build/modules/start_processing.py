@@ -18,6 +18,8 @@ def is_batch_processing_enabled(canvas: Canvas) -> bool:
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
 
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
+    if is_batch_processing_enabled(canvas):
+        return hasattr(canvas, "bp_regional_analysis_var") and canvas.bp_regional_analysis_var.get() == 1
     return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()
 
 def is_prebinary_enabled(canvas:Canvas) ->bool:
@@ -219,9 +221,21 @@ def start_batch_processing_threaded(canvas: Canvas):
         
         # Group dfs by sheet name
         for sheet_name, sheet_df in excel_data.items():
-            if sheet_name not in all_metrics_df:
-                all_metrics_df[sheet_name] = []
-            all_metrics_df[sheet_name].append(sheet_df)
+            if "Regional analysis_" in sheet_name:
+                # Special case: split each regional row within the ROI into its own sheet.  
+                image_name = os.path.splitext(image_file)[0]
+                for row_idx, row in sheet_df.iterrows():
+                    row_df = row.to_frame().transpose().copy()
+                    region_name = str(row_df.iloc[0].get("Region", f"Region{row_idx + 1}"))
+                    row_df.drop(columns=["Region"], inplace=True)
+                    row_df["name"] = image_name
+                    if region_name not in all_metrics_df:
+                        all_metrics_df[region_name] = []
+                    all_metrics_df[region_name].append(row_df)
+            else:
+                if sheet_name not in all_metrics_df:
+                    all_metrics_df[sheet_name] = []
+                all_metrics_df[sheet_name].append(sheet_df)
 
     # 2. Concat df for each sheet and save the overall metrics spreadsheet
     results_file_path = os.path.join(canvas.bp_selected_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")

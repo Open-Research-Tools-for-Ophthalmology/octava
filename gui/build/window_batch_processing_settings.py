@@ -17,6 +17,7 @@ import customtkinter as ctk
 from theme import *
 from modules.round_rectangle import *
 from modules.select_folder import *
+from window_regional_analysis_settings import *
 
 def init_batch_processing_settings(canvas: Canvas):
     canvas.bp_selected_folder_path = None
@@ -26,15 +27,16 @@ def init_batch_processing_settings(canvas: Canvas):
     canvas.bp_variable_image_size_bool_var = IntVar(value=0)
     canvas.bp_variable_image_size_df = None
     canvas.bp_segment_faz_var = IntVar(value=0)
+    canvas.bp_regional_analysis_var = IntVar(value=0)
 
 def close(subwindow):
     subwindow.destroy()
     subwindow.update()
 
-def subwindow3(canvas):
+def subwindow3(canvas, open_window_fn=None):
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
-    subwindow.geometry("350x420")
+    subwindow.geometry("350x455")
     subwindow.configure(bg="#FBE3D6")
     
     # Trace checkbox to enable/disable batch resize entry
@@ -43,7 +45,7 @@ def subwindow3(canvas):
     subcanvas3 = Canvas(
         subwindow,
         bg="#FBE3D6",
-        height=420,
+        height=455,
         width=350,
         bd=0,
         highlightthickness=0,
@@ -154,6 +156,18 @@ def subwindow3(canvas):
     )
     measure_faz_checkbox.place(x=40.0, y=286.0)
 
+    # regional analysis checkbox
+    regional_analysis_checkbox = Checkbutton(
+        subwindow,
+        text="Run Regional Analysis",
+        variable=canvas.bp_regional_analysis_var,
+        command=lambda: (open_window_fn("regional_analysis", subwindow2, canvas)) if canvas.bp_regional_analysis_var.get() == 1 else None,
+        bg=subwindow_bg_colour,
+        fg=text_colour,
+        font=("Roboto", 14 * -1),
+    )
+    regional_analysis_checkbox.place(x=40.0, y=321.0)
+
     # close
     button_close = ctk.CTkButton(
         subwindow,
@@ -172,7 +186,7 @@ def subwindow3(canvas):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=110, y=335)
+    button_close.place(x=110, y=370)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)
@@ -180,11 +194,11 @@ def subwindow3(canvas):
         display_text = fit_path_to_canvas(canvas.bp_selected_folder_path, subcanvas3, ("Roboto", 12 * -1), 220)
         display_text_to_canvas(
             subcanvas3,
-            60,
+            60, 
             100,
             display_text,
             ("Roboto", 12 * -1),
         )
-        
+
     subwindow.resizable(False, False)
     return subwindow

@@ -338,7 +338,7 @@ button_regional_analysis.place(x=30, y=415)
 
 
 button_batch_processing = ctk.CTkButton(window, text="Optional Batch Processing Settings",
-                        command=lambda: open_window('batch_processing', subwindow3, canvas),
+                        command=lambda: open_window('batch_processing', subwindow3, canvas, open_window_fn=open_window),
                         width=380,height=65,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
