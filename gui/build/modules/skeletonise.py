@@ -25,7 +25,7 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
   # generate skeletonized image
   y, x = bin_img.shape
   L = bin_img.astype(bool)
-  sk2, distance = medial_axis(L, return_distance=True)
+  sk2, distance = medial_axis(L, return_distance=True, rng=0)
 
   # removes branches smaller than twig size
   sk2 = remove_small_objects(sk2, twig_size, connectivity=2)
