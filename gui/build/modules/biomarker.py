@@ -218,8 +218,8 @@ class BiomarkerAnalyzer:
         
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
-        # BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
-        # write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
+        BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
 
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
@@ -581,9 +581,15 @@ class BiomarkerAnalyzer:
                 VCI1 = np.nan
 
             with np.errstate(divide='ignore',invalid='ignore'):
-                t = np.gradient(1/curvature)
+                # t = np.gradient(1/curvature)
+                curv_safe = curvature.copy()
+                curv_safe[np.abs(curv_safe) < 1e-6] = np.nan
+                inv_curv = 1.0 / curv_safe
+                t = np.gradient(inv_curv)
+                # t[~np.isfinite(t)] = np.nan
+                # VCI2 = np.nanmean(np.abs(t))
 
-            t[np.isinf(t)] = np.nan
+            t[~np.isfinite(t)] = np.nan
             VCI2 = np.nansum(t)/numPoints
 
             per_link_metrics.append({
@@ -607,8 +613,5 @@ class BiomarkerAnalyzer:
             canvas.new_tort_metrics = {}
 
         canvas.new_tort_metrics.update(meanMetrics)
-
-        # canvas.tortuosity_metrics_per_link = per_link_metrics
-        # canvas.tortuosity_mean_metrics = meanMetrics
 
  
