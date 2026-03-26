@@ -165,14 +165,14 @@ function [metrics meanMetrics] = tort_metrics_new(links)
         % calculation 
         metrics(i).DT = nansum(segAOCs .* segArcs) / arcLength;
         
-        %% 6. Peak-weighted AOC
+        %%! 6. Peak-weighted AOC
         metrics(i).PWAOC = metrics(i).AOC*nExtrema;
 
         %% 7. Inverse spherical radius 
         metrics(i).ISR = sum(abs(curvature))/numPoints;
 
-        %% 8. Sum of angles metric 
-          % This implementation computes the turning angle (in radians) at each interior point
+        %%! 8. Sum of angles metric 
+        % This implementation computes the turning angle (in radians) at each interior point
         % of the vessel and weights the angle by the average length of the two adjoining segments.
         numPoints = length(vesselX);
         if numPoints < 3
@@ -296,7 +296,7 @@ function [metrics meanMetrics] = tort_metrics_new(links)
             t = gradient(1./curvature); 
             t(t==inf) = nan;
             t(t==-inf) = nan;
-            metrics(i).VCI2 = nansum(t)/numPoints; 
+            metrics(i).VCI2 = nansum(t)/numPoints; % average rate of change of curvature radius
 
             %% Save mean and STD of all metrics 
             % Package all metrics into a structure for output.

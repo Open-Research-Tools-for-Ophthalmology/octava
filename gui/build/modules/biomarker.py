@@ -259,6 +259,197 @@ class BiomarkerAnalyzer:
         links = canvas.skeleton_links
         binary = canvas.binary_image
 
+        if not hasattr(canvas, "new_tort_metrics"):
+            canvas.new_tort_metrics = {}
+
+        if links is None or len(links) == 0:
+            canvas.new_tort_metrics.update({
+                "PWAOC_mean": np.nan,
+                "PWAOC_std": np.nan,
+                "SOAM_mean": np.nan,
+                "SOAM_std": np.nan,
+            })
+            return
+
+        eps = np.finfo(float).eps
+
+        # Image scale
+        image_size_mm = float(canvas.image_size_var.get())
+        img_height, _ = canvas.fullImSizePix
+        pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
+
+        image_shape = binary.shape
+
+        def movmean(arr, window):
+            arr = np.asarray(arr, dtype=float)
+            n = arr.size
+            if n == 0 or window <= 1:
+                return arr.copy()
+
+            half_left = (window - 1) // 2
+            half_right = window // 2
+
+            csum = np.cumsum(np.insert(arr, 0, 0.0))
+            out = np.empty(n)
+
+            for i in range(n):
+                start = max(0, i - half_left)
+                end = min(n, i + half_right + 1)
+                out[i] = (csum[end] - csum[start]) / (end - start)
+
+            return out
+
+        per_link_metrics = []
+
+        for link in links:
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size < 3:
+                continue
+
+            rows, cols = np.unravel_index(indices, image_shape)
+
+            vesselX = cols.astype(float) * pix2mm
+            vesselY = rows.astype(float) * pix2mm
+            numPoints = len(vesselX)
+
+            ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
+            arcLength = np.sum(ds)
+
+            chordLength = np.sqrt(
+                (vesselX[-1]-vesselX[0])**2 +
+                (vesselY[-1]-vesselY[0])**2
+            )
+
+            if arcLength <= 0:
+                continue
+
+            window_size = 10
+
+            smoothedX = movmean(vesselX, window_size)
+            smoothedY = movmean(vesselY, window_size)
+
+            dx = movmean(np.gradient(smoothedX), window_size)
+            dy = movmean(np.gradient(smoothedY), window_size)
+
+            ddx = movmean(np.gradient(dx), window_size)
+            ddy = movmean(np.gradient(dy), window_size)
+
+            curvature = (dx * ddy - ddx * dy) / ((dx**2 + dy**2) ** (3 / 2) + eps)
+            curvature = movmean(curvature, window_size)
+
+            signCurv = np.sign(curvature)
+            inflecIdx = np.where(np.diff(signCurv) != 0)[0] + 1
+            x = np.arange(1, numPoints + 1)
+
+            v1 = np.array([vesselY[-1] - vesselY[0], vesselX[-1] - vesselX[0]])
+            v2 = np.array([x[-1] - x[0], 0.0])
+
+            angle = np.arccos(
+                np.clip(
+                    np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
+                    -1,
+                    1,
+                )
+            )
+
+            vessel = np.column_stack((smoothedY, smoothedX))
+            vesselSlope = np.sign(v1[1])
+
+            rot = np.array([
+                [np.cos(vesselSlope * angle), -np.sin(vesselSlope * angle)],
+                [np.sin(vesselSlope * angle), np.cos(vesselSlope * angle)],
+            ])
+
+            vessel_rot = vessel @ rot
+            vessel_rot = vessel_rot[:, 1]
+
+            gradCurv = movmean(np.gradient(vessel_rot), window_size)
+            signGradCurv = np.sign(gradCurv)
+            extremaIdx = np.where(np.diff(signGradCurv) != 0)[0] + 1
+
+            testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
+            testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
+
+            if len(extremaIdx) >= 1:
+                trueExtrema = [extremaIdx[0]]
+                thr = 3 * pix2mm
+
+                for kk in range(1, len(extremaIdx)):
+                    cond1 = abs(testY[kk - 1]) > thr and abs(testX[kk - 1]) > thr
+
+                    cond2 = (
+                        (abs(testY[kk - 1]) > thr or abs(testX[kk - 1]) > thr)
+                        and (extremaIdx[kk] - extremaIdx[kk - 1] > 100)
+                    )
+
+                    if cond1 or cond2:
+                        trueExtrema.append(extremaIdx[kk])
+
+                nExtrema = max(len(trueExtrema), 1)
+            else:
+                nExtrema = 1
+
+            AOC = np.nan if chordLength == 0 else arcLength / chordLength
+            PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
+
+            if numPoints < 3:
+                SOAM = 0
+            else:
+                totalWeightedAngle = 0
+
+                for j in range(1, numPoints - 1):
+                    v1 = np.array([
+                        vesselX[j] - vesselX[j - 1],
+                        vesselY[j] - vesselY[j - 1],
+                    ])
+                    v2 = np.array([
+                        vesselX[j + 1] - vesselX[j],
+                        vesselY[j + 1] - vesselY[j],
+                    ])
+
+                    cosTheta = np.clip(
+                        np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
+                        -1,
+                        1,
+                    )
+
+                    angleRad = np.arccos(cosTheta)
+                    totalWeightedAngle += angleRad
+
+                SOAM = totalWeightedAngle / arcLength
+
+            per_link_metrics.append({
+                "PWAOC": PWAOC,
+                "SOAM": SOAM,
+            })
+
+        if per_link_metrics:
+            pwaoc_vals = np.array([m["PWAOC"] for m in per_link_metrics], dtype=float)
+            soam_vals = np.array([m["SOAM"] for m in per_link_metrics], dtype=float)
+            mean_metrics = {
+                "PWAOC_mean": np.nanmean(pwaoc_vals),
+                "PWAOC_std": np.nanstd(pwaoc_vals),
+                "SOAM_mean": np.nanmean(soam_vals),
+                "SOAM_std": np.nanstd(soam_vals),
+            }
+        else:
+            mean_metrics = {
+                "PWAOC_mean": np.nan,
+                "PWAOC_std": np.nan,
+                "SOAM_mean": np.nan,
+                "SOAM_std": np.nan,
+            }
+
+        canvas.new_tort_metrics.update(mean_metrics)
+
+ 
+    @staticmethod
+    def new_tortuosity_metrics_all(canvas: Canvas) -> None:
+        import numpy as np
+
+        links = canvas.skeleton_links
+        binary = canvas.binary_image
+
         if links is None or len(links) == 0:
             return
 
