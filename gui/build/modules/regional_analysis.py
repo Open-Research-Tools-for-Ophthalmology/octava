@@ -17,6 +17,7 @@ import cv2
 RIGHT_EYE = "Right Eye"
 
 class GridType(Enum):
+	'''Enum for different types of regional analysis grids.'''
 	SQUARE_GRID = "Square grid"
 	ETDRS_GRID = "ETDRS grid"
 	EXTENDED_ETDRS_GRID = "Extended"
@@ -24,6 +25,15 @@ class GridType(Enum):
 	FOVEAL_RING = "Foveal rings"
 
 def run_regional_analysis(canvas):
+	"""Run all enabled regional analysis modes for the current canvas state.
+
+	Args:
+		canvas: Tk canvas-like object holding the loaded image, masks, scale,
+			and region-analysis configuration flags.
+
+	Returns:
+		None. Results are written back onto ``canvas`` and exported to Excel.
+	"""
 	change_status_to_waiting(canvas, status="● Wait...running regional analysis")
 
 	# Get image size from canvas
@@ -52,6 +62,17 @@ def run_regional_analysis(canvas):
 
 
 def apply_square_grid(canvas, binary, original, pix_to_mm):
+	"""Split the image into a 3x3 square grid and analyze each region.
+
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
+	"""
 	# Divide image into 3x3 grid
 	regionsize = np.floor(np.array(canvas.fullImSizePix) / 3).astype(int)
 	h, w = regionsize
@@ -85,10 +106,6 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	imgReg.append(original[2 * h : 3 * h, w : 2 * w])
 	imgReg.append(original[2 * h : 3 * h, 2 * w : 3 * w])
 
-	# # -------- Area calculations --------
-	# imgArea_pix = h * w
-	# imgArea_mm = imgArea_pix * (pix_to_mm**2)
-
 	# -------- Region labels --------
 	if canvas.eye_var.get() == RIGHT_EYE:
 		canvas.RAlabels = [
@@ -118,16 +135,18 @@ def apply_square_grid(canvas, binary, original, pix_to_mm):
 	run_analysis_on_regions(canvas, binaryReg, imgReg, imgArea_pix_vec=None, pix_to_mm=pix_to_mm, grid_type=GridType.SQUARE_GRID)
 
 def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
-	'''
-	ETDRS stands for Early Treatment Diabetic Retinopathy Study.
+	"""Construct an ETDRS parafoveal grid and analyze its regions.
 
-In retinal imaging, the ETDRS grid is a standardized way of dividing the macula into clinically meaningful regions so measurements are comparable across studies, devices, and software.
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+		image_size_mm: Real image width in millimeters.
 
-Conceptually, the ETDRS grid consists of:
-	1.	A central circular region (the fovea)
-	2.	A surrounding ring (the parafoveal region between 1mm and 3mm from the center)
-	3.	That ring is divided into angular sectors (here: 6 sectors of 60° each)
-	'''
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
+	"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -266,57 +285,19 @@ Conceptually, the ETDRS grid consists of:
 		grid_type=GridType.ETDRS_GRID,   # change per function
 	)
 
-	# plt.imshow(canvas.original_img, cmap="gray")
-	# colors = ["r","g","b","y","c","m"]
-
-	# for i in range(6):
-	# 		mask = sector_masks[:, :, i]
-	# 		plt.contour(mask, colors=colors[i], linewidths=1)
-	# 		plt.text(cx, cy - rad_3mm + 20*i, f"S{i+1}", color=colors[i])
-
-	# plt.axis('off')
-	# plt.scatter(cx, cy, c="white")
-	# plt.savefig("etdrs_wedge_orientation_debug.png", dpi=300, bbox_inches="tight")
-
-
 def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
+	"""Construct an extended ETDRS grid and analyze its regions.
+
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+		image_size_mm: Real image width in millimeters.
+
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
 	"""
-	Construct an Extended ETDRS parafoveal grid for regional retinal analysis.
-
-	This function implements an Extended ETDRS grid based on the standard
-	ETDRS parafoveal ring (1–3 mm diameter), with increased angular resolution
-	and additional composite regions for enhanced regional sensitivity.
-
-	The algorithm performs the following steps:
-
-	1. Convert physical radii (0.5 mm and 1.5 mm) into pixel units using the
-		image dimensions and real-world image scale.
-	2. Define the foveal avascular zone (FAZ) center, defaulting to the image
-		center if not previously specified.
-	3. Generate circular masks for the foveal region (inner 1 mm diameter)
-		and the parafoveal ring (1–3 mm diameter).
-	4. Subdivide the parafoveal ring into eight equal angular sectors
-		(45° wedges) covering the full 360° circumference.
-	5. Exclude the foveal region from all wedge masks to ensure analysis is
-		restricted to parafoveal tissue only.
-	6. Define ten analysis regions in total:
-		- Eight individual 45° parafoveal wedges
-		- One 90° nasal composite wedge
-		- One 90° temporal composite wedge
-	7. Extract corresponding binary vessel masks and grayscale image data for
-		each region, applying quadrant-based cropping to preserve anatomical
-		orientation and reduce irrelevant image content.
-	8. Assign anatomically correct region labels, accounting for eye laterality
-		(right vs. left eye).
-	9. Compute pixel-area values for each region to support normalization of
-		downstream vascular metrics.
-
-	The resulting regional masks and image subsets are used for quantitative
-	vascular analysis, including vessel density, skeleton-based metrics, and
-	fractal dimension estimation. The Extended ETDRS grid enables improved
-	directional sensitivity and facilitates nasal–temporal asymmetry analysis
-	beyond the standard ETDRS grid.
-"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
@@ -451,46 +432,18 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 
 
 def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
+	"""Construct an ONH/peripapillary grid and analyze its regions.
+
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+		image_size_mm: Real image width in millimeters.
+
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
 	"""
-Construct an Optic Nerve Head (ONH) / peripapillary grid for regional analysis.
-
-This function defines a peripapillary analysis grid centered on the optic
-nerve head (ONH). The grid consists of an inner ONH exclusion zone and an
-outer peripapillary ring, which is subdivided into angular sectors and
-composite regions to enable detailed regional vascular analysis.
-
-The algorithm performs the following steps:
-
-1. Convert physical radii (1 mm inner ONH radius and an outer peripapillary
-	 radius, default 2.0 mm) into pixel units based on the image size and
-	 real-world scaling.
-2. Define the ONH center (FAZ/ONH center), defaulting to the image center if
-	 not previously specified.
-3. Create a circular inner mask representing the ONH region and an outer
-	 circular mask representing the peripapillary boundary.
-4. Define the peripapillary ring as the region between the inner ONH mask
-	 and the outer circular mask.
-5. Subdivide the peripapillary ring into eight equal 45° angular sectors
-	 covering the full 360° circumference.
-6. Exclude the ONH region from all sector masks to ensure analysis is
-	 restricted to peripapillary tissue.
-7. Define fifteen analysis regions in total:
-	 - Eight individual 45° peripapillary wedges
-	 - Two superior and inferior hemispheric regions
-	 - Four cardinal composite regions (superior, inferior, nasal, temporal)
-	 - One full peripapillary ring region
-8. Extract corresponding binary vessel masks and grayscale image data for
-	 each region, using quadrant-based cropping to preserve anatomical
-	 orientation and reduce irrelevant image content.
-9. Assign anatomically correct region labels, accounting for eye laterality
-	 (right vs. left eye).
-10. Compute pixel-area values for each region to support normalization of
-		downstream vascular metrics.
-
-The resulting regional masks and image subsets are used for quantitative
-analysis of peripapillary vasculature, including vessel density,
-skeleton-based metrics, tortuosity, and fractal dimension.
-"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 1 * H / image_size_mm
 	rad_outer = 2.0 * H / image_size_mm #The outer ring may need to be 2.5, 3, or 4.25 - The user will need to input this 
@@ -610,52 +563,18 @@ skeleton-based metrics, tortuosity, and fractal dimension.
 
 
 def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
+	"""Construct a concentric foveal ring grid and analyze its regions.
+
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+		image_size_mm: Real image width in millimeters.
+
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
 	"""
-		Construct a foveal ring grid for concentric retinal regional analysis.
-
-		This function defines a fovea-centered, radially symmetric analysis grid
-		consisting of concentric circular regions surrounding the foveal avascular
-		zone (FAZ). The grid enables quantification of vascular metrics as a
-		function of radial distance from the foveal center, independent of
-		angular orientation.
-
-		The grid is composed of three regions:
-
-		1. FAZ circle (central foveal region)
-			 - Radius: 0.5 mm
-			 - Typically avascular or minimally vascular
-
-		2. Inner parafoveal ring
-			 - Radial extent: 0.5–1.0 mm from the foveal center
-			 - Corresponds to the region of highest capillary density
-
-		3. Outer parafoveal ring
-			 - Radial extent: 1.0–1.5 mm from the foveal center
-			 - Represents the outer parafoveal vascular network
-
-		The algorithm performs the following steps:
-
-		1. Converts physical radii (0.5 mm, 1.0 mm, and 1.5 mm) into pixel units
-			 using the image size and real-world scaling.
-		2. Determines the foveal center (FAZ center), defaulting to the image
-			 center if not previously defined.
-		3. Creates concentric circular binary masks for each radial region.
-		4. Defines ring masks by subtracting inner regions from outer regions.
-		5. Extracts corresponding binary vessel masks and grayscale image data
-			 for each region.
-		6. Crops central regions to a tight bounding box (±1.5 mm) to reduce
-			 computational load while preserving anatomical context.
-		7. Assigns descriptive region labels.
-		8. Computes pixel-area values for each region to enable normalization of
-			 downstream vascular metrics.
-
-		The resulting regional masks and image subsets are passed to the
-		downstream regional analysis pipeline to compute vessel density,
-		skeleton-based metrics, tortuosity, and fractal dimension.
-
-		This foveal ring grid is particularly suited for FAZ-centric and
-		radial-gradient analyses in OCT-A studies.
-		"""
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_2mm = 1.0 * H / image_size_mm
@@ -732,29 +651,23 @@ def run_analysis_on_regions(
 		pix_to_mm,
 		grid_type,
 ):
-		"""
-		Exact translation of MATLAB regional metrics loop.
+		"""Perform skeletonization and metric extraction for each region.
 
-		Parameters
-		----------
-		canvas : object
-				Canvas holding skeleton_nodes, skeleton_links, RAlabels, etc.
-		binaryReg : list[np.ndarray]
-				Binary vessel masks per region
-		imgReg : list[np.ndarray]
-				Original image per region
-		imgArea_pix_vec : list[float]
-				Pixel area per region (only used for non-square grids)
-		pix_to_mm : float
-				Pixel-to-mm conversion
-		grid_type : str
-				Grid type name
+		Args:
+			canvas: Tk canvas-like object holding graph state, labels, and
+				output paths.
+			binaryReg: List of binary vessel masks, one per region.
+			imgReg: List of grayscale image crops, one per region.
+			imgArea_pix_vec: Region areas in pixels for non-square grids.
+			pix_to_mm: Physical scale conversion from pixels to millimeters.
+			grid_type: ``GridType`` enum describing the regional layout.
+
+		Returns:
+			pandas.DataFrame: Table of per-region vascular metrics.
 		"""
 		canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
 
-		# --------------------------------------------------
 		# Create validation folder
-		# --------------------------------------------------
 		validation_folder = os.path.join(canvas.current_save_folder, 		"regional_validation")
 		os.makedirs(validation_folder, exist_ok=True)
 
@@ -795,8 +708,7 @@ def run_analysis_on_regions(
 						skelRegion=(canvas.skeleton_image.astype(np.uint8) * 255),
 				)
 
-
-				# Image area (MATLAB conditional)
+				# Image area
 				if grid_type != GridType.SQUARE_GRID:
 						imgArea_pix = imgArea_pix_vec[i]
 						imgArea_mm = imgArea_pix * (pix_to_mm ** 2)
@@ -806,25 +718,17 @@ def run_analysis_on_regions(
 						imgArea_pix = h * w
 						imgArea_mm = imgArea_pix * (pix_to_mm**2)
 
-
 				canvas.regional_metrics[i]["Region"] = canvas.RAlabels[i]
-				new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
-						links=canvas.skeleton_links,
-						binary_image=binaryReg[i],
-						image_size_var=canvas.image_size_var,
-						fullImSizePix=canvas.fullImSizePix,
-				)
-				canvas.regional_metrics[i].update(new_tort_metrics)
 
 				# If skeleton graph exists
 				links = getattr(canvas, "skeleton_links", None)
 				nodes = getattr(canvas, "skeleton_nodes", None)
 
 				if links is not None and len(links) > 0:
-						# MATLAB: sum(~[app.Gnodes.ep])
+						# sum(~[app.Gnodes.ep])
 						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
 
-						# MATLAB: sum(sum(binaryReg{i})) / 255 / imgArea_pix
+						# sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 
@@ -832,36 +736,36 @@ def run_analysis_on_regions(
 						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm)
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
-						# MATLAB: VLD %
+						# VLD %
 						canvas.regional_metrics[i]["VLD_pct"] = round(
 								(total_length_mm * pix_to_mm) / imgArea_mm, 4
 						) * 100 #? is that a bug in the original code? (pix_to_mm should not be there?)
 
-						# MATLAB: VLD 1/mm
+						# VLD 1/mm
 						canvas.regional_metrics[i]["VLD_mminv"] = round(
 								total_length_mm / imgArea_mm, 4
 						)
 
-						# MATLAB: Mean / Median length (µm)
+						# Mean / Median length (µm)
 						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
 						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
 						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_pix)*pix_to_mm*1000)
 
-						# MATLAB: Mean / Median diameter (µm)
+						# Mean / Median diameter (µm)
 						mean_diam_um, median_diam_um = compute_diameter(links, binaryReg[i], pix_to_mm)
 						canvas.regional_metrics[i]["MeanDiam"] = round(mean_diam_um)
 						canvas.regional_metrics[i]["MedianDiam"] = round(median_diam_um)
 
-						# MATLAB: Branch density
+						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
 								canvas.regional_metrics[i]["nodes"] / canvas.regional_metrics[i]["totalLength"], 2
 						)
 
-						# MATLAB: fractalDimension(app)
+						# fractalDimension(app)
 						slope = compute_fractal_dimension(canvas)
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 
-						# MATLAB: mean tortuosity
+						# mean tortuosity
 						canvas.regional_metrics[i]["mTort"] = compute_mean_tortuosity(links, binaryReg[i])
 
 				# If no skeleton graph
@@ -881,6 +785,13 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
 
+				new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
+						links=canvas.skeleton_links,
+						binary_image=binaryReg[i],
+						image_size_var=canvas.image_size_var,
+						fullImSizePix=canvas.fullImSizePix,
+				)
+				canvas.regional_metrics[i].update(new_tort_metrics)
 
 		# Save Excel to local
 		df = pd.DataFrame(canvas.regional_metrics)
@@ -892,18 +803,15 @@ def run_analysis_on_regions(
 
 
 def compute_length(links, binary, pix_to_mm):
-	"""
-	Compute total length of vessel links.
+	"""Compute the total vessel-link length for a region.
 
-	Parameters
-	----------
-	links : list
-			List of vessel link objects.
+	Args:
+		links: List of vessel link objects with ``path`` attributes.
+		binary: Binary vessel mask whose shape defines index decoding.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
 
-	Returns
-	-------
-	float
-			Total length in mm.
+	Returns:
+		float: Total vessel length in millimeters.
 	"""
 	total_length_pix = 0.0
 
@@ -922,26 +830,20 @@ def compute_length(links, binary, pix_to_mm):
 			total_length_pix += length_pix
 			link.pixLength = length_pix
 
-	# print([l.pixLength for l in links])
 	total_length_mm = total_length_pix * pix_to_mm
 	return total_length_mm
 
 
 def compute_diameter(links, binary, pix_to_mm):
-	"""
-	Compute diameter of a vessel link using distance transform.
+	"""Compute mean and median vessel diameter for a region.
 
-	Parameters
-	----------
-	link : object
-			Vessel link with path attribute.
-	binary : np.ndarray
-			Binary vessel mask.
+	Args:
+		links: List of vessel link objects with ``path`` attributes.
+		binary: Binary vessel mask used to build a distance transform.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
 
-	Returns
-	-------
-	float
-			Diameter in pixels.
+	Returns:
+		tuple[float, float]: Mean and median diameters in micrometers.
 	"""
 	radius_map = distance_transform_edt(binary > 0)
 	diameter_map = radius_map * 2
@@ -975,6 +877,14 @@ def compute_diameter(links, binary, pix_to_mm):
 
 
 def count_branchpoints(nodes):
+	"""Count branchpoints in a skeleton graph.
+
+	Args:
+		nodes: Iterable of node objects with an ``ep`` endpoint flag.
+
+	Returns:
+		int: Number of non-endpoint nodes.
+	"""
 	branchpoint_count = 0
 	if nodes is not None:
 			for node in nodes:
@@ -984,6 +894,15 @@ def count_branchpoints(nodes):
 
 
 def compute_branch_point_density(branchpoint_count, total_length_mm):
+	"""Compute branchpoint density in units of 1/mm.
+
+	Args:
+		branchpoint_count: Number of branchpoints in the region.
+		total_length_mm: Total vessel length in millimeters.
+
+	Returns:
+		float: Branchpoint density in inverse millimeters.
+	"""
 	if total_length_mm > 0.0:
 			branchpoint_density = branchpoint_count / total_length_mm
 	else:
@@ -992,6 +911,14 @@ def compute_branch_point_density(branchpoint_count, total_length_mm):
 
 
 def compute_fractal_dimension(canvas):
+		"""Estimate fractal dimension from the current skeleton image.
+
+		Args:
+			canvas: Tk canvas-like object with ``skeleton_image`` populated.
+
+		Returns:
+			float: Box-counting fractal dimension estimate.
+		"""
 		img = canvas.skeleton_image.astype(bool)
 
 		h, w = img.shape
@@ -1028,18 +955,14 @@ def compute_fractal_dimension(canvas):
 
 
 def compute_mean_tortuosity(links, binary):
-	"""
-	Compute mean tortuosity of vessel links.
+	"""Compute mean arc-over-chord tortuosity across vessel links.
 
-	Parameters
-	----------
-	links : list
-			List of vessel link objects.
+	Args:
+		links: List of vessel link objects with ``path`` attributes.
+		binary: Binary vessel mask whose shape defines index decoding.
 
-	Returns
-	-------
-	float
-			Mean tortuosity.
+	Returns:
+		float: Mean tortuosity across valid links.
 	"""
 	tortuosity_list = []
 	image_shape = binary.shape
