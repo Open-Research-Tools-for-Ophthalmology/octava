@@ -409,7 +409,12 @@ class BiomarkerAnalyzer:
             "Mean tortuosity": float(mean_tortuosity),
         }
 
-        BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
+            links=canvas.skeleton_links,
+            binary_image=canvas.binary_image,
+            image_size_var=canvas.image_size_var,
+            fullImSizePix=canvas.fullImSizePix,
+        )
         micro_stats.update(canvas.new_tort_metrics)
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
@@ -445,25 +450,19 @@ class BiomarkerAnalyzer:
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
 
     @staticmethod
-    def new_tortuosity_metrics(canvas: Canvas) -> None:
-        links = canvas.skeleton_links
-        binary = canvas.binary_image
-
-        if not hasattr(canvas, "new_tort_metrics"):
-            canvas.new_tort_metrics = {}
-
+    def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix):
+        binary = binary_image
         if links is None or len(links) == 0:
-            canvas.new_tort_metrics.update({
+            return {
                 "PWAOC_mean": np.nan,
                 "PWAOC_std": np.nan,
                 "SOAM_mean": np.nan,
                 "SOAM_std": np.nan,
-            })
-            return
+            }
 
         # Image scale
-        image_size_mm = float(canvas.image_size_var.get())
-        img_height, _ = canvas.fullImSizePix
+        image_size_mm = float(image_size_var.get())
+        img_height, _ = fullImSizePix
         pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
 
         image_shape = binary.shape
@@ -484,9 +483,7 @@ class BiomarkerAnalyzer:
             if metrics is not None:
                 per_link_metrics.append(metrics)
 
-        canvas.new_tort_metrics.update(
-            BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
-        )
+        return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
  
     @staticmethod

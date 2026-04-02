@@ -6,6 +6,7 @@ import pandas as pd
 from modules.skeletonise import *
 from modules.change_status import *
 from modules.write_excel import *
+from modules.biomarker import BiomarkerAnalyzer
 from enum import Enum
 import math
 from scipy.ndimage import distance_transform_edt
@@ -719,7 +720,7 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 		imgReg=imgReg,
 		imgArea_pix_vec=imgArea_pix_vec,
 		pix_to_mm=pix_to_mm,
-		grid_type=GridType.FOVEAL_RING,   # change per function
+		grid_type=GridType.FOVEAL_RING,
 	)
 
 
@@ -758,6 +759,7 @@ def run_analysis_on_regions(
 		os.makedirs(validation_folder, exist_ok=True)
 
 		for i in range(len(binaryReg)):
+
 				# Skeletonize this region
 				skeletonise(
 						canvas,
@@ -806,6 +808,13 @@ def run_analysis_on_regions(
 
 
 				canvas.regional_metrics[i]["Region"] = canvas.RAlabels[i]
+				new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
+						links=canvas.skeleton_links,
+						binary_image=binaryReg[i],
+						image_size_var=canvas.image_size_var,
+						fullImSizePix=canvas.fullImSizePix,
+				)
+				canvas.regional_metrics[i].update(new_tort_metrics)
 
 				# If skeleton graph exists
 				links = getattr(canvas, "skeleton_links", None)
@@ -819,9 +828,7 @@ def run_analysis_on_regions(
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 
-						# MATLAB: sum([app.Glinks.pixLength] * pix_to_mm)
-						# Vessel length density from boimarker.py
-						# binary = canvas.binary_image
+						# Vessel length density
 						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm)
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
@@ -837,9 +844,7 @@ def run_analysis_on_regions(
 
 						# MATLAB: Mean / Median length (µm)
 						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
-						# print('links length in pix:', links_length_pix)
 						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
-						# print('mean length:', canvas.regional_metrics[i]["MeanLength"])
 						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_pix)*pix_to_mm*1000)
 
 						# MATLAB: Mean / Median diameter (µm)
@@ -859,9 +864,7 @@ def run_analysis_on_regions(
 						# MATLAB: mean tortuosity
 						canvas.regional_metrics[i]["mTort"] = compute_mean_tortuosity(links, binaryReg[i])
 
-				# --------------------------------------------------
 				# If no skeleton graph
-				# --------------------------------------------------
 				else:
 						canvas.regional_metrics[i]["nodes"] = 0
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
@@ -877,6 +880,7 @@ def run_analysis_on_regions(
 						slope = compute_fractal_dimension(canvas)
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
+
 
 		# Save Excel to local
 		df = pd.DataFrame(canvas.regional_metrics)
