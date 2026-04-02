@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 from basic_binarise import *
 
 # 1. Set the output directory
-target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests"
+target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests"
 os.makedirs(target_dir, exist_ok=True)
 
 # 2. Load and convert the image to grayscale using ITU-R BT.601 weights [oai_citation:1‡mathworks.com](https://www.mathworks.com/help/matlab/ref/rgb2gray.html#:~:text=,R%2C%20G%2C%20and%20B%20components)
@@ -46,7 +46,7 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 # Directory where test results are saved
-target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests'
+target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests'
 
 # Load MATLAB result
 Y_mat = loadmat(os.path.join(target_dir, 'binarise_matlab_result.mat'))['Y_mat']

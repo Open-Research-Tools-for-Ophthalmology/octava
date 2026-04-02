@@ -11,6 +11,17 @@ from theme import *
 import customtkinter as ctk
 
 
+def init_advanced_settings(canvas: Canvas):
+  """Initialize canvas variables used by the advanced settings UI and pipeline."""
+  canvas.frangi_bool = IntVar(value=1)
+  canvas.frangi_min = IntVar(value=1)
+  canvas.frangi_max = IntVar(value=4)
+  canvas.med_filt_bool = IntVar(value=0)
+  canvas.twig_size = IntVar(value=8)
+  canvas.kernel_size = IntVar(value=3)
+  canvas.prebinary_var = IntVar(value=0)
+
+
 def close(window):
   window.destroy()
   window.update()

@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 from hessian_filter import hessian_filter
 
 # 1. Set the target directory
-target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests"
+target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests"
 
 # 2. Load the .tif image
 img_path = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/LEI/to_be_rename/MILA_renamed/test/5000.tif"
@@ -48,7 +48,7 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 # 1. Set the target directory
-target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests'
+target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests'
 
 # 2. Sigma values to compare
 sigma_values = [1, 3]

@@ -51,8 +51,8 @@ skel2, nodes, links = skeletonise(canvas, raw_img, bin_img, display=False)
 BiomarkerAnalyzer.new_torturosity_metrics(canvas)
 
 # Save results
-out_npz = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/python_tortuosity_metrics.npz"
-out_json = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/python_tortuosity_metrics.json"
+out_npz = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/python_tortuosity_metrics.npz"
+out_json = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/python_tortuosity_metrics.json"
 
 np.savez(
     out_npz,
@@ -64,7 +64,7 @@ np.savez(
 with open(out_json, "w") as f:
     json.dump(canvas.tortuosity_mean_metrics, f, indent=2)
 
-out_csv = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/python_tortuosity_metrics.csv"
+out_csv = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/python_tortuosity_metrics.csv"
 
 with open(out_csv, "w", newline="") as f:
     writer = csv.writer(f)

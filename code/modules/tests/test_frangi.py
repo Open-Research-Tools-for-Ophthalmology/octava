@@ -11,10 +11,10 @@ parent_dir  = os.path.abspath(os.path.join(current_dir, os.pardir))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from basic_binarise import *
+from frangi_2Dfilter import *
 
 # 1. Set the output directory
-target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests"
+target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests"
 os.makedirs(target_dir, exist_ok=True)
 
 # 2. Load and convert the image to grayscale using ITU-R BT.601 weights [oai_citation:1‡mathworks.com](https://www.mathworks.com/help/matlab/ref/rgb2gray.html#:~:text=,R%2C%20G%2C%20and%20B%20components)
@@ -30,14 +30,22 @@ else:
     I = Iraw
 I = I.astype(np.float64)
 
-# 4. Run 
+# 3. Define the same Frangi options as MATLAB
+opts = {
+    'sigmarange': (1, 4),
+    'sigmastepsize': 2,  # yields [1, 3]
+    'correctionconst1': 0.8,
+    'correctionconst2': 15
+}
+
+# 4. Run the Frangi filter
 np.random.seed(0)
-Y_py = basic_binarise(I)
+Y_py = frangi_2Dfilter(I, opts)
 
 # 5. Save output
-savemat(os.path.join(target_dir, 'binarise_medfilt_python_result.mat'), {'Y_py': Y_py})
-np.save(os.path.join(target_dir, 'binarise_medfilt_python_result.npy'), Y_py)
-print(f"Saved Python Binarise output to {target_dir}")
+savemat(os.path.join(target_dir, 'frangi_python_result.mat'), {'Y_py': Y_py})
+np.save(os.path.join(target_dir, 'frangi_python_result.npy'), Y_py)
+print(f"Saved Python Frangi output to {target_dir}")
 
 # compare_frangi_results.py
 import os
@@ -46,13 +54,13 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 # Directory where test results are saved
-target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests'
+target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests'
 
 # Load MATLAB result
-Y_mat = loadmat(os.path.join(target_dir, 'binarise_medfilt_matlab_result.mat'))['Y_mat']
-Y_py = loadmat(os.path.join(target_dir, 'binarise_medfilt_python_result.mat'))['Y_py']
+Y_mat = loadmat(os.path.join(target_dir, 'frangi_matlab_result.mat'))['Y_mat']
+Y_py = loadmat(os.path.join(target_dir, 'frangi_python_result.mat'))['Y_py']
 # Load Python result
-# Y_py = np.load(os.path.join(target_dir, 'binarise_medfilt_python_result.npy'))
+# Y_py = np.load(os.path.join(target_dir, 'frangi_python_result.npy'))
 
 print("MATLAB shape:", Y_mat.shape)
 print("Python shape:", Y_py.shape)
@@ -75,9 +83,7 @@ print(f"Agreement:           {float_agreement:.6f}")
 print(f"Different pixels:    {np.sum(~float_close)}")
 
 # 3. Visualize the outputs and differences
-plt.figure(figsize=(12, 6))
-plt.suptitle("Binarisation Comparison", y=0.90, fontsize=16)
-
+plt.figure(figsize=(12, 4))
 plt.subplot(1, 3, 1)
 plt.imshow(Y_mat, cmap='gray')
 plt.title('MATLAB output')
@@ -90,25 +96,9 @@ plt.axis('off')
 
 plt.subplot(1, 3, 3)
 plt.imshow(~float_close, cmap='hot')
-plt.title('Difference mask (Mismatches are in white)')
+plt.title('Difference mask')
 plt.axis('off')
-plt.tight_layout(rect=[0, 0, 1, 1])  # leaves room for suptitle + text
 
-# Add accuracy statistics to the figure
-accuracy_text = (
-    f"Strict equality: {strict_agreement:.6f}\n"
-    # f" - Different pixels: {strict_diff}\n\n"
-    f"Tolerance |Δ| <= {tol:.1e} agreement: {float_agreement:.6f}\n"
-    # f" - Different pixels: {float_diff}"
-)
-
-plt.figtext(
-    0.5, 0.1,        # position (centered below plots)
-    accuracy_text,
-    ha="center",
-    va="top",
-    fontsize=11
-)
-
-plt.savefig(os.path.join(target_dir, 'binarise_with_medfilt_comparison.png'), dpi=300)
+plt.tight_layout()
+plt.savefig(os.path.join(target_dir, 'frangi_comparison.png'))
 plt.show()

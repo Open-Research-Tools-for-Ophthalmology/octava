@@ -23,7 +23,6 @@ from modules.faz_utils import *
 from modules.histogram import HistogramPlotter
 from test import *
 
-OUTPUT_PATH = Path(__file__).parent
 
 # Global window registry
 OPEN_WINDOWS = {}
@@ -65,32 +64,12 @@ canvas = Canvas(
     relief = "ridge"
 )
 
-canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
-canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
-canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
-canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
-canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
-canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
-canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
-# regional analysis settings variables
-canvas.eye_var = StringVar(value="Right Eye")
-canvas.load_faz_bool = IntVar(value=0)
-canvas.square_grid_bool = IntVar(value=0)
-canvas.etdrs_grid_bool = IntVar(value=0)
-canvas.extended_etdrs_bool = IntVar(value=0)
-canvas.foveal_ring_bool = IntVar(value=0)
-canvas.optic_nerve_head_bool = IntVar(value=0)
-canvas.apply_regional_analysis_bool = IntVar(value=0)
-# batch processing settings variables
-canvas.bp_file_type_var = StringVar(value="tif")  # Variable for File Type dropdown 
-canvas.bp_batch_resize_var = IntVar(value=0)  # Variable for Batch Resize checkbox 
-canvas.bp_batch_resize_value = IntVar(value=1000)  # Variable for Batch Resize value Spinbox
-canvas.bp_measure_faz_var = IntVar(value=0)  # Variable for Measure FAZ checkbox 
 
-# Initialize batch processing settings on canvas        
+init_advanced_settings(canvas)
+init_regional_analysis_settings(canvas)      
 init_batch_processing_settings(canvas)
 
 canvas.place(x = 0, y = 0)
@@ -409,7 +388,6 @@ canvas.create_text(
 
 round_rectangle(canvas, 430, 395, 240, 270, radius=8)
 round_rectangle(canvas, 685, 395, 500, 270, radius=8)
-
 
 canvas.create_text(
     485.0,

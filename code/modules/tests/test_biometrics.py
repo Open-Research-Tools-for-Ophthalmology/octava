@@ -20,7 +20,7 @@ MAT_FILES = [
 
 OUTPUT_XLSX = (
     "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/"
-    "gui/build/modules/tests/matlab_link_tortuosity_validation.xlsx"
+    "code/modules/tests/matlab_link_tortuosity_validation.xlsx"
 )
 
 
