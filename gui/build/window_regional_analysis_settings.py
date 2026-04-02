@@ -5,6 +5,19 @@ from tkinter.ttk import Combobox
 import customtkinter as ctk
 
 
+def init_regional_analysis_settings(canvas: Canvas):
+  """Initialize canvas variables used by the regional analysis UI and pipeline."""
+  canvas.eye_var = StringVar(value="Right Eye")
+  canvas.load_faz_bool = IntVar(value=0)
+  canvas.square_grid_bool = IntVar(value=0)
+  canvas.etdrs_grid_bool = IntVar(value=0)
+  canvas.extended_etdrs_bool = IntVar(value=0)
+  canvas.foveal_ring_bool = IntVar(value=0)
+  canvas.optic_nerve_head_bool = IntVar(value=0)
+  canvas.apply_regional_analysis_bool = IntVar(value=0)
+  canvas.RAlabels = []
+
+
 def close(subwindow):
   subwindow.destroy()
   subwindow.update()

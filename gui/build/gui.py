@@ -75,15 +75,8 @@ canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
-# regional analysis settings variables
-canvas.eye_var = StringVar(value="Right Eye")
-canvas.load_faz_bool = IntVar(value=0)
-canvas.square_grid_bool = IntVar(value=0)
-canvas.etdrs_grid_bool = IntVar(value=0)
-canvas.extended_etdrs_bool = IntVar(value=0)
-canvas.foveal_ring_bool = IntVar(value=0)
-canvas.optic_nerve_head_bool = IntVar(value=0)
-canvas.apply_regional_analysis_bool = IntVar(value=0)
+
+init_regional_analysis_settings(canvas)
 
 # Initialize batch processing settings on canvas        
 init_batch_processing_settings(canvas)
