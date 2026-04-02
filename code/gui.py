@@ -23,7 +23,6 @@ from modules.faz_utils import *
 from modules.histogram import HistogramPlotter
 from test import *
 
-OUTPUT_PATH = Path(__file__).parent
 
 # Global window registry
 OPEN_WINDOWS = {}

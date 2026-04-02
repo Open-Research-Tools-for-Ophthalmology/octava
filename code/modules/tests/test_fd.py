@@ -20,12 +20,12 @@ RIGHT_EYE = "Right Eye"
 eye_var = RIGHT_EYE
 
 
-skel = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/skeleton_fd_test.png") > 0
+skel = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/skeleton_fd_test.png") > 0
 skel = skel.astype(bool)
 
-binary_image = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/5000binary.png")
+binary_image = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/5000binary.png")
 
-original_image = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests/5000input.png")
+original_image = imageio.imread("/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests/5000input.png")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir  = os.path.abspath(os.path.join(current_dir, os.pardir))

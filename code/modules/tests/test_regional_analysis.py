@@ -21,7 +21,7 @@ target_py_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/d
 
 target_matlab_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/source/5000/regional_validation"
 
-current_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests"  # current working directory
+current_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests"  # current working directory
 comparison_results_path = os.path.join(current_dir, "regional_analysis_comparison_results")
 
 os.makedirs(comparison_results_path, exist_ok=True)

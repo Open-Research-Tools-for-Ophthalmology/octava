@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 from eig2im import eig2im
 
 # 1. Set the target directory (must match MATLAB)
-target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests"
+target_dir = "/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests"
 os.makedirs(target_dir, exist_ok=True)
 
 # 2. Sigma values to test
@@ -41,7 +41,7 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 # 1. Set the target directory
-target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/gui/build/modules/tests'
+target_dir = '/Users/milameteor/Library/CloudStorage/OneDrive-UWA/M4 Backup/dev/octava/code/modules/tests'
 
 # 2. Sigma values to compare
 sigma_values = [1, 3]
