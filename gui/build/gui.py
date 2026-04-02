@@ -65,20 +65,12 @@ canvas = Canvas(
     relief = "ridge"
 )
 
-canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
-canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
-canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
-canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
-canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
-canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
-canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 
-init_regional_analysis_settings(canvas)
-
-# Initialize batch processing settings on canvas        
+init_advanced_settings(canvas)
+init_regional_analysis_settings(canvas)      
 init_batch_processing_settings(canvas)
 
 canvas.place(x = 0, y = 0)
