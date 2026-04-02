@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
-from modules.write_excel import *
+from write_excel import *
 
 
 class BiomarkerAnalyzer:
@@ -12,6 +12,199 @@ class BiomarkerAnalyzer:
     Compute vessel biomarkers from the current canvas state.
     Results are stored in canvas.metrics and shown in the GUI.
     """
+
+    @staticmethod
+    def _movmean(arr, window):
+        arr = np.asarray(arr, dtype=float)
+        n = arr.size
+        if n == 0 or window <= 1:
+            return arr.copy()
+
+        half_left = (window - 1) // 2
+        half_right = window // 2
+
+        csum = np.cumsum(np.insert(arr, 0, 0.0))
+        out = np.empty(n)
+
+        for i in range(n):
+            start = max(0, i - half_left)
+            end = min(n, i + half_right + 1)
+            out[i] = (csum[end] - csum[start]) / (end - start)
+
+        return out
+
+    @staticmethod
+    def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
+        vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
+        vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
+
+        if vesselX.size < 3 or vesselY.size < 3:
+            return None
+
+        numPoints = len(vesselX)
+        eps = np.finfo(float).eps
+        window_size = 10
+
+        ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
+        arcLength = np.sum(ds)
+
+        if arcLength <= 0:
+            return None
+
+        chordLength = np.sqrt(
+            (vesselX[-1] - vesselX[0])**2 +
+            (vesselY[-1] - vesselY[0])**2
+        )
+
+        smoothedX = BiomarkerAnalyzer._movmean(vesselX, window_size)
+        smoothedY = BiomarkerAnalyzer._movmean(vesselY, window_size)
+
+        dx = BiomarkerAnalyzer._movmean(np.gradient(smoothedX), window_size)
+        dy = BiomarkerAnalyzer._movmean(np.gradient(smoothedY), window_size)
+
+        ddx = BiomarkerAnalyzer._movmean(np.gradient(dx), window_size)
+        ddy = BiomarkerAnalyzer._movmean(np.gradient(dy), window_size)
+
+        curvature = (dx * ddy - ddx * dy) / ((dx**2 + dy**2) ** (3 / 2) + eps)
+        curvature = BiomarkerAnalyzer._movmean(curvature, window_size)
+
+        signCurv = np.sign(curvature)
+        _ = np.where(np.diff(signCurv) != 0)[0] + 1
+        x = np.arange(1, numPoints + 1)
+
+        v1 = np.array([vesselY[-1] - vesselY[0], vesselX[-1] - vesselX[0]])
+        v2 = np.array([x[-1] - x[0], 0.0])
+
+        angle = np.arccos(
+            np.clip(
+                np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
+                -1,
+                1,
+            )
+        )
+
+        vessel = np.column_stack((smoothedY, smoothedX))
+        vesselSlope = np.sign(v1[1])
+
+        rot = np.array([
+            [np.cos(vesselSlope * angle), -np.sin(vesselSlope * angle)],
+            [np.sin(vesselSlope * angle), np.cos(vesselSlope * angle)],
+        ])
+
+        vessel_rot = (vessel @ rot)[:, 1]
+
+        gradCurv = BiomarkerAnalyzer._movmean(np.gradient(vessel_rot), window_size)
+        signGradCurv = np.sign(gradCurv)
+        extremaIdx = np.where(np.diff(signGradCurv) != 0)[0] + 1
+
+        testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
+        testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
+
+        if len(extremaIdx) >= 1:
+            trueExtrema = [extremaIdx[0]]
+            thr = 3 * pix2mm
+
+            for kk in range(1, len(extremaIdx)):
+                cond1 = abs(testY[kk - 1]) > thr and abs(testX[kk - 1]) > thr
+                cond2 = (
+                    (abs(testY[kk - 1]) > thr or abs(testX[kk - 1]) > thr)
+                    and (extremaIdx[kk] - extremaIdx[kk - 1] > 100)
+                )
+
+                if cond1 or cond2:
+                    trueExtrema.append(extremaIdx[kk])
+
+            nExtrema = max(len(trueExtrema), 1)
+        else:
+            nExtrema = 1
+
+        AOC = np.nan if chordLength == 0 else arcLength / chordLength
+        PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
+
+        if numPoints < 3:
+            SOAM = 0.0
+        else:
+            totalWeightedAngle = 0.0
+
+            for j in range(1, numPoints - 1):
+                v1 = np.array([
+                    vesselX[j] - vesselX[j - 1],
+                    vesselY[j] - vesselY[j - 1],
+                ])
+                v2 = np.array([
+                    vesselX[j + 1] - vesselX[j],
+                    vesselY[j + 1] - vesselY[j],
+                ])
+
+                cosTheta = np.clip(
+                    np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
+                    -1,
+                    1,
+                )
+                totalWeightedAngle += np.arccos(cosTheta)
+
+            SOAM = totalWeightedAngle / arcLength
+
+        return {
+            "PWAOC": PWAOC,
+            "SOAM": SOAM,
+        }
+
+    @staticmethod
+    def _summarize_new_tort_metrics(per_link_metrics):
+        if per_link_metrics:
+            pwaoc_vals = np.array([m["PWAOC"] for m in per_link_metrics], dtype=float)
+            soam_vals = np.array([m["SOAM"] for m in per_link_metrics], dtype=float)
+            return {
+                "PWAOC_mean": np.nanmean(pwaoc_vals),
+                "PWAOC_std": np.nanstd(pwaoc_vals),
+                "SOAM_mean": np.nanmean(soam_vals),
+                "SOAM_std": np.nanstd(soam_vals),
+            }
+
+        return {
+            "PWAOC_mean": np.nan,
+            "PWAOC_std": np.nan,
+            "SOAM_mean": np.nan,
+            "SOAM_std": np.nan,
+        }
+
+    @staticmethod
+    def compute_new_tortuosity_metrics_from_mat_file(mat_path):
+        import scipy.io as sio
+
+        mat = sio.loadmat(mat_path, squeeze_me=True, struct_as_record=False)
+
+        if "links" not in mat:
+            raise KeyError("MAT file must contain a 'links' variable.")
+        if "realImageSizeMm" not in mat:
+            raise KeyError("MAT file must contain 'realImageSizeMm'.")
+        if "fullImSizePix" not in mat:
+            raise KeyError("MAT file must contain 'fullImSizePix'.")
+
+        image_size_mm = float(np.asarray(mat["realImageSizeMm"]).squeeze())
+        full_im_size_pix = np.asarray(mat["fullImSizePix"]).astype(float).ravel()
+        if full_im_size_pix.size == 0:
+            raise ValueError("'fullImSizePix' must contain at least one value.")
+
+        pix2mm = image_size_mm / full_im_size_pix[0] if full_im_size_pix[0] > 0 else 0.0
+        mat_links = np.atleast_1d(mat["links"])
+
+        per_link_metrics = []
+
+        for link in mat_links:
+            if not hasattr(link, "x") or not hasattr(link, "y"):
+                continue
+
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+                link.x,
+                link.y,
+                pix2mm,
+            )
+            if metrics is not None:
+                per_link_metrics.append(metrics)
+
+        return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
     @staticmethod
     def process(canvas: Canvas) -> None:
@@ -207,19 +400,18 @@ class BiomarkerAnalyzer:
             "mean_tortuosity": float(mean_tortuosity),
         })
         micro_stats = {
+            "name": canvas.FileLabelName,
             "Vessel area density": float(vad_pct),
             "Vessel length density": float(vessel_length_density),
             "Mean diameter": float(mean_diameter_um),
             "Branchpoint density": float(branchpoint_density),
             "Fractal dimension": float(fractal_dim),
             "Mean tortuosity": float(mean_tortuosity),
-            "name": canvas.FileLabelName,
         }
-        
-        write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
-        # BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
-        # write_excel(canvas.new_tort_metrics, canvas.lastMetricsPath, sheet_name="New tortuosity metrics")
+        BiomarkerAnalyzer.new_tortuosity_metrics(canvas)
+        micro_stats.update(canvas.new_tort_metrics)
+        write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
         # Update GUI display
         if hasattr(canvas, "vad_value_id"):
@@ -254,6 +446,51 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def new_tortuosity_metrics(canvas: Canvas) -> None:
+        links = canvas.skeleton_links
+        binary = canvas.binary_image
+
+        if not hasattr(canvas, "new_tort_metrics"):
+            canvas.new_tort_metrics = {}
+
+        if links is None or len(links) == 0:
+            canvas.new_tort_metrics.update({
+                "PWAOC_mean": np.nan,
+                "PWAOC_std": np.nan,
+                "SOAM_mean": np.nan,
+                "SOAM_std": np.nan,
+            })
+            return
+
+        # Image scale
+        image_size_mm = float(canvas.image_size_var.get())
+        img_height, _ = canvas.fullImSizePix
+        pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
+
+        image_shape = binary.shape
+
+        per_link_metrics = []
+
+        for link in links:
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size < 3:
+                continue
+
+            rows, cols = np.unravel_index(indices, image_shape)
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+                cols,
+                rows,
+                pix2mm,
+            )
+            if metrics is not None:
+                per_link_metrics.append(metrics)
+
+        canvas.new_tort_metrics.update(
+            BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
+        )
+
+ 
+    @staticmethod
+    def new_tortuosity_metrics_all(canvas: Canvas) -> None:
         import numpy as np
 
         links = canvas.skeleton_links
@@ -581,9 +818,15 @@ class BiomarkerAnalyzer:
                 VCI1 = np.nan
 
             with np.errstate(divide='ignore',invalid='ignore'):
-                t = np.gradient(1/curvature)
+                # t = np.gradient(1/curvature)
+                curv_safe = curvature.copy()
+                curv_safe[np.abs(curv_safe) < 1e-6] = np.nan
+                inv_curv = 1.0 / curv_safe
+                t = np.gradient(inv_curv)
+                # t[~np.isfinite(t)] = np.nan
+                # VCI2 = np.nanmean(np.abs(t))
 
-            t[np.isinf(t)] = np.nan
+            t[~np.isfinite(t)] = np.nan
             VCI2 = np.nansum(t)/numPoints
 
             per_link_metrics.append({
@@ -607,8 +850,5 @@ class BiomarkerAnalyzer:
             canvas.new_tort_metrics = {}
 
         canvas.new_tort_metrics.update(meanMetrics)
-
-        # canvas.tortuosity_metrics_per_link = per_link_metrics
-        # canvas.tortuosity_mean_metrics = meanMetrics
 
  
