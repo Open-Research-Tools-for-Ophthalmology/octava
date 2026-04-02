@@ -84,11 +84,6 @@ canvas.extended_etdrs_bool = IntVar(value=0)
 canvas.foveal_ring_bool = IntVar(value=0)
 canvas.optic_nerve_head_bool = IntVar(value=0)
 canvas.apply_regional_analysis_bool = IntVar(value=0)
-# batch processing settings variables
-canvas.bp_file_type_var = StringVar(value="tif")  # Variable for File Type dropdown 
-canvas.bp_batch_resize_var = IntVar(value=0)  # Variable for Batch Resize checkbox 
-canvas.bp_batch_resize_value = IntVar(value=1000)  # Variable for Batch Resize value Spinbox
-canvas.bp_measure_faz_var = IntVar(value=0)  # Variable for Measure FAZ checkbox 
 
 # Initialize batch processing settings on canvas        
 init_batch_processing_settings(canvas)
@@ -409,7 +404,6 @@ canvas.create_text(
 
 round_rectangle(canvas, 430, 395, 240, 270, radius=8)
 round_rectangle(canvas, 685, 395, 500, 270, radius=8)
-
 
 canvas.create_text(
     485.0,
