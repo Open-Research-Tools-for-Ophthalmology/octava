@@ -602,7 +602,7 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	# Binary regions
 	binaryReg = [None] * 3
 
-	#Crops each region to a tight square around the FAZ (± 3 mm) to reduce image size and speed later analysis #todo: check bounds
+	#Crops each region to a tight square around the FAZ (± 3 mm) to reduce image size and speed later analysis 
 	y1 = int(round(max(cy - rad_3mm, 0)))
 	y2 = int(round(min(cy + rad_3mm, H)))
 	x1 = int(round(max(cx - rad_3mm, 0))) 
