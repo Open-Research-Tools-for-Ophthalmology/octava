@@ -18,6 +18,7 @@ from scipy.ndimage import binary_dilation
 import os
 
 def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, display: bool = True):
+  """Skeletonize a binary vessel mask, build its graph, and optionally render the result."""
   change_status_to_waiting(canvas, status="● Wait...Skeletonising")
 
   twig_size = canvas.twig_size.get()

@@ -59,6 +59,7 @@ class HistogramPlotter:
 
 
     def save_plot(self):
+        """Open a save dialog and write the current histogram figure to disk."""
         current_size = getattr(self, 'current_bin_size', 5)
         default_name = f"Vessel Diameter Distribution (Bin size = {current_size})"
         filename = filedialog.asksaveasfilename(

@@ -72,6 +72,7 @@ for sigma in sigma_values:
 
     # Function to print equality metrics
     def compare_and_print(name, A_mat, A_py):
+        """Print error statistics and show a mismatch visualization for one Hessian component."""
         strict_equal   = (A_mat == A_py)
         strict_agree   = strict_equal.mean()
         float_close    = np.isclose(A_mat, A_py, atol=tol)

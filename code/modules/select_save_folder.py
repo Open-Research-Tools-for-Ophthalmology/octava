@@ -7,6 +7,7 @@ from modules.change_status import *
 TAG_SAVE_FOLDER_TEXT = "save_folder_text"
 
 def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int) -> str:
+    """Trim a path with a middle ellipsis so it fits within the given canvas width."""
     tk_font = tkfont.Font(canvas, font=font)
     if tk_font.measure(path) <= max_width:
         return path
@@ -29,6 +30,7 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
     return best
 
 def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
+    """Prompt for an output folder, render its label, and store the real path on the canvas."""
     change_status_to_waiting(canvas)
 
     dir_path = filedialog.askdirectory(title="Select a folder", mustexist=True)

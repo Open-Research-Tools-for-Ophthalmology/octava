@@ -9,19 +9,23 @@ from modules.biomarker import BiomarkerAnalyzer
 
 class DummyVar:
     def __init__(self, value):
+        """Store a fixed value for tests that mimic Tk variables."""
         self._value = value
 
     def get(self):
+        """Return the stored test value."""
         return self._value
 
 
 class DummyCanvas(SimpleNamespace):
     def __init__(self):
+        """Create a minimal canvas-like object for headless skeletonization tests."""
         super().__init__()
         self._image_refs = {}
 
     # GUI-dependent methods used by skeletonise(display=False won't call most)
     def create_image(self, *args, **kwargs):
+        """Stub out Tk image creation for non-GUI tests."""
         return None
 
 

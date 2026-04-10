@@ -39,6 +39,7 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
     return best
 
 def display_text_to_canvas(canvas: tk.Canvas, text_x: int, text_y: int, display_text: str, font_spec: tuple):
+    """Draw a left-anchored text label on the canvas and return its item id."""
     # Draw a single-line, left-anchored label (no wrapping needed because we fit it)
     return canvas.create_text(
         text_x, text_y,

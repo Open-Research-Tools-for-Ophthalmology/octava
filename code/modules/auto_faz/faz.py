@@ -6,6 +6,7 @@ from .util import *
 
 
 def process_image(img, ctx):
+    """Segment a FAZ mask from a grayscale or pre-binarized OCTA image."""
     # check if input images are already pre-binarized 0/255 uint8
     binarised = img
     unique_vals = np.unique(img)
@@ -167,6 +168,7 @@ def pick_faz_component(lab, stats, faz, ctx,
 
 
 def faz_from_binarised(binarised, ctx, dilate_ks=7, close_ks=7):
+    """Convert a binarized vessel map into a cleaned FAZ candidate mask."""
 
     Kd = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_ks, dilate_ks))
     walls = cv2.dilate(binarised, Kd, 1)

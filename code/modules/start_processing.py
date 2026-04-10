@@ -15,14 +15,17 @@ import datetime
 skipped_images = []  # List to track images that failed to load during batch processing
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
+    """Return whether a batch input folder has been selected."""
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
 
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
+    """Return whether any regional-analysis mode is enabled for the current run."""
     if is_batch_processing_enabled(canvas):
         return hasattr(canvas, "bp_regional_analysis_var") and canvas.bp_regional_analysis_var.get() == 1
     return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()
 
 def is_prebinary_enabled(canvas:Canvas) ->bool:
+    """Return whether the loaded image should be treated as pre-binarized input."""
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
 
 def start_processing(canvas: Canvas):
@@ -58,6 +61,7 @@ def start_processing(canvas: Canvas):
 # Create save folder for current image
 # variables such as canvas.FileLabelName and canvas.lastPath are set after load_image
 def make_save_folder(canvas: Canvas):
+    """Create the per-image output folder structure and metrics workbook path."""
     # Create a per-original-image save folder
     base_save_dir = getattr(canvas, "save_dir", None)
     if base_save_dir:
@@ -72,6 +76,7 @@ def make_save_folder(canvas: Canvas):
 # Single image processing
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
+    """Run the single-image processing pipeline off the main Tk thread."""
     if not is_prebinary_enabled(canvas):
         print("Starting binarising...")
         binarise_image(canvas)  # long-running
@@ -86,6 +91,7 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
     # Refresh histogram on main thread
     def refresh_histogram_ui():
+        """Refresh and persist the vessel-diameter histogram from the latest measurements."""
         if hasattr(canvas, "hist_plotter"):
             diameters = getattr(canvas, "vessel_diameters_um", [])
             canvas.hist_plotter.set_data(diameters)
@@ -122,6 +128,7 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
 # batch processing
 def start_batch_processing_threaded(canvas: Canvas):
+    """Iterate through the selected batch folder and process each supported image."""
     print("Starting batch image processing...")
 
     # Get images of selected file type from directory
@@ -204,6 +211,7 @@ def start_batch_processing_threaded(canvas: Canvas):
         
         # Sort by datetime in filename (same strptime %d-%b-%Y %H%M%S")
         def get_file_datetime(file_name):
+            """Parse the timestamp embedded in an exported metrics workbook filename."""
             try:
                 file_exts = file_name.split('_', 1)
                 datetime_str = file_exts[1].replace('.xlsx', '')
@@ -253,4 +261,3 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
-

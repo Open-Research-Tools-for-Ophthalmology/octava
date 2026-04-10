@@ -25,6 +25,7 @@ OUTPUT_XLSX = (
 
 
 def main():
+    """Run the MATLAB-link tortuosity validation workflow and export the summary workbook."""
     rows = []
     missing_files = []
 

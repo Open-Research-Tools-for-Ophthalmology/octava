@@ -15,6 +15,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _movmean(arr, window):
+        """Compute a centered moving average with edge-aware truncation."""
         arr = np.asarray(arr, dtype=float)
         n = arr.size
         if n == 0 or window <= 1:
@@ -35,6 +36,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
+        """Compute PWAOC and SOAM tortuosity metrics for one vessel centerline."""
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
 
@@ -152,6 +154,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _summarize_new_tort_metrics(per_link_metrics):
+        """Aggregate per-link tortuosity metrics into mean and standard deviation values."""
         if per_link_metrics:
             pwaoc_vals = np.array([m["PWAOC"] for m in per_link_metrics], dtype=float)
             soam_vals = np.array([m["SOAM"] for m in per_link_metrics], dtype=float)
@@ -171,6 +174,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def compute_new_tortuosity_metrics_from_mat_file(mat_path):
+        """Load MATLAB link data and return summarized tortuosity metrics."""
         import scipy.io as sio
 
         mat = sio.loadmat(mat_path, squeeze_me=True, struct_as_record=False)
@@ -208,6 +212,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def process(canvas: Canvas) -> None:
+        """Compute whole-image vascular biomarkers, update the GUI, and export metrics."""
         # Read input data from canvas
         binary = canvas.binary_image
         skeleton = canvas.skeleton_image
@@ -451,6 +456,7 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix):
+        """Compute summarized tortuosity metrics directly from graph links."""
         binary = binary_image
         if links is None or len(links) == 0:
             return {
@@ -488,6 +494,7 @@ class BiomarkerAnalyzer:
  
     @staticmethod
     def new_tortuosity_metrics_all(canvas: Canvas) -> None:
+        """Compute the legacy full tortuosity metric set for every link on the canvas."""
         import numpy as np
 
         links = canvas.skeleton_links
@@ -511,6 +518,7 @@ class BiomarkerAnalyzer:
         ]
 
         def movmean(arr, window):
+            """Compute a centered moving average for the nested legacy metric routine."""
             arr = np.asarray(arr, dtype=float)
             n = arr.size
             if n == 0 or window <= 1:
@@ -530,6 +538,7 @@ class BiomarkerAnalyzer:
             return out
 
         def trimmean_10(arr):
+            """Return the 10% trimmed mean used by the legacy tortuosity export."""
             arr = np.asarray(arr)
             arr = arr[np.isfinite(arr)]
             if arr.size == 0:

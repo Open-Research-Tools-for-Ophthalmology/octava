@@ -39,6 +39,7 @@ os.makedirs(comparison_results_path, exist_ok=True)
 TYPES_OF_DATA = ["imgRegion", "binaryRegion", "skelRegion"]
 
 def load_data_from_npz(npz_path: str, data_type: str) -> np.ndarray:
+    """Load one named array from a regional-analysis validation `.npz` file."""
     d = np.load(npz_path)
     if data_type not in d:
         raise KeyError(f"'{data_type}' not found in {npz_path}. Keys: {list(d.keys())}")
@@ -47,6 +48,7 @@ def load_data_from_npz(npz_path: str, data_type: str) -> np.ndarray:
 
 
 def load_data_from_mat(mat_path: str, data_type: str) -> np.ndarray:
+    """Load one named array from a MATLAB regional-analysis validation file."""
     d = sio.loadmat(mat_path)
     if data_type not in d:
         keys = [k for k in d.keys() if not k.startswith("__")]

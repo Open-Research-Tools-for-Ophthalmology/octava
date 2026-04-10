@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 
 
 def apply_clahe(img, clipLimit=1.0, tileGridSize=(8, 8), invert=False):
+    """Apply CLAHE contrast enhancement, optionally inverting the result."""
 
     clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tuple(tileGridSize))
     clahe_img = clahe.apply(img)
@@ -14,6 +15,7 @@ def apply_clahe(img, clipLimit=1.0, tileGridSize=(8, 8), invert=False):
 
 
 def apply_gaussian_blur(img, kernel_size=(3, 3)):
+    """Apply Gaussian smoothing with the requested kernel size."""
     return cv2.GaussianBlur(img, tuple(kernel_size), 0)
 
 
