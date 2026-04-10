@@ -65,6 +65,7 @@ def binarise_image(canvas: Canvas, display:bool=True):
     cv2.imwrite(img_path, binary_image)
 
 def display_binarised_image(canvas: Canvas, image: np.ndarray):
+    """Render a binarized image preview onto the GUI canvas."""
     # Convert NumPy → PIL → ImageTk
     binary_pil = Image.fromarray(image)  # now a grayscale PIL image
     resized_img = resize_image(binary_pil)     # if resize is needed
@@ -77,6 +78,7 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
 
 
 def invert_binarised_image(canvas: Canvas):
+    """Invert the currently displayed binary mask and refresh the preview."""
     if not hasattr(canvas, "binary_image"):
       messagebox.showwarning(
           "No Binarised Image", 

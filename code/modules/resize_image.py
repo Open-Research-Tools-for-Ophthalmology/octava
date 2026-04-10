@@ -2,6 +2,7 @@ from PIL import Image, ImageTk, UnidentifiedImageError
 
 # Resize image to specified size, by default 200x200
 def resize_image(image, size = (200, 200)):
+  """Resize a PIL image to the requested pixel dimensions using Lanczos resampling."""
   return image.resize(size, Image.LANCZOS)
 
 def size_to_pixels(size_value: float) -> int:

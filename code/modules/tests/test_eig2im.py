@@ -68,6 +68,7 @@ for sigma in sigma_values:
     
     # Function to compare arrays
     def compare_component(name, A_mat, A_py):
+        """Print agreement statistics and visualize MATLAB/Python component differences."""
         strict_eq   = (A_mat == A_py)
         strict_agree = strict_eq.mean()
         float_close  = np.isclose(A_mat, A_py, atol=tol)

@@ -10,6 +10,7 @@ class ClearMode(Enum):
   CLEAR_BEFORE_PROCESSING = 3
 
 def remove_items_from_canvas(canvas: Canvas, item_ids: list):
+  """Delete the named canvas items if they exist."""
   # Remove specified items from the canvas
   for item_id in item_ids:
     id = getattr(canvas, item_id, None)
@@ -21,6 +22,7 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
 
 
 def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_ENTIRE_SCREEN):
+  """Clear canvas images, labels, and cached plot state for the requested workflow stage."""
   item_ids_to_remove = set()
   processed_results_ids = {"binary_img_id","skeleton_img_id", "faz_img_id"}
 
@@ -63,6 +65,5 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
       canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
     except Exception:
       pass
-
 
 

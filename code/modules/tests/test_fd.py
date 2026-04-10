@@ -1012,6 +1012,7 @@ if parent_dir not in sys.path:
 
 
 def main():
+  """Execute the standalone fractal-dimension validation script."""
   img = skel
 
   h, w = img.shape

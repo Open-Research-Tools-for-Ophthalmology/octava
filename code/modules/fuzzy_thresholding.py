@@ -73,6 +73,7 @@ def iexpansion(X:np.ndarray, nx:int, ny:int) -> np.ndarray:
 
 
 def trapezoid_fuzzy_membership(x, a, b, c, d):
+    """Evaluate a trapezoidal fuzzy-membership function over the input array."""
     x = x.astype(np.float64)
     if (b < a) or (c < b) or (d < c):
         raise ValueError('Bad params')
@@ -158,5 +159,4 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
     Y = Y * (Y > 0) + (Y == 0)
 
     return Y
-
 

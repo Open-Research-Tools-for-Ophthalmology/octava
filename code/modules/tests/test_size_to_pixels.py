@@ -12,16 +12,19 @@ from resize_image import size_to_pixels
 
 class TestSizeToPixels(unittest.TestCase):
     def test_canonical_values(self):
+        """Verify that canonical image sizes map to their fixed pixel counts."""
         self.assertEqual(size_to_pixels(3.0), 1000)
         self.assertEqual(size_to_pixels(5.5), 1833)
         self.assertEqual(size_to_pixels(6.0), 2000)
         self.assertEqual(size_to_pixels(8.0), 2667)
 
     def test_invalid_input_defaults_to_200(self):
+        """Verify that invalid inputs fall back to the default preview size."""
         self.assertEqual(size_to_pixels(None), 200)
         self.assertEqual(size_to_pixels("not_a_number"), 200)
 
     def test_proportional_values(self):
+        """Verify proportional scaling for non-canonical image sizes."""
         self.assertEqual(size_to_pixels(1.0), 333)
         self.assertEqual(size_to_pixels(2.0), 667)
         self.assertEqual(size_to_pixels(4.0), 1333)

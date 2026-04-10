@@ -4,6 +4,7 @@ from modules.pk_functions import pk_get_nh, pk_get_nh_idx, pk_follow_link
 
 class node_cluster:
     def __init__(self, nodes_idx: list[int], ep: int):
+        """Initialize a node cluster with its voxel indices and endpoint flag."""
         self.nodes_idx = nodes_idx
         self.links = []
         self.conn = []
@@ -14,20 +15,24 @@ class node_cluster:
         self.label = None
 
     def find_center_mass(self, skel_dim):
+        """Compute the cluster center of mass in skeleton coordinates."""
         x, y, z = np.unravel_index(self.nodes_idx, skel_dim)
         self.comx = np.mean(x)
         self.comy = np.mean(y)
         self.comz = np.mean(z)
 
     def assign_label(self, lm):
+        """Assign the connected-component label for this node cluster."""
         self.label = lm.ravel()[self.nodes_idx[0]]
 
     def __str__(self):
+        """Return a debug-friendly string representation of the node cluster."""
         return f"node_cluster(nodes={self.nodes_idx}, links={self.links}, conn={self.conn}, ep={self.ep})"
 
 
 class Link:
     def __init__(self, start, end, path, label):
+        """Initialize a graph link between two nodes and its voxel path."""
         self.start = start
         self.end = end
         self.path = path
@@ -47,6 +52,7 @@ class Link:
 ##############################################
 
 def unpad_indices(indices, padded_shape):
+    """Map indices from a 1-pixel padded volume back to the original volume."""
     px, py, pz = padded_shape
     ux, uy, uz = px - 2, py - 2, pz - 2
 
@@ -73,6 +79,7 @@ def unpad_indices(indices, padded_shape):
 ##############################################
 
 def skel2graph3d(skel, thr=0):
+    """Convert a padded 2D/3D skeleton mask into node and link graph structures."""
 
     # -----------------------------
     # 1. Guarantee 3D + pad

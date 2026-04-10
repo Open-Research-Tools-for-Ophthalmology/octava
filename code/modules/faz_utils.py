@@ -12,6 +12,7 @@ from modules.change_status import *
 from modules.write_excel import *
 
 def display_faz_image(canvas: Canvas):
+    """Render the current FAZ mask preview onto the GUI canvas."""
     # TODO Display finished FAZ mask on main window canvas
     # Create a 200x200 resized version for display
     preview = resize_image(canvas.faz_grayscale_img)
@@ -26,6 +27,7 @@ def display_faz_image(canvas: Canvas):
 
 # Edit: Load existing FAZ grayscale array into polygon points
 def load_faz_grayscale_arr(canvas: Canvas):
+    """Extract a simplified contour point list from the current FAZ mask."""
     # Get faz mask
     grayscale_arr = canvas.faz_grayscale_arr.copy()
     
@@ -96,6 +98,7 @@ def get_central(x,y):
 
 # Generate FAZ mask from image using auto_faz module
 def generate_faz_mask(canvas: Canvas, batch: bool = False):
+    """Run automatic FAZ segmentation and store the resulting grayscale mask on the canvas."""
     change_status_to_waiting(canvas, status="● Wait...Segmenting FAZ")
 
     grayscale_arr = auto_faz(image=canvas.original_img)
@@ -114,6 +117,7 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
 
 # TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
+    """Measure FAZ morphology and FD_300, then export the metrics and validation images."""
     print("Measuring FAZ metrics...")
     if not hasattr(canvas, 'faz_grayscale_arr'):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
@@ -289,5 +293,4 @@ def save_faz_images(canvas, inner_contour, outer_contour, Cx, Cy):
     img_grayscale.save(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ_mask_{curr_idx}.png'))
     
     print(f"Saved FAZ images to {faz_images_folder_path}")
-
 
