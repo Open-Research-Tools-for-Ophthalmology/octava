@@ -1012,40 +1012,40 @@ if parent_dir not in sys.path:
 
 
 def main():
-  """Execute the standalone fractal-dimension validation script."""
-  img = skel
+    """Execute the standalone fractal-dimension validation script."""
+    img = skel
 
-  h, w = img.shape
-  Nx = max(h, w)
-  if Nx < 2:
-      return 0.0
+    h, w = img.shape
+    Nx = max(h, w)
+    if Nx < 2:
+        return 0.0
 
-  numIterations = int(math.ceil(math.log(Nx, 2)))  # ceil(log2(Nx))
-  width = 2 ** numIterations
+    numIterations = int(math.ceil(math.log(Nx, 2)))  # ceil(log2(Nx))
+    width = 2 ** numIterations
 
-  Z = np.zeros((width, width), dtype=bool)
-  Z[:h, :w] = img
+    Z = np.zeros((width, width), dtype=bool)
+    Z[:h, :w] = img
 
-  # MATLAB: n_r(numIterations+1) = sum(sum(img));
-  n_r = [int(Z.sum())]
+    # MATLAB: n_r(numIterations+1) = sum(sum(img));
+    n_r = [int(Z.sum())]
 
-  current = Z
-  for _ in range(numIterations):
-      rows, cols = current.shape
-      if rows < 2 or cols < 2:
-          break
-      # MATLAB's effect is repeated 2×2 OR pooling
-      current = current.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
-      n_r.append(int(current.sum()))
+    current = Z
+    for _ in range(numIterations):
+        rows, cols = current.shape
+        if rows < 2 or cols < 2:
+            break
+        # MATLAB's effect is repeated 2x2 OR pooling
+        current = current.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+        n_r.append(int(current.sum()))
 
-  # MATLAB does: n_r = n_r(end:-1:1); r = 2.^(0:numIterations);
-  # But their final polyfit uses matching r with n_r ordered from r=1,2,4,...
-  r = 2 ** np.arange(len(n_r), dtype=float)          # [1,2,4,...]
-  n_r = np.array(n_r, dtype=float)
+    # MATLAB does: n_r = n_r(end:-1:1); r = 2.^(0:numIterations);
+    # But their final polyfit uses matching r with n_r ordered from r=1,2,4,...
+    r = 2 ** np.arange(len(n_r), dtype=float)  # [1,2,4,...]
+    n_r = np.array(n_r, dtype=float)
 
-  # MATLAB: P = polyfit(log(r), -log(n_r), 1); slope = P(1);
-  P = np.polyfit(np.log(r), -np.log(n_r), 1)
-  print(f"Fractal Dimension: {float(P[0]):.4f}") 
+    # MATLAB: P = polyfit(log(r), -log(n_r), 1); slope = P(1);
+    P = np.polyfit(np.log(r), -np.log(n_r), 1)
+    print(f"Fractal Dimension: {float(P[0]):.4f}")
 
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
-from modules.write_excel import *
+from write_excel import *
 
 
 class BiomarkerAnalyzer:
