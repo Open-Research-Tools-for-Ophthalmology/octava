@@ -34,7 +34,7 @@ def run_regional_analysis(canvas):
 	Returns:
 		None. Results are written back onto ``canvas`` and exported to Excel.
 	"""
-	change_status_to_waiting(canvas, status="● Wait...running regional analysis")
+	change_status_to_waiting(canvas, status="● Regional analysis...")
 
 	# Get image size from canvas
 	image_size_mm = canvas.image_size_var.get()
@@ -679,9 +679,10 @@ def run_analysis_on_regions(
 						imgReg[i],
 						binaryReg[i],
 						display=False,
+						notify=False,
 				)
 				
-				change_status_to_waiting(canvas, status="● Regional analysis")
+				change_status_to_waiting(canvas, status="● Regional analysis...")
 
 				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
 				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
