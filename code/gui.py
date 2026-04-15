@@ -23,6 +23,7 @@ from modules.faz_utils import *
 from modules.histogram import HistogramPlotter
 from test import *
 
+#command for bundling on mac with pyinstaller: pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
 
 # Global window registry
 OPEN_WINDOWS = {}
