@@ -804,6 +804,16 @@ def run_analysis_on_regions(
 
 		return df
 
+def run_analysis_on_regions_from_mat(		
+        canvas,
+        binaryReg,
+        imgReg,
+        imgArea_pix_vec,
+        pix_to_mm,
+        grid_type):
+    
+    pass
+
 
 def normalize_regional_tortuosity_metrics(metrics):
 		"""Convert undefined regional tortuosity outputs into stable numeric values."""
