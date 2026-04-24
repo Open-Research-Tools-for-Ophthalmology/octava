@@ -792,7 +792,9 @@ def run_analysis_on_regions(
 						image_size_var=canvas.image_size_var,
 						fullImSizePix=canvas.fullImSizePix,
 				)
-				canvas.regional_metrics[i].update(new_tort_metrics)
+				canvas.regional_metrics[i].update(
+						normalize_regional_tortuosity_metrics(new_tort_metrics)
+				)
 
 		# Save Excel to local
 		df = pd.DataFrame(canvas.regional_metrics)
@@ -801,6 +803,17 @@ def run_analysis_on_regions(
 		write_excel(df, canvas.lastMetricsPath, sheet_name)
 
 		return df
+
+
+def normalize_regional_tortuosity_metrics(metrics):
+		"""Convert undefined regional tortuosity outputs into stable numeric values."""
+		normalized = {}
+
+		for key in ("PWAOC_mean", "PWAOC_std", "SOAM_mean", "SOAM_std"):
+				value = metrics.get(key, np.nan)
+				normalized[key] = float(value) if np.isfinite(value) else 0.0
+
+		return normalized
 
 
 def compute_length(links, binary, pix_to_mm):
