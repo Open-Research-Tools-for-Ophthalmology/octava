@@ -1,3 +1,5 @@
+'''compare regional tortuosity metrics computed by Python vs MATLAB for the same skeletonised results saved from matlab.'''
+
 import json
 import os
 import sys
