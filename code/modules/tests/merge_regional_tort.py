@@ -1,3 +1,4 @@
+'''Merge regional tortuosity metrics computed by Python with those from MATLAB sheets for the same skeletonised results saved from MATLAB.'''
 from pathlib import Path
 
 import pandas as pd
