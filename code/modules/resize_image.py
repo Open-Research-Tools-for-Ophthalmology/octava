@@ -49,6 +49,6 @@ def size_to_pixels(size_value: float) -> int:
   pixels = (size_value / 3.0) * 1000
   
   # No less than 1000 pix
-  # pixels = MINIMUM_IMAGE_PIXELS if pixels < MINIMUM_IMAGE_PIXELS else pixels
+  pixels = MINIMUM_IMAGE_PIXELS if pixels < MINIMUM_IMAGE_PIXELS else pixels
   
   return round(pixels)
