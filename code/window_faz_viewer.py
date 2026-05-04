@@ -35,7 +35,7 @@ def subwindow4(canvas, editable=False):
         canvas.original_img.astype(np.uint8), mode="L"
     )
     subwindow4.zoom_level = 1.0
-    subwindow4.active_tool = "draw"  # TODO "draw/drag", "pan", "zoom" , "null"
+    subwindow4.active_tool = "null"  # "draw/drag", "pan", "zoom" , "null"
     subwindow4.polygon_points = []
     subwindow4.pan_start = None
     subwindow4.pan_offset = [0, 0]
@@ -81,6 +81,24 @@ def subwindow4(canvas, editable=False):
     )
     subcanvas_faz.pack(fill="both", expand=True, padx=50, pady=(5, 10))
     
+    # Show confirm button if either in viewer mode (AUTO FAZ) or in editor mode with existing mask (DRAG), but not in editor mode creating new mask (DRAW)
+    if not editable or (editable and draggable):
+        button_confirm = ctk.CTkButton(
+            subwindow4,
+            text="Done",
+            command=lambda: on_close(),
+            width=120,
+            height=40,
+            font=("Roboto", 12 * -1),
+            text_color=text_colour,
+            fg_color=button_blue_colour,
+            hover_color=button_blue_hover,
+            corner_radius=6,
+            border_width=1,
+            border_color=button_border_colour,
+        )
+        button_confirm.pack(side="bottom", pady=10)
+
     # Edit: Show tool frame if editable
     if editable:
         def set_active_tool(tool_name):
@@ -364,7 +382,8 @@ def subwindow4(canvas, editable=False):
                             print("polygon_points: ", subwindow4.polygon_points)
                             update_image_display()
                             set_active_tool("null")  # Disable further drawing
-                            confirm_polygon()
+                            # Defer confirm_result to allow canvas to render first
+                            subwindow4.after(100, confirm_result)
                             return
                         
                     # Add new point
@@ -446,44 +465,57 @@ def subwindow4(canvas, editable=False):
             # update display
             update_image_display()
 
-    def confirm_polygon():
+    def confirm_result():
         result = messagebox.askyesno(
             title="Segmentation Confirmation",
             message="Is segmentation sufficient?",
             parent=subwindow4
         ) # assign parent to focus on subwindow4
         if result is True:  # Yes - Save
-            # Save the polygon information to main canvas
-            messagebox.showinfo("Saved", "FAZ polygon saved successfully!")
-            canvas.faz_polygon_points = subwindow4.polygon_points
+            # DRAG & DRAW
+            if editable:
+                # Save the polygon information to main canvas
+                # messagebox.showinfo("Saved", "FAZ polygon saved successfully!")
+                canvas.faz_polygon_points = subwindow4.polygon_points
 
-            # Store binary mask to canvas
-            grayscale_arr = np.zeros(canvas.original_img.shape, dtype=np.uint8)
+                # Store binary mask to canvas
+                grayscale_arr = np.zeros(canvas.original_img.shape, dtype=np.uint8)
 
-            # Create a mask from the polygon points
-            poly_arr = np.array(subwindow4.polygon_points, dtype=np.int32)
-            # Refit to original image size
-            poly_arr = (poly_arr * canvas.original_img.shape[0] / subwindow4.img_display_size[1] * subwindow4.zoom_level).astype(np.int32)
-            grayscale_arr = cv2.fillPoly(grayscale_arr, [poly_arr], color=255)
-            grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
-            print("grayscale_arr type/shape:", type(grayscale_arr), grayscale_arr.shape, "grayscale_img type:", type(grayscale_img))
+                # Create a mask from the polygon points
+                poly_arr = np.array(subwindow4.polygon_points, dtype=np.int32)
+                # Refit to original image size
+                poly_arr = (poly_arr * canvas.original_img.shape[0] / subwindow4.img_display_size[1] * subwindow4.zoom_level).astype(np.int32)
+                grayscale_arr = cv2.fillPoly(grayscale_arr, [poly_arr], color=255)
+                grayscale_img = Image.fromarray(grayscale_arr.astype(np.uint8), mode='L')
+                print("grayscale_arr type/shape:", type(grayscale_arr), grayscale_arr.shape, "grayscale_img type:", type(grayscale_img))
 
-            # Store to main canvas
-            canvas.faz_grayscale_arr = grayscale_arr
-            canvas.faz_grayscale_img = grayscale_img
+                # Store to main canvas
+                canvas.faz_grayscale_arr = grayscale_arr
+                canvas.faz_grayscale_img = grayscale_img
+            
+            # VIEW (no action needed, mask already generated)
 
             # Destroy the window and show preview!
             subwindow4.destroy()
             display_faz_image(canvas)
 
-        elif result is False:  # No - Draw again (Edit: Clear canvas) (Drag: Close without saving)
+        elif result is False:  # No - Draw again (DRAW: Clear canvas) (DRAG: Close without saving) (VIEW: Clear canvas properties)
+            if not editable:
+                # Clear canvas properties
+                delattr(canvas, 'faz_grayscale_arr')
+                delattr(canvas, 'faz_grayscale_img')
+                subwindow4.destroy()
+                return
+            # DRAG
             if draggable:
                 # Just close the window without saving
                 subwindow4.destroy()
                 return
-            subwindow4.polygon_points = []
-            set_active_tool("draw")
-            update_image_display()
+            # DRAW
+            if editable:
+                subwindow4.polygon_points = []
+                set_active_tool("draw")
+                update_image_display()
 
     # Key Binding events
     subcanvas_faz.bind("<ButtonPress-1>", on_canvas_click)
@@ -495,16 +527,13 @@ def subwindow4(canvas, editable=False):
     # Close window event
     def on_close():
         print("FAZ Viewer/Editer closed.")
-
-        if draggable:
-            return confirm_polygon()
+            
+        # If either in DRAG mode or in auto-faz VIEWER mode (DRAW will automatically confirm after enclosing the polygon)
+        if draggable or not editable:
+            return confirm_result()
 
         # Purge!
         subwindow4.destroy()
-
-        if not editable:
-            # Viewer: send for preview
-            display_faz_image(canvas)
 
     # Initial display after window is rendered (100ms)
     subwindow4.after(100, update_image_display if editable else display_fixed_image)
@@ -513,7 +542,7 @@ def subwindow4(canvas, editable=False):
     if draggable:
         def load_existing_polygon():
             polygon_points = load_faz_grayscale_arr(canvas)
-            # TODO Scale polygon_points to current image display size
+            # Scale polygon_points to current image display size
             scale_ratio = subcanvas_faz.winfo_height() / canvas.faz_grayscale_arr.shape[1]
             print("draggable subcanvas_faz.winfo_height(), canvas.faz_grayscale_arr.height, image scale_ratio:", subcanvas_faz.winfo_height(), canvas.faz_grayscale_arr.shape[1], scale_ratio)
             polygon_points = [(pt[0] * scale_ratio, pt[1] * scale_ratio) for pt in polygon_points]

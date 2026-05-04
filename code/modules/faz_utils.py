@@ -13,12 +13,12 @@ from modules.write_excel import *
 
 def display_faz_image(canvas: Canvas):
     """Render the current FAZ mask preview onto the GUI canvas."""
-    # TODO Display finished FAZ mask on main window canvas
+    # Display finished FAZ mask on main window canvas
     # Create a 200x200 resized version for display
     preview = resize_image(canvas.faz_grayscale_img)
     img_tk = ImageTk.PhotoImage(preview)
 
-    img_id = canvas.create_image(550, 550, image=img_tk)
+    canvas.faz_img_id = canvas.create_image(550, 550, image=img_tk)
 
     # Prevent garbage collection. Without this, the image will not display.
     if not hasattr(canvas, "_image_refs"):
@@ -42,14 +42,13 @@ def load_faz_grayscale_arr(canvas: Canvas):
     cnt = cnt.reshape(-1, 2)  # Shape: (N, 2)
     print("largest contour points:", len(cnt))
 
-    # TODO may need better reduce machanism
     # Reduce number of points to closely to 20 points for easier editing
     reduce_divisor = max(1, len(cnt) // 20)
     cnt_reduced = cnt[::reduce_divisor]
     print("reduced contour points:", len(cnt_reduced))
     return [(point[0], point[1]) for point in cnt_reduced]
 
-# TODO From FAZ_code/get_area.py
+# From FAZ_code/get_area.py
 def get_area(x:np.ndarray,y:np.ndarray)->float:
     """
     Computes the signed area of a polygon using the shoelace formula.
@@ -71,7 +70,7 @@ def get_area(x:np.ndarray,y:np.ndarray)->float:
 
     return 0.5*sum
 
-# TODO From FAZ_code/get_central.py
+# From FAZ_code/get_central.py
 def get_central(x,y):
     '''
     Computes the central point of a polygon defined by its contour points.'''
@@ -115,13 +114,13 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
     if not batch:
         change_status_to_ready(canvas)
 
-# TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
+# measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
     """Measure FAZ morphology and FD_300, then export the metrics and validation images."""
     print("Measuring FAZ metrics...")
-    if not hasattr(canvas, 'faz_grayscale_arr'):
+    if not hasattr(canvas, 'faz_grayscale_arr') or not hasattr(canvas, 'faz_grayscale_img') or not hasattr(canvas, 'faz_img_id') or not canvas._image_refs.get("faz_img"):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
-    if not hasattr(canvas, 'binary_image'):
+    if not hasattr(canvas, 'binary_image') or not canvas._image_refs.get('binary_img'):
         return messagebox.showwarning("No Binarised Image", "Please binarise an image before measuring FAZ.")
     if not hasattr(canvas, 'current_save_folder'):
         return messagebox.showwarning("Empty save folder", "Save folder not specified")
@@ -137,10 +136,10 @@ def measure_faz(canvas: Canvas):
     
     # Calculate FD_300 (FAZ with 300 microns expanded)
     # 1. Get contour points
-    # TODO replacement of matlab's bwboundaries
+    # replacement of matlab's bwboundaries
     # https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
     # RETR_EXTERNAL: only capture outer-most, parent, non-nested contours
-    # TODO CHAIN_APPROX_NONE all possible contour points, if we want to have drag adjustment, may consider CHAIN_APPROX_SIMPLE for lesser points
+    # CHAIN_APPROX_NONE all possible contour points, if we want to have drag adjustment, may consider CHAIN_APPROX_SIMPLE for lesser points
     contours, _ = cv2.findContours(grayscale_arr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     print("contours found:", len(contours))
 
@@ -162,42 +161,45 @@ def measure_faz(canvas: Canvas):
     cnt_theta = np.arctan2(cnt_y, cnt_x)
     cnt_rho = np.sqrt(cnt_x**2 + cnt_y**2)
     
-    # 3. Outer Contour: Expand radius by 300 microns
-    rad_size_pix = 0.3 / pix_to_mm 
-    cnt_rho_expanded = cnt_rho + rad_size_pix
-    
-    # 4. Convert back to cartesian
-    cnt_x_expanded = cnt_rho_expanded * np.cos(cnt_theta) + Cx
-    cnt_y_expanded = cnt_rho_expanded * np.sin(cnt_theta) + Cy
-    
-    # 5. Inner/Outer Contours -> Inner/Outer Masks
-    inner_mask = np.zeros((img_height, img_width), dtype=np.uint8)
-    cv2.fillPoly(inner_mask, [cnt], 255)
-    
-    outer_pts = np.column_stack((cnt_x_expanded, cnt_y_expanded)).astype(np.int32) # x/y coords, int32 for large size
-    outer_mask = np.zeros((img_height, img_width), dtype=np.uint8)
-    cv2.fillPoly(outer_mask, [outer_pts], 255)
-    
-    # 6. Create ring mask: outer - inner
-    # Both outer/inner masks have 0 and 255 values
-    # ring_mask will be 255 in the ring area (outer - inner) and NAN elsewhere
-    ring_mask = outer_mask - inner_mask
-    ring_mask = ring_mask.astype(np.float32) # Convert to float for NaN assignment
-    ring_mask[ring_mask == 0] = np.nan
+    if image_size_mm >= 1:
+        # 3. Outer Contour: Expand radius by 300 microns
+        rad_size_pix = 0.3 / pix_to_mm 
+        cnt_rho_expanded = cnt_rho + rad_size_pix
+        
+        # 4. Convert back to cartesian
+        cnt_x_expanded = cnt_rho_expanded * np.cos(cnt_theta) + Cx
+        cnt_y_expanded = cnt_rho_expanded * np.sin(cnt_theta) + Cy
+        
+        # 5. Inner/Outer Contours -> Inner/Outer Masks
+        inner_mask = np.zeros((img_height, img_width), dtype=np.uint8)
+        cv2.fillPoly(inner_mask, [cnt], 255)
+        
+        outer_pts = np.column_stack((cnt_x_expanded, cnt_y_expanded)).astype(np.int32) # x/y coords, int32 for large size
+        outer_mask = np.zeros((img_height, img_width), dtype=np.uint8)
+        cv2.fillPoly(outer_mask, [outer_pts], 255)
+        
+        # 6. Create ring mask: outer - inner
+        # Both outer/inner masks have 0 and 255 values
+        # ring_mask will be 255 in the ring area (outer - inner) and NAN elsewhere
+        ring_mask = outer_mask - inner_mask
+        ring_mask = ring_mask.astype(np.float32) # Convert to float for NaN assignment
+        ring_mask[ring_mask == 0] = np.nan
 
-    # 7. FD_300: Apply ring mask to original binary vessel image
-    #! Use the original binary image (vessels), not the FAZ mask
-    binary_image = canvas.binary_image.copy()
-    mask_bin = (ring_mask / 255.0) * (binary_image / 255.0) # Binary mask within the ring (vessel=1)
-    
-    print("mask_bin unique values / nansum:", np.unique(mask_bin), np.nansum(mask_bin))
-    n_pix = np.nansum(ring_mask) / 255  # Num of pixels within the ring (ring_mask has 255 where ring exists)
-    print("n_pix:", n_pix)
-    n_mask_bin = np.nansum(mask_bin)
-    print("n_mask_bin:", n_mask_bin)
-    FD_300 = n_mask_bin / n_pix * 100 if n_pix > 0 else 0
-    print("FD_300:", FD_300) # The vessel density within the ring mask
-
+        # 7. FD_300: Apply ring mask to original binary vessel image
+        #! Use the original binary image (vessels), not the FAZ mask
+        binary_image = canvas.binary_image.copy()
+        mask_bin = (ring_mask / 255.0) * (binary_image / 255.0) # Binary mask within the ring (vessel=1)
+        
+        print("mask_bin unique values / nansum:", np.unique(mask_bin), np.nansum(mask_bin))
+        n_pix = np.nansum(ring_mask) / 255  # Num of pixels within the ring (ring_mask has 255 where ring exists)
+        print("n_pix:", n_pix)
+        n_mask_bin = np.nansum(mask_bin)
+        print("n_mask_bin:", n_mask_bin)
+        FD_300 = n_mask_bin / n_pix * 100 if n_pix > 0 else 0
+        print("FD_300:", FD_300) # The vessel density within the ring mask
+    else:
+        print("Image size too small for FD_300 calculation, skipping...")
+        
     # Calculate region properties using OpenCV
     # Area
     area_pix = cv2.contourArea(cnt)
@@ -245,13 +247,13 @@ def measure_faz(canvas: Canvas):
         'Perimeter': round(perimeter_mm, 3),
         'acircularity_index': round(acircularity_index, 2),
         'axis_ratio': round(axis_ratio, 2),
-        'FD_300': round(FD_300, 1),
+        'FD_300': round(FD_300, 1) if image_size_mm >= 1 else 'N/A',
         'name': canvas.FileLabelName,
     }
     
     # Save images/excel to local
     write_excel(FAZ_stats, canvas.lastMetricsPath, sheet_name='FAZ metrics')
-    save_faz_images(canvas, cnt, outer_pts, Cx, Cy)
+    save_faz_images(canvas, cnt, outer_pts if image_size_mm >= 1 else None, Cx, Cy)
 
 def save_faz_images(canvas, inner_contour, outer_contour, Cx, Cy):
     """Save FAZ visualization images"""
@@ -279,16 +281,17 @@ def save_faz_images(canvas, inner_contour, outer_contour, Cx, Cy):
     cv2.drawContours(img_contour_inner, [inner_contour], -1, (0, 0, 255), 2) # contourIdx=-1 draw all contours
     cv2.imwrite(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ_Contour_{curr_idx}.png'), img_contour_inner)
     
-    # 2. Outer contour only (yellow)
-    cv2.polylines(img_contour_outer, [outer_contour], True, (0, 255, 255), 2) # isClosed=True
-    cv2.imwrite(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ300_Contour_{curr_idx}.png'), img_contour_outer)
-    
-    # 3. Both contours with centroid as a crosshair
-    cv2.drawContours(img_contour_both, [inner_contour], -1, (0, 0, 255), 2)
-    cv2.polylines(img_contour_both, [outer_contour], True, (0, 255, 255), 2)
-    cv2.drawMarker(img_contour_both, (int(Cx), int(Cy)), (0, 0, 255), cv2.MARKER_CROSS, 5)  # Red centroid marker
-    cv2.imwrite(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ_Contour_both_{curr_idx}.png'), img_contour_both)
-    
+    if outer_contour is not None:
+        # 2. Outer contour only (yellow)
+        cv2.polylines(img_contour_outer, [outer_contour], True, (0, 255, 255), 2) # isClosed=True
+        cv2.imwrite(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ300_Contour_{curr_idx}.png'), img_contour_outer)
+        
+        # 3. Both contours with centroid as a crosshair
+        cv2.drawContours(img_contour_both, [inner_contour], -1, (0, 0, 255), 2)
+        cv2.polylines(img_contour_both, [outer_contour], True, (0, 255, 255), 2)
+        cv2.drawMarker(img_contour_both, (int(Cx), int(Cy)), (0, 0, 255), cv2.MARKER_CROSS, 5)  # Red centroid marker
+        cv2.imwrite(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ_Contour_both_{curr_idx}.png'), img_contour_both)
+        
     # 4. Binary mask
     img_grayscale.save(os.path.join(faz_images_folder_path, f'{filename_base}_FAZ_mask_{curr_idx}.png'))
     

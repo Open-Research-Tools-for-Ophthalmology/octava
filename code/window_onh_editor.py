@@ -76,6 +76,23 @@ def window_onh_editor(canvas):
     )
     subcanvas_onh.pack(fill="both", expand=True, padx=50, pady=(5, 10))
     
+      # Confirm button
+    button_confirm = ctk.CTkButton(
+        subwindow_onh,
+        text="Done",
+        command=lambda: on_close(),
+        width=120,
+        height=40,
+        font=("Roboto", 12 * -1),
+        text_color=text_colour,
+        fg_color=button_blue_colour,
+        hover_color=button_blue_hover,
+        corner_radius=6,
+        border_width=1,
+        border_color=button_border_colour,
+    )
+    button_confirm.pack(side="bottom", pady=10)
+
     # Edit: Show tool frame if editable
     def set_active_tool(tool_name):
         print("Tool set to :", tool_name)
@@ -137,19 +154,19 @@ def window_onh_editor(canvas):
 
     # Draw tool button
     btn_drag = ctk.CTkButton(
-        tools_frame, image=icon_drag, command=lambda: set_active_tool("drag"), **btn_config
+        tools_frame, image=icon_drag, text="", command=lambda: set_active_tool("drag"), **btn_config
     )
     pack_tool_button(btn_drag, "drag")
 
     # Pan tool button
     btn_pan = ctk.CTkButton(
-        tools_frame, image=icon_pan, command=lambda: set_active_tool("pan"), **btn_config
+        tools_frame, image=icon_pan, text="", command=lambda: set_active_tool("pan"), **btn_config
     )
     pack_tool_button(btn_pan, "pan")
 
     # Zoom tool button
     btn_zoom = ctk.CTkButton(
-        tools_frame, image=icon_zoom, command=lambda: set_active_tool("zoom"), **btn_config
+        tools_frame, image=icon_zoom, text="", command=lambda: set_active_tool("zoom"), **btn_config
     )
     pack_tool_button(btn_zoom, "zoom")
 
@@ -444,7 +461,7 @@ def window_onh_editor(canvas):
             radius_outer_orig = int((x2 - x1) / 2 * scale_x)
             radius_inner_orig = int((x2 - x1) / 2 * scale_x) / 2
 
-            # TODO Store ring parameters and create mask for @author Joshua's future use
+            # Store ring parameters and create mask for @author Joshua's future use
             canvas.onh_center = (center_x_orig, center_y_orig)
             canvas.onh_radius_outer = radius_outer_orig
             canvas.onh_radius_inner = radius_inner_orig
@@ -454,7 +471,7 @@ def window_onh_editor(canvas):
             dist_from_center = np.sqrt((x_coords - center_x_orig)**2 + (y_coords - center_y_orig)**2)
             inter_mask = (dist_from_center > radius_inner_orig) & (dist_from_center <= radius_outer_orig)
             
-            # TODO Store intersection for @author Joshua's future use   
+            # Store intersection for @author Joshua's future use   
             masked_img = np.where(inter_mask, canvas.original_img, 0).astype(np.uint8)
             canvas.onh_mask_arr = inter_mask
             canvas.onh_mask_img = masked_img

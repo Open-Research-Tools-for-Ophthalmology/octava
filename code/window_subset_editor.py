@@ -71,6 +71,23 @@ def subwindow_subset(canvas):
     )
     subcanvas_subset.pack(fill="both", expand=True, padx=50, pady=(5, 10))
     
+    # Confirm button
+    button_confirm = ctk.CTkButton(
+        subwindow_subset,
+        text="Done",
+        command=lambda: confirm_square(),
+        width=120,
+        height=40,
+        font=("Roboto", 12 * -1),
+        text_color=text_colour,
+        fg_color=button_blue_colour,
+        hover_color=button_blue_hover,
+        corner_radius=6,
+        border_width=1,
+        border_color=button_border_colour,
+    )
+    button_confirm.pack(side="bottom", pady=10)
+
     # Edit: Show tool frame if editable
     def set_active_tool(tool_name):
         print("Tool set to :", tool_name)
@@ -533,6 +550,7 @@ def subwindow_subset(canvas):
 
     def confirm_square():
         if not (subwindow_subset.sq_start and subwindow_subset.sq_end):
+            messagebox.showwarning("No Area Selected", "Please select a valid area to crop.")
             return
         
         result = messagebox.askyesno(
