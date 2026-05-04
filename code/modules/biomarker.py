@@ -414,6 +414,7 @@ class BiomarkerAnalyzer:
             "Mean tortuosity": float(mean_tortuosity),
         }
 
+        # Compute new tortuosity metrics and add to micro_stats
         canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
             links=canvas.skeleton_links,
             binary_image=canvas.binary_image,
@@ -421,6 +422,15 @@ class BiomarkerAnalyzer:
             fullImSizePix=canvas.fullImSizePix,
         )
         micro_stats.update(canvas.new_tort_metrics)
+
+        parameters = {
+            "Frangi Sigma Min": canvas.frangi_min.get(),
+            "Frangi Sigma Max": canvas.frangi_max.get(),
+            "Median Filter Kernel Size": canvas.kernel_size.get() if canvas.med_filt_bool.get() else 0,
+            "Twig Size": canvas.twig_size.get(),
+        }
+        micro_stats.update(parameters)
+
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
         # Update GUI display
