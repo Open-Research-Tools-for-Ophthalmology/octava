@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 from scipy.ndimage import binary_dilation
 import os
+import cv2
 
 def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, display: bool = True, notify: bool=True):
   """Skeletonize a binary vessel mask, build its graph, and optionally render the result."""
@@ -101,13 +102,18 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
     skel_uint8 = binary_dilation(canvas.skeleton_image, iterations=1).astype(np.uint8) * 255
     skel_pil = Image.fromarray(skel_uint8, mode="L")
 
-    skel = canvas.skeleton_image
-    fig, ax = plt.subplots(figsize=(3,3), dpi=300)
-    ax.imshow(skel, cmap='gray')
-    ax.axis('off')
-    img_path = os.path.join(canvas.current_save_folder, "images",
-                            f"{canvas.FileLabelName}_Skeletonised_TwigSize{twig_size}.png")
-    plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
+    # Save files in original shape
+    print("Skeleton image shape:", canvas.skeleton_image.shape)
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Skeletonised_TwigSize{twig_size}.png")
+    cv2.imwrite(img_path, canvas.skeleton_image * 255)
+
+    # skel = canvas.skeleton_image
+    # fig, ax = plt.subplots(figsize=(3,3), dpi=300)
+    # ax.imshow(skel, cmap='gray')
+    # ax.axis('off')
+    # img_path = os.path.join(canvas.current_save_folder, "images",
+    #                         f"{canvas.FileLabelName}_Skeletonised_TwigSize{twig_size}.png")
+    # plt.savefig(img_path, bbox_inches='tight', pad_inches=0)
 
     resized_img = resize_image(skel_pil)
     img_tk = ImageTk.PhotoImage(resized_img)
