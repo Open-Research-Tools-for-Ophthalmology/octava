@@ -1,5 +1,7 @@
 from PIL import Image, ImageTk, UnidentifiedImageError
 
+MINIMUM_IMAGE_PIXELS = 1000
+
 # Resize image to specified size, by default 200x200
 def resize_image(image, size = (200, 200)):
   """Resize a PIL image to the requested pixel dimensions using Lanczos resampling."""
@@ -32,12 +34,12 @@ def size_to_pixels(size_value: float) -> int:
 
   # if bad input
   if size_value is None:
-    return 200
+    return MINIMUM_IMAGE_PIXELS
   
   try: 
     size_value = float(size_value)
   except (TypeError, ValueError):
-    return 200
+    return MINIMUM_IMAGE_PIXELS
   
   # use canonical mapping for specific values
   if size_value in canonical_map:
@@ -45,5 +47,8 @@ def size_to_pixels(size_value: float) -> int:
   
   # proportional scaling
   pixels = (size_value / 3.0) * 1000
+  
+  # No less than 1000 pix
+  # pixels = MINIMUM_IMAGE_PIXELS if pixels < MINIMUM_IMAGE_PIXELS else pixels
   
   return round(pixels)
