@@ -155,7 +155,7 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
         medXtrap3[:, :, ii] = median_filter(Xtrap3[:, :, ii], size=(w, w),
                                     mode='constant', cval=0.0)
 
-    Y = np.argmax(medXtrap3, axis=2) + 1 #! Axis 2 is the third dimension; +1 to match the index as in Matlab. May need to change the +1 based on the context
+    Y = np.argmax(medXtrap3, axis=2) + 1 # Axis 2 is the third dimension; +1 to match the index as in Matlab
     Y = Y * (Y > 0) + (Y == 0)
 
     return Y
