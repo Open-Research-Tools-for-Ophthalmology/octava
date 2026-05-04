@@ -502,8 +502,8 @@ def subwindow4(canvas, editable=False):
         elif result is False:  # No - Draw again (DRAW: Clear canvas) (DRAG: Close without saving) (VIEW: Clear canvas properties)
             if not editable:
                 # Clear canvas properties
-                canvas.faz_grayscale_arr = None
-                canvas.faz_grayscale_img = None
+                delattr(canvas, 'faz_grayscale_arr')
+                delattr(canvas, 'faz_grayscale_img')
                 subwindow4.destroy()
                 return
             # DRAG
