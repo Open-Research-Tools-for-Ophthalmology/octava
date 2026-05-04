@@ -19,11 +19,6 @@ def binarise_image(canvas: Canvas, display:bool=True):
     """
     change_status_to_waiting(canvas, status="● Wait...Binarising")
 
-    # --- Locate brightest vessel pixel ---
-    y = canvas.original_img.max(axis=0)
-    cc = int(y.argmax())
-    rr = int(canvas.original_img[:, cc].argmax())
-
     # --- Apply median filter if selected ---
     if canvas.med_filt_bool.get():
         print("Median filter selected.")
@@ -49,8 +44,9 @@ def binarise_image(canvas: Canvas, display:bool=True):
     binary_image = fuzzy_thresholding(img, nth, 3)-1
 
     # --- Convert to 255 (white vessels) and 0 (black background) ---
-    ref_value = binary_image[rr, cc]
-    binary_image = np.where(binary_image == ref_value, 255, 0).astype(np.uint8)
+    labels = np.unique(binary_image)
+    bright_label = max(labels, key=lambda label: img[binary_image == label].mean())
+    binary_image = np.where(binary_image == bright_label, 255, 0).astype(np.uint8)
 
     # --- Store result back to canvas ---
     canvas.binary_image = binary_image
