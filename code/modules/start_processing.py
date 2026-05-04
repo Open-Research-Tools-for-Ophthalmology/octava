@@ -191,8 +191,6 @@ def start_batch_processing_threaded(canvas: Canvas):
             )
             skipped_images.append(image_file)
             continue  # Skip to next image
-
-    # TODO Generate overall metrics spreadsheet for all images
     
     # Process only successfully loaded images
     processed_images = [img for img in image_files if img not in skipped_images]

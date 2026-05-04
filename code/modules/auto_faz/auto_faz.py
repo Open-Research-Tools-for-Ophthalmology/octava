@@ -84,7 +84,7 @@ def process_batch(pairs, ctx):
         new_ctx = Context(ctx.config, None, filename=image_id, steps=ctx.steps, candidate=ctx.candidate, batch=True)
         pred = process_image(img, new_ctx)
 
-        # TODO save results
+        # save results
         cv2.imwrite(os.path.join(out_dir, f"{image_id}_pred.png"), pred)
 
 # Auto segment FAZ and save results
@@ -113,6 +113,4 @@ def auto_faz(image=None):
     if binary_mask is not None:
         # cv2.imwrite("mask.png", processed_img)
         # print("Saved mask to mask.png")
-        # TODO Show image in a subwindow
-        # TODO display preview in GUI
         return binary_mask

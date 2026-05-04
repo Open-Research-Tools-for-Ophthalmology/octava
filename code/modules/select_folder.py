@@ -109,7 +109,7 @@ def select_folder(canvas: tk.Canvas, mainCanvas: tk.Canvas, text_x: int, text_y:
         font_spec
     )
 
-    #todo: Keep the real path handy for later use
+    # Keep the real path handy for later use
     mainCanvas.bp_selected_folder_path = dir_path
     print(f"Selected folder: {dir_path}")
 

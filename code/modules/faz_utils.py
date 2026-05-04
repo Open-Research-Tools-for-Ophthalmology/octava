@@ -13,7 +13,7 @@ from modules.write_excel import *
 
 def display_faz_image(canvas: Canvas):
     """Render the current FAZ mask preview onto the GUI canvas."""
-    # TODO Display finished FAZ mask on main window canvas
+    # Display finished FAZ mask on main window canvas
     # Create a 200x200 resized version for display
     preview = resize_image(canvas.faz_grayscale_img)
     img_tk = ImageTk.PhotoImage(preview)
@@ -42,14 +42,13 @@ def load_faz_grayscale_arr(canvas: Canvas):
     cnt = cnt.reshape(-1, 2)  # Shape: (N, 2)
     print("largest contour points:", len(cnt))
 
-    # TODO may need better reduce machanism
     # Reduce number of points to closely to 20 points for easier editing
     reduce_divisor = max(1, len(cnt) // 20)
     cnt_reduced = cnt[::reduce_divisor]
     print("reduced contour points:", len(cnt_reduced))
     return [(point[0], point[1]) for point in cnt_reduced]
 
-# TODO From FAZ_code/get_area.py
+# From FAZ_code/get_area.py
 def get_area(x:np.ndarray,y:np.ndarray)->float:
     """
     Computes the signed area of a polygon using the shoelace formula.
@@ -71,7 +70,7 @@ def get_area(x:np.ndarray,y:np.ndarray)->float:
 
     return 0.5*sum
 
-# TODO From FAZ_code/get_central.py
+# From FAZ_code/get_central.py
 def get_central(x,y):
     '''
     Computes the central point of a polygon defined by its contour points.'''
@@ -115,7 +114,7 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
     if not batch:
         change_status_to_ready(canvas)
 
-# TODO measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
+# measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
 def measure_faz(canvas: Canvas):
     """Measure FAZ morphology and FD_300, then export the metrics and validation images."""
     print("Measuring FAZ metrics...")
@@ -137,10 +136,10 @@ def measure_faz(canvas: Canvas):
     
     # Calculate FD_300 (FAZ with 300 microns expanded)
     # 1. Get contour points
-    # TODO replacement of matlab's bwboundaries
+    # replacement of matlab's bwboundaries
     # https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
     # RETR_EXTERNAL: only capture outer-most, parent, non-nested contours
-    # TODO CHAIN_APPROX_NONE all possible contour points, if we want to have drag adjustment, may consider CHAIN_APPROX_SIMPLE for lesser points
+    # CHAIN_APPROX_NONE all possible contour points, if we want to have drag adjustment, may consider CHAIN_APPROX_SIMPLE for lesser points
     contours, _ = cv2.findContours(grayscale_arr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     print("contours found:", len(contours))
 
