@@ -44,8 +44,9 @@ def binarise_image(canvas: Canvas, display:bool=True):
     binary_image = fuzzy_thresholding(img, nth, 3)-1
 
     # --- Convert to 255 (white vessels) and 0 (black background) ---
-    labels = np.unique(binary_image)
-    bright_label = max(labels, key=lambda label: img[binary_image == label].mean())
+    # labels = np.unique(binary_image)
+    # bright_label = max(labels, key=lambda label: img[binary_image == label].mean())
+    bright_label = 1  # Since we are using nth=2, we expect labels to be [0, 1] where 1 is the brighter cluster.
     binary_image = np.where(binary_image == bright_label, 255, 0).astype(np.uint8)
 
     # --- Store result back to canvas ---
