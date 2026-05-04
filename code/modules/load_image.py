@@ -8,6 +8,7 @@ import os
 from modules.change_status import *
 from modules.clear import *
 from modules.binarise_image import *
+from modules.select_folder import *
 
 def resize_from_spinbox(canvas):
     """Resize the full-resolution image based on the current spinbox value and update preview."""
@@ -108,13 +109,14 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
 
     # Draw the preview and filename on the canvas
     img_id = canvas.create_image(x, y, image=img_tk)
-    text_id = canvas.create_text(
-        text_x,
+
+    display_text = fit_path_to_canvas(path.name, canvas, ("Roboto", 12 * -1), 220)
+    text_id = display_text_to_canvas(
+        canvas,
+        text_x, 
         text_y,
-        text=path.name,
-        fill="#333333",
-        font=("Roboto", -13),
-        anchor="w",
+        display_text,
+        ("Roboto", 12 * -1),
     )
 
     # Keep references so Tk doesn't garbage-collect the image
