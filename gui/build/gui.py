@@ -20,6 +20,7 @@ from modules.change_status import *
 from modules.binarise_image import *
 from modules.clear import *
 from modules.faz_utils import *
+from modules.onh_vessel_separation import *
 from modules.histogram import HistogramPlotter
 from test import *
 
@@ -303,15 +304,62 @@ button_onh_mask = ctk.CTkButton(window, text="ONH Mask",
                         hover_color=button_green_hover,
     border_color=button_border_colour  )
 
+# def update_optional_buttons_state(*args):
+#     # ONH mask editor
+#     if canvas.img_type_var.get()=="ONH":
+#         return button_onh_mask.place(x=30, y=355)
+#     else:
+#         button_onh_mask.place_forget()
+
+#     # FAZ button disabling
+#     if canvas.img_type_var.get()=="Skin":
+#         button_point_faz.configure(state="disabled")
+#         button_auto_faz.configure(state="disabled")
+#         button_measure_faz.configure(state="disabled")
+#     else:
+#         button_point_faz.configure(state="normal")
+#         button_auto_faz.configure(state="normal")
+#         button_measure_faz.configure(state="normal")
+
 def update_optional_buttons_state(*args):
-    # ONH mask editor
-    if canvas.img_type_var.get()=="ONH":
-        return button_onh_mask.place(x=30, y=355)
+    img_type = canvas.img_type_var.get()
+
+    # ONH mode
+    if img_type == "ONH":
+        button_onh_mask.place(x=30, y=355)
+
+        button_point_faz.place_forget()
+        button_auto_faz.place_forget()
+        button_measure_faz.place_forget()
+
+        canvas.onh_segmentation_dropdown.place(
+            x=550.0,
+            y=400.0,
+            width=110.0,
+            height=20.0
+        )
+
+        canvas.itemconfig(canvas.segmentation_title_id, text="Vessels Segmentation")
+
+        if hasattr(canvas, "onh_overall_vessel_img"):
+            update_onh_segmentation_dropdown_display(
+                canvas,
+                canvas.onh_segmentation_view_var.get()
+            )
+
     else:
         button_onh_mask.place_forget()
 
-    # FAZ button disabling
-    if canvas.img_type_var.get()=="Skin":
+        button_point_faz.place(x=30, y=355)
+        button_auto_faz.place(x=125, y=355)
+        button_measure_faz.place(x=220, y=355)
+
+        canvas.onh_segmentation_dropdown.place_forget()
+
+        canvas.itemconfig(canvas.segmentation_title_id, text="FAZ Segmentation")
+
+    # Disable FAZ only for Skin
+    if img_type == "Skin":
         button_point_faz.configure(state="disabled")
         button_auto_faz.configure(state="disabled")
         button_measure_faz.configure(state="disabled")
@@ -320,9 +368,7 @@ def update_optional_buttons_state(*args):
         button_auto_faz.configure(state="normal")
         button_measure_faz.configure(state="normal")
 
-update_optional_buttons_state()
 
-canvas.img_type_var.trace_add("write", update_optional_buttons_state)
 
 
 button_regional_analysis = ctk.CTkButton(window, text="Optional Regional Analysis Settings",
@@ -409,8 +455,7 @@ canvas.create_text(
 round_rectangle(canvas, 430, 395, 240, 270, radius=8)
 round_rectangle(canvas, 685, 395, 500, 270, radius=8)
 
-
-canvas.create_text(
+canvas.segmentation_title_id = canvas.create_text(
     485.0,
     420.0,
     anchor="nw",
@@ -418,6 +463,39 @@ canvas.create_text(
     fill=theme_blue,
     font=("Roboto", 16 * -1)
 )
+
+canvas.onh_segmentation_view_var = StringVar(value="Overall")
+
+canvas.onh_segmentation_dropdown = Combobox(
+    window,
+    textvariable=canvas.onh_segmentation_view_var,
+    values=["Overall", "Large Vessels", "Small Vessels"],
+    state="readonly"
+)
+canvas.onh_segmentation_dropdown.place(
+    x=550.0,
+    y=400.0,
+    width=110.0,
+    height=20.0
+)
+
+canvas.onh_segmentation_dropdown.place_forget()
+
+def on_onh_segmentation_dropdown_change(event=None):
+    update_onh_segmentation_dropdown_display(
+        canvas,
+        canvas.onh_segmentation_view_var.get()
+    )
+
+canvas.onh_segmentation_dropdown.bind(
+    "<<ComboboxSelected>>",
+    on_onh_segmentation_dropdown_change
+)
+
+
+update_optional_buttons_state()
+
+canvas.img_type_var.trace_add("write", update_optional_buttons_state)
 
 canvas.create_text(
     910.0,

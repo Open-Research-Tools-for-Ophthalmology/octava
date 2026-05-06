@@ -2,12 +2,17 @@ from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.onh_binarise_image import *
 from modules.biomarker import *
 from modules.skeletonise import *
 from modules.faz_utils import *
 from modules.load_image import *
 from modules.clear import *
 from modules.regional_analysis import *
+from modules.onh_vessel_separation import *
+from modules.onh_skeletonise import *
+from modules.onh_biomarker import *
+import numpy as np
 import threading
 import os
 import datetime
@@ -138,13 +143,57 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
 # ONH pipeline not implemented yet
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
-    print("ONH processing pipeline is not implemented yet.")
 
-    canvas.after(0, lambda: messagebox.showinfo(
-        "ONH Processing",
-        "ONH processing pipeline has not been implemented yet."
-    ))
-    canvas.after(0, lambda: change_status_to_ready(canvas))
+    if not hasattr(canvas, "onh_mask_img") or not hasattr(canvas, "onh_mask_arr"):
+        canvas.after(0, lambda: messagebox.showwarning(
+            "ONH Mask Missing",
+            "Please open ONH Mask and confirm the ring mask before processing."
+        ))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
+    try:
+        # 1. ONH-specific binarisation
+        print("Starting ONH-specific binarisation...")
+        binarise_onh_image(canvas, display=True)
+        print("ONH-specific binarisation completed.")
+
+        # 2. ONH-specific skeletonisation v2
+        print("Starting ONH-specific skeletonisation v2...")
+        skeletonise_onh(canvas, canvas.binary_image, display=True)
+        print("ONH-specific skeletonisation v2 completed.")
+        ONHBiomarkerAnalyzer.process(canvas)
+
+        # Stop here for now.
+        # Do not run biomarker calculation until nodes/links are confirmed stable.
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
+    except Exception as e:
+        err_msg = str(e)
+        print(f"ONH processing failed: {err_msg}")
+        canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+
+    # Refresh histogram on main thread
+    def refresh_histogram_ui():
+        if hasattr(canvas, "hist_plotter"):
+            diameters = getattr(canvas, "vessel_diameters_um", [])
+            canvas.hist_plotter.set_data(diameters)
+            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+            images_dir = os.path.join(canvas.current_save_folder, "images")
+            os.makedirs(images_dir, exist_ok=True)
+
+            bin_size = int(canvas.bin_size_var.get())
+            hist_path = os.path.join(
+                images_dir,
+                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
+            )
+            canvas.hist_plotter.save_to_file(hist_path)
+
+    canvas.after(0, refresh_histogram_ui)
+
+    print("Biomarker analyzer processing completed.")
 
 # Skin pipeline not implemented yet
 def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
