@@ -458,7 +458,20 @@ def window_onh_editor(canvas):
             masked_img = np.where(inter_mask, canvas.original_img, 0).astype(np.uint8)
             canvas.onh_mask_arr = inter_mask
             canvas.onh_mask_img = masked_img
-            
+
+            masked_preview = resize_image(
+                Image.fromarray(masked_img, mode="L"),
+                (200, 200)
+            )
+            masked_preview_tk = ImageTk.PhotoImage(masked_preview)
+            if hasattr(canvas, "original_img_id"):
+                canvas.itemconfigure(canvas.original_img_id, image=masked_preview_tk)
+            else:
+                canvas.original_img_id = canvas.create_image(550, 255, image=masked_preview_tk)
+            if not hasattr(canvas, "_image_refs"):
+                canvas._image_refs = {}
+            canvas._image_refs["original_img"] = masked_preview_tk
+
             # # --- Save binary image to local ---
             # curr_idx = len([f for f in os.listdir(os.path.join(canvas.save_dir, "images")) if 'ONH_Mask' in f])
             # img_path = os.path.join(canvas.save_dir, "images", f"{canvas.FileLabelName}_ONH_Mask_{curr_idx}.png")

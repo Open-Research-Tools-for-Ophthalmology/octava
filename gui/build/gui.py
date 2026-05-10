@@ -76,6 +76,7 @@ canvas.prebinary_var = IntVar(value=0)  # Variable for Prebinary checkbox
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
+canvas.onh_large_vessel_threshold_um = DoubleVar(value=40.0)  # ONH-only large vessel diameter threshold
 # regional analysis settings variables
 canvas.eye_var = StringVar(value="Right Eye")
 canvas.load_faz_bool = IntVar(value=0)
@@ -84,10 +85,17 @@ canvas.etdrs_grid_bool = IntVar(value=0)
 canvas.extended_etdrs_bool = IntVar(value=0)
 canvas.foveal_ring_bool = IntVar(value=0)
 canvas.optic_nerve_head_bool = IntVar(value=0)
+canvas.onh_quadrant_analysis_bool = IntVar(value=0)
 canvas.apply_regional_analysis_bool = IntVar(value=0)
 canvas.bp_file_type_var = StringVar(value="tif")  # Variable for File Type dropdown (Batch Processing Settings)
 canvas.bp_batch_resize_var = IntVar(value=0)  # Variable for Batch Resize checkbox (Batch Processing Settings)
 canvas.bp_batch_resize_value = IntVar(value=1000)  # Variable for Batch Resize value Spinbox (Batch Processing Settings)
+
+IMAGE_SIZE_DEFAULTS_MM = {
+    "Retina": 3.0,
+    "ONH": 4.5,
+    "Skin": 3.0,
+}
 canvas.bp_measure_faz_var = IntVar(value=0)  # Variable for Measure FAZ checkbox (Batch Processing Settings)
 
 # Initialize batch processing settings on canvas        
@@ -321,11 +329,34 @@ button_onh_mask = ctk.CTkButton(window, text="ONH Mask",
 #         button_auto_faz.configure(state="normal")
 #         button_measure_faz.configure(state="normal")
 
+def update_image_size_default_for_type(img_type):
+    previous_img_type = getattr(canvas, "_previous_img_type", None)
+    target_default = IMAGE_SIZE_DEFAULTS_MM.get(img_type)
+
+    if previous_img_type is None or target_default is None:
+        canvas._previous_img_type = img_type
+        return
+
+    previous_default = IMAGE_SIZE_DEFAULTS_MM.get(previous_img_type)
+    try:
+        current_size = float(canvas.image_size_var.get())
+    except (TypeError, ValueError):
+        current_size = None
+
+    if previous_default is not None and current_size is not None:
+        if abs(current_size - previous_default) < 1e-6:
+            canvas.image_size_var.set(target_default)
+
+    canvas._previous_img_type = img_type
+
+
 def update_optional_buttons_state(*args):
     img_type = canvas.img_type_var.get()
+    update_image_size_default_for_type(img_type)
 
     # ONH mode
     if img_type == "ONH":
+        canvas.coords(canvas.status_id, 875.0, 35.0)
         button_onh_mask.place(x=30, y=355)
 
         button_point_faz.place_forget()
@@ -333,13 +364,13 @@ def update_optional_buttons_state(*args):
         button_measure_faz.place_forget()
 
         canvas.onh_segmentation_dropdown.place(
-            x=550.0,
-            y=400.0,
-            width=110.0,
-            height=20.0
+            x=460.0,
+            y=407.0,
+            width=150.0,
+            height=24.0
         )
 
-        canvas.itemconfig(canvas.segmentation_title_id, text="Vessels Segmentation")
+        update_onh_results_layout()
 
         if hasattr(canvas, "onh_overall_vessel_img"):
             update_onh_segmentation_dropdown_display(
@@ -348,6 +379,7 @@ def update_optional_buttons_state(*args):
             )
 
     else:
+        canvas.coords(canvas.status_id, 950.0, 35.0)
         button_onh_mask.place_forget()
 
         button_point_faz.place(x=30, y=355)
@@ -357,6 +389,7 @@ def update_optional_buttons_state(*args):
         canvas.onh_segmentation_dropdown.place_forget()
 
         canvas.itemconfig(canvas.segmentation_title_id, text="FAZ Segmentation")
+        update_default_results_layout()
 
     # Disable FAZ only for Skin
     if img_type == "Skin":
@@ -367,6 +400,69 @@ def update_optional_buttons_state(*args):
         button_point_faz.configure(state="normal")
         button_auto_faz.configure(state="normal")
         button_measure_faz.configure(state="normal")
+
+
+def set_canvas_items_state(item_ids, state):
+    for item_id in item_ids:
+        canvas.itemconfigure(item_id, state=state)
+
+
+def update_onh_results_layout():
+    set_canvas_items_state(canvas.segmentation_panel_ids, "hidden")
+    set_canvas_items_state(canvas.results_panel_ids, "hidden")
+    set_canvas_items_state(canvas.onh_results_panel_ids, "normal")
+    canvas.itemconfigure(canvas.segmentation_title_id, state="hidden")
+
+    canvas.coords(canvas.results_title_id, 760.0, 410.0)
+    canvas.coords(canvas.bin_size_label_id, 990.0, 410.0)
+    binsize_spinbox.place(x=1121.0, y=408.0)
+
+    canvas.coords(canvas.micro_metrics_title_id, 460.0, 435.0)
+    canvas.itemconfig(canvas.micro_metrics_title_id, text="ONH Microvascular Metrics")
+    canvas.coords(canvas.vdd_title_id, 880.0, 435.0)
+    hist_frame.place(x=890, y=455)
+
+    canvas.coords(canvas.vad_label_id, 460.0, 470.0)
+    canvas.coords(canvas.vad_value_id, 603.0, 470.0)
+    canvas.coords(canvas.length_density_label_id, 460.0, 500.0)
+    canvas.coords(canvas.length_density_value_id, 616.0, 500.0)
+    canvas.coords(canvas.mean_diameter_label_id, 460.0, 530.0)
+    canvas.coords(canvas.mean_diameter_value_id, 575.0, 530.0)
+    canvas.coords(canvas.branch_density_label_id, 460.0, 560.0)
+    canvas.coords(canvas.branch_density_value_id, 607.0, 560.0)
+    canvas.coords(canvas.fractal_dim_label_id, 460.0, 590.0)
+    canvas.coords(canvas.fractal_dim_value_id, 593.0, 590.0)
+    canvas.coords(canvas.tortuosity_label_id, 460.0, 620.0)
+    canvas.coords(canvas.tortuosity_value_id, 580.0, 620.0)
+
+
+def update_default_results_layout():
+    set_canvas_items_state(canvas.segmentation_panel_ids, "normal")
+    set_canvas_items_state(canvas.results_panel_ids, "normal")
+    set_canvas_items_state(canvas.onh_results_panel_ids, "hidden")
+    canvas.itemconfigure(canvas.segmentation_title_id, state="normal")
+
+    canvas.coords(canvas.results_title_id, 910.0, 410.0)
+    canvas.coords(canvas.bin_size_label_id, 990.0, 410.0)
+    binsize_spinbox.place(x=1121.0, y=408.0)
+
+    canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
+    canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
+    canvas.coords(canvas.vdd_title_id, 980.0, 435.0)
+    hist_frame.place(x=945, y=455)
+
+    canvas.coords(canvas.vad_label_id, 710.0, 470.0)
+    canvas.coords(canvas.vad_value_id, 853.0, 470.0)
+    canvas.coords(canvas.length_density_label_id, 710.0, 500.0)
+    canvas.coords(canvas.length_density_value_id, 866.0, 500.0)
+    canvas.coords(canvas.mean_diameter_label_id, 710.0, 530.0)
+    canvas.coords(canvas.mean_diameter_value_id, 825.0, 530.0)
+    canvas.coords(canvas.branch_density_label_id, 710.0, 560.0)
+    canvas.coords(canvas.branch_density_value_id, 857.0, 560.0)
+    canvas.coords(canvas.fractal_dim_label_id, 710.0, 590.0)
+    canvas.coords(canvas.fractal_dim_value_id, 843.0, 590.0)
+    canvas.coords(canvas.tortuosity_label_id, 710.0, 620.0)
+    canvas.coords(canvas.tortuosity_value_id, 830.0, 620.0)
 
 
 
@@ -452,8 +548,11 @@ canvas.create_text(
     font=("Roboto", 16 * -1)
 )
 
-round_rectangle(canvas, 430, 395, 240, 270, radius=8)
-round_rectangle(canvas, 685, 395, 500, 270, radius=8)
+canvas.segmentation_panel_ids = round_rectangle(canvas, 430, 395, 240, 270, radius=8)
+canvas.results_panel_ids = round_rectangle(canvas, 685, 395, 500, 270, radius=8)
+canvas.onh_results_panel_ids = round_rectangle(canvas, 430, 395, 755, 270, radius=8)
+for panel_item_id in canvas.onh_results_panel_ids:
+    canvas.itemconfigure(panel_item_id, state="hidden")
 
 canvas.segmentation_title_id = canvas.create_text(
     485.0,
@@ -493,11 +592,7 @@ canvas.onh_segmentation_dropdown.bind(
 )
 
 
-update_optional_buttons_state()
-
-canvas.img_type_var.trace_add("write", update_optional_buttons_state)
-
-canvas.create_text(
+canvas.results_title_id = canvas.create_text(
     910.0,
     410.0,
     anchor="nw",
@@ -506,7 +601,7 @@ canvas.create_text(
     font=("Roboto", 16 * -1)
 )
 
-canvas.create_text(
+canvas.bin_size_label_id = canvas.create_text(
     990.0,
     410.0,
     anchor="nw",
@@ -544,7 +639,7 @@ binsize_spinbox.place(
     y=408.0
 )
 
-canvas.create_text(
+canvas.micro_metrics_title_id = canvas.create_text(
     710.0,
     435.0,
     anchor="nw",
@@ -553,7 +648,7 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.vdd_title_id = canvas.create_text(
     980.0,
     435.0,
     anchor="nw",
@@ -562,7 +657,7 @@ canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.vad_label_id = canvas.create_text(
     710.0,
     470.0,
     anchor="nw",
@@ -580,7 +675,7 @@ canvas.vad_value_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.length_density_label_id = canvas.create_text(
     710.0,
     500.0,
     anchor="nw",
@@ -598,7 +693,7 @@ canvas.length_density_value_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.mean_diameter_label_id = canvas.create_text(
     710.0,
     530.0,
     anchor="nw",
@@ -616,7 +711,7 @@ canvas.mean_diameter_value_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.branch_density_label_id = canvas.create_text(
     710.0,
     560.0,
     anchor="nw",
@@ -634,7 +729,7 @@ canvas.branch_density_value_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.create_text(
+canvas.fractal_dim_label_id = canvas.create_text(
     710.0,
     590.0,
     anchor="nw",
@@ -653,7 +748,7 @@ canvas.fractal_dim_value_id = canvas.create_text(
 )
 
 
-canvas.create_text(
+canvas.tortuosity_label_id = canvas.create_text(
     710.0,
     620.0,
     anchor="nw",
@@ -670,6 +765,9 @@ canvas.tortuosity_value_id = canvas.create_text(
     fill="#0F1F3F",
     font=("Roboto", 14 * -1)
 )
+
+update_optional_buttons_state()
+canvas.img_type_var.trace_add("write", update_optional_buttons_state)
 
 # Event handlers
 def on_prebinary_toggle():

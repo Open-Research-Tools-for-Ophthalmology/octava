@@ -122,7 +122,13 @@ def prune_short_spurs(
     return skel
 
 
-def skeletonise_onh(canvas: Canvas, bin_img: np.ndarray = None, display: bool = True):
+def skeletonise_onh(
+    canvas: Canvas,
+    bin_img: np.ndarray = None,
+    display: bool = True,
+    label: str = "overall",
+    set_active: bool = True,
+):
     """
     ONH-specific skeletonisation v2.2.
 
@@ -150,13 +156,18 @@ def skeletonise_onh(canvas: Canvas, bin_img: np.ndarray = None, display: bool = 
     - canvas.onh_distance_map
     """
 
-    change_status_to_waiting(canvas, status="● Wait...Skeletonising ONH")
+    key = label.lower().replace(" ", "_")
+
+    change_status_to_waiting(canvas, status=f"● Wait...Skeletonising ONH {label}")
 
     # ------------------------------------------------------------
     # 1. Choose binary input
     # ------------------------------------------------------------
     if bin_img is None:
-        if hasattr(canvas, "binary_image"):
+        binary_attr = f"onh_binary_{key}"
+        if hasattr(canvas, binary_attr):
+            bin_img = getattr(canvas, binary_attr)
+        elif hasattr(canvas, "binary_image"):
             bin_img = canvas.binary_image
         else:
             raise ValueError("No binary image found for ONH skeletonisation.")
@@ -306,21 +317,34 @@ def skeletonise_onh(canvas: Canvas, bin_img: np.ndarray = None, display: bool = 
     # ------------------------------------------------------------
     # 8. Store outputs on canvas
     # ------------------------------------------------------------
-    canvas.skeleton_image = skeleton_clean
-    canvas.skeleton_nodes = nodes
-    canvas.skeleton_links = links
-    canvas.distance_map = distance_map
+    setattr(canvas, f"onh_skeleton_{key}", skeleton_clean)
+    setattr(canvas, f"onh_skeleton_nodes_{key}", nodes)
+    setattr(canvas, f"onh_skeleton_links_{key}", links)
+    setattr(canvas, f"onh_distance_map_{key}", distance_map)
 
-    canvas.onh_skeleton_image = skeleton_clean
-    canvas.onh_skeleton_nodes = nodes
-    canvas.onh_skeleton_links = links
-    canvas.onh_distance_map = distance_map
+    if set_active:
+        canvas.skeleton_image = skeleton_clean
+        canvas.skeleton_nodes = nodes
+        canvas.skeleton_links = links
+        canvas.distance_map = distance_map
+
+        # Backward-compatible ONH aliases used by the first ONH prototype.
+        canvas.onh_skeleton_image = skeleton_clean
+        canvas.onh_skeleton_nodes = nodes
+        canvas.onh_skeleton_links = links
+        canvas.onh_distance_map = distance_map
 
     # Useful tuning/debug information.
-    canvas.onh_vessel_mask_clean_debug = vessel_mask_clean
-    canvas.onh_skeleton_twig_size = onh_twig_size
-    canvas.onh_pre_min_area = pre_min_area
-    canvas.onh_spur_prune_length = spur_prune_length
+    setattr(canvas, f"onh_vessel_mask_clean_debug_{key}", vessel_mask_clean)
+    setattr(canvas, f"onh_skeleton_twig_size_{key}", onh_twig_size)
+    setattr(canvas, f"onh_pre_min_area_{key}", pre_min_area)
+    setattr(canvas, f"onh_spur_prune_length_{key}", spur_prune_length)
+
+    if set_active:
+        canvas.onh_vessel_mask_clean_debug = vessel_mask_clean
+        canvas.onh_skeleton_twig_size = onh_twig_size
+        canvas.onh_pre_min_area = pre_min_area
+        canvas.onh_spur_prune_length = spur_prune_length
 
     # ------------------------------------------------------------
     # 9. Display and save
@@ -328,7 +352,7 @@ def skeletonise_onh(canvas: Canvas, bin_img: np.ndarray = None, display: bool = 
     if display:
         display_onh_skeleton(canvas, skeleton_clean)
 
-    save_onh_skeleton_image(canvas, skeleton_clean, onh_twig_size)
+    save_onh_skeleton_image(canvas, skeleton_clean, onh_twig_size, label=label)
 
     print("ONH skeletonisation v2.2 completed.")
 
@@ -360,7 +384,12 @@ def display_onh_skeleton(canvas: Canvas, skeleton_image: np.ndarray):
     canvas._image_refs["skeleton_img"] = img_tk
 
 
-def save_onh_skeleton_image(canvas: Canvas, skeleton_image: np.ndarray, twig_size: int):
+def save_onh_skeleton_image(
+    canvas: Canvas,
+    skeleton_image: np.ndarray,
+    twig_size: int,
+    label: str = "overall",
+):
     """
     Save ONH skeleton image and optional debug masks.
     """
@@ -374,9 +403,11 @@ def save_onh_skeleton_image(canvas: Canvas, skeleton_image: np.ndarray, twig_siz
 
     file_label = getattr(canvas, "FileLabelName", "ONH_Image")
 
+    label_for_file = label.replace(" ", "_")
+
     curr_idx = len([
         f for f in os.listdir(images_dir)
-        if "ONH_Skeletonised" in f
+        if f"ONH_Skeletonised_{label_for_file}" in f
     ])
 
     # Save original one-pixel skeleton.
@@ -384,7 +415,7 @@ def save_onh_skeleton_image(canvas: Canvas, skeleton_image: np.ndarray, twig_siz
 
     img_path = os.path.join(
         images_dir,
-        f"{file_label}_ONH_Skeletonised_TwigSize{twig_size}_{curr_idx}.png"
+        f"{file_label}_ONH_Skeletonised_{label_for_file}_TwigSize{twig_size}_{curr_idx}.png"
     )
 
     cv2.imwrite(img_path, skel_uint8)
@@ -398,19 +429,23 @@ def save_onh_skeleton_image(canvas: Canvas, skeleton_image: np.ndarray, twig_siz
 
     display_path = os.path.join(
         images_dir,
-        f"{file_label}_ONH_Skeletonised_Display_TwigSize{twig_size}_{curr_idx}.png"
+        f"{file_label}_ONH_Skeletonised_Display_{label_for_file}_TwigSize{twig_size}_{curr_idx}.png"
     )
 
     cv2.imwrite(display_path, skel_display_uint8)
     print(f"ONH display skeleton image saved to: {display_path}")
 
     # Save pre-cleaned vessel mask if available.
-    vessel_mask_clean = getattr(canvas, "onh_vessel_mask_clean_debug", None)
+    vessel_mask_clean = getattr(
+        canvas,
+        f"onh_vessel_mask_clean_debug_{label.lower().replace(' ', '_')}",
+        None,
+    )
 
     if vessel_mask_clean is not None:
         vessel_mask_path = os.path.join(
             images_dir,
-            f"{file_label}_ONH_VesselMaskClean_{curr_idx}.png"
+            f"{file_label}_ONH_VesselMaskClean_{label_for_file}_{curr_idx}.png"
         )
 
         cv2.imwrite(

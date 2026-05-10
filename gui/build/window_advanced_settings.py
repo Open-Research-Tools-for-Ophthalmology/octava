@@ -19,9 +19,15 @@ def relative_to_assets(path: str) -> Path:
   return ADVANCED_SETTINGS_ASSETS_PATH / path
 
 def subwindow1(canvas):
+  is_onh_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "ONH"
+  )
+  window_height = 515
+
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
-  subwindow.geometry("360x515")
+  subwindow.geometry(f"360x{window_height}")
   subwindow.configure(bg = subwindow_bg_colour)
 
   large_vessels_var = IntVar(value=0)
@@ -33,7 +39,7 @@ def subwindow1(canvas):
   subcanvas1 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 515,
+      height = window_height,
       width = 360,
       bd = 0,
       highlightthickness = 0,
@@ -211,70 +217,109 @@ def subwindow1(canvas):
       border_color=button_border_colour  )
   button1.place(x=50, y=205)
 
-  subcanvas1.create_text(
-      45.0,
-      274.0,
-      anchor="nw",
-      text="Additional Segmentation Settings",
-      fill="#10203F",
-      font=("Roboto", 14 * -1, "bold")
-  )
+  close_y = 450
 
-  # large vessels checkbox
-  large_vessels_checkbox = Checkbutton(
-      subwindow,
-      text="Large vessels (Retina, ONH only)",
-      variable=large_vessels_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  large_vessels_checkbox.place(
-      x=40.0,
-      y=300.0
-  )
+  if is_onh_mode and hasattr(canvas, "onh_large_vessel_threshold_um"):
+      subcanvas1.create_text(
+          45.0,
+          274.0,
+          anchor="nw",
+          text="ONH Settings",
+          fill="#10203F",
+          font=("Roboto", 14 * -1, "bold")
+      )
 
-  # small vessels checkbox
-  small_vessels_checkbox = Checkbutton(
-      subwindow,
-      text="Small vessels (Retina, ONH only)",
-      variable=small_vessels_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  small_vessels_checkbox.place(
-      x=40.0,
-      y=330.0
-  )
+      subcanvas1.create_text(
+          45.0,
+          302.0,
+          anchor="nw",
+          text="Large vessel threshold (um)",
+          fill="#10203F",
+          font=("Roboto", 14 * -1)
+      )
 
-  # artery checkbox
-  artery_checkbox = Checkbutton(
-      subwindow,
-      text="Artery (Retina only, not yet available)",
-      variable=artery_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  artery_checkbox.place(
-      x=40.0,
-      y=360.0
-  )
+      onh_large_threshold_spinbox = Spinbox(
+          subwindow,
+          from_=10,
+          to=200,
+          increment=5,
+          width=4,
+          textvariable=canvas.onh_large_vessel_threshold_um,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 12 * -1),
+          bd=0.5,
+          highlightthickness=0,
+      )
+      onh_large_threshold_spinbox.place(
+          x=250.0,
+          y=302.0
+      )
+  else:
+      subcanvas1.create_text(
+          45.0,
+          274.0,
+          anchor="nw",
+          text="Additional Segmentation Settings",
+          fill="#10203F",
+          font=("Roboto", 14 * -1, "bold")
+      )
 
-  # veins checkbox
-  veins_checkbox = Checkbutton(
-      subwindow,
-      text="Veins (Retina only, not yet available)",
-      variable=veins_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  veins_checkbox.place(
-      x=40.0,
-      y=390.0
-  )
+      # large vessels checkbox
+      large_vessels_checkbox = Checkbutton(
+          subwindow,
+          text="Large vessels (Retina, ONH only)",
+          variable=large_vessels_var,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      large_vessels_checkbox.place(
+          x=40.0,
+          y=300.0
+      )
+
+      # small vessels checkbox
+      small_vessels_checkbox = Checkbutton(
+          subwindow,
+          text="Small vessels (Retina, ONH only)",
+          variable=small_vessels_var,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      small_vessels_checkbox.place(
+          x=40.0,
+          y=330.0
+      )
+
+      # artery checkbox
+      artery_checkbox = Checkbutton(
+          subwindow,
+          text="Artery (Retina only, not yet available)",
+          variable=artery_var,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      artery_checkbox.place(
+          x=40.0,
+          y=360.0
+      )
+
+      # veins checkbox
+      veins_checkbox = Checkbutton(
+          subwindow,
+          text="Veins (Retina only, not yet available)",
+          variable=veins_var,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      veins_checkbox.place(
+          x=40.0,
+          y=390.0
+      )
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
@@ -286,7 +331,7 @@ def subwindow1(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=114, y=450)
+  button_close.place(x=114, y=close_y)
 
   subwindow.resizable(False, False)
   return subwindow

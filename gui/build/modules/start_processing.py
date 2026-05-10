@@ -25,6 +25,12 @@ def is_batch_processing_enabled(canvas: Canvas) -> bool:
 def is_regional_analysis_enabled(canvas:Canvas) ->bool:
     return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()
 
+def is_onh_quadrant_analysis_enabled(canvas: Canvas) -> bool:
+    return (
+        hasattr(canvas, "onh_quadrant_analysis_bool")
+        and canvas.onh_quadrant_analysis_bool.get() == 1
+    )
+
 def is_prebinary_enabled(canvas:Canvas) ->bool:
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
 
@@ -144,6 +150,14 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
 
+    if batch:
+        canvas.after(0, lambda: messagebox.showinfo(
+            "ONH Batch Processing",
+            "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
+        ))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
     if not hasattr(canvas, "onh_mask_img") or not hasattr(canvas, "onh_mask_arr"):
         canvas.after(0, lambda: messagebox.showwarning(
             "ONH Mask Missing",
@@ -153,19 +167,78 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         return
 
     try:
-        # 1. ONH-specific binarisation
-        print("Starting ONH-specific binarisation...")
-        binarise_onh_image(canvas, display=True)
-        print("ONH-specific binarisation completed.")
+        # 1. ONH-specific overall binarisation
+        if is_prebinary_enabled(canvas):
+            print("ONH prebinary selected. Using loaded image as ONH overall binary mask.")
+            prepare_onh_prebinary_overall(canvas)
+        else:
+            print("Starting ONH-specific binarisation...")
+            binarise_onh_image(canvas, display=False)
+            print("ONH-specific binarisation completed.")
 
-        # 2. ONH-specific skeletonisation v2
-        print("Starting ONH-specific skeletonisation v2...")
-        skeletonise_onh(canvas, canvas.binary_image, display=True)
-        print("ONH-specific skeletonisation v2 completed.")
+        # 2. ONH large/small vessel separation
+        print("Starting ONH large/small vessel separation...")
+        separate_onh_vessels(canvas, canvas.onh_binary_overall, display=False)
+        print("ONH large/small vessel separation completed.")
+
+        # 3. ONH-specific skeletonisation for each vessel class
+        print("Starting ONH skeletonisation for overall, large, and small vessels...")
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_overall,
+            display=False,
+            label="overall",
+            set_active=True,
+        )
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_large,
+            display=False,
+            label="large",
+            set_active=False,
+        )
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_small,
+            display=False,
+            label="small",
+            set_active=False,
+        )
+        print("ONH skeletonisation completed for all vessel classes.")
+
+        # 4. ONH metrics for all vessel classes
         ONHBiomarkerAnalyzer.process(canvas)
 
-        # Stop here for now.
-        # Do not run biomarker calculation until nodes/links are confirmed stable.
+        if is_onh_quadrant_analysis_enabled(canvas):
+            print("Running ONH quadrant analysis...")
+            ONHBiomarkerAnalyzer.process_quadrants(canvas)
+            print("ONH quadrant analysis completed.")
+
+        selected_view = "Overall"
+        if hasattr(canvas, "onh_segmentation_view_var"):
+            selected_view = canvas.onh_segmentation_view_var.get()
+
+        canvas.after(
+            0,
+            lambda view=selected_view: update_onh_segmentation_dropdown_display(canvas, view)
+        )
+
+        def refresh_histogram_ui():
+            if hasattr(canvas, "hist_plotter"):
+                diameters = getattr(canvas, "vessel_diameters_um", [])
+                canvas.hist_plotter.set_data(diameters)
+                canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+                images_dir = os.path.join(canvas.current_save_folder, "images")
+                os.makedirs(images_dir, exist_ok=True)
+
+                bin_size = int(canvas.bin_size_var.get())
+                hist_path = os.path.join(
+                    images_dir,
+                    f"{canvas.FileLabelName}_ONH_VDD_{selected_view.replace(' ', '_')}_Bin{bin_size}.png"
+                )
+                canvas.hist_plotter.save_to_file(hist_path)
+
+        canvas.after(0, refresh_histogram_ui)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -175,25 +248,28 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
         canvas.after(0, lambda: change_status_to_ready(canvas))
 
-    # Refresh histogram on main thread
-    def refresh_histogram_ui():
-        if hasattr(canvas, "hist_plotter"):
-            diameters = getattr(canvas, "vessel_diameters_um", [])
-            canvas.hist_plotter.set_data(diameters)
-            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
-            images_dir = os.path.join(canvas.current_save_folder, "images")
-            os.makedirs(images_dir, exist_ok=True)
 
-            bin_size = int(canvas.bin_size_var.get())
-            hist_path = os.path.join(
-                images_dir,
-                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
-            )
-            canvas.hist_plotter.save_to_file(hist_path)
+def prepare_onh_prebinary_overall(canvas: Canvas):
+    if hasattr(canvas, "binary_image"):
+        source = canvas.binary_image
+    elif hasattr(canvas, "original_img"):
+        source = canvas.original_img
+    else:
+        raise ValueError("No loaded image found for ONH prebinary processing.")
 
-    canvas.after(0, refresh_histogram_ui)
+    roi_mask = canvas.onh_mask_arr.astype(bool)
 
-    print("Biomarker analyzer processing completed.")
+    if source.shape != roi_mask.shape:
+        raise ValueError("ONH prebinary image and ONH mask have different sizes.")
+
+    binary = ((source > 0) & roi_mask).astype(np.uint8) * 255
+
+    canvas.onh_binary_overall = binary
+    canvas.onh_overall_vessel_img = binary
+    canvas.binary_image = binary
+    canvas.inverted_image = binary.copy()
+
+    save_onh_binary_image(canvas, binary)
 
 # Skin pipeline not implemented yet
 def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
@@ -327,4 +403,3 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
-

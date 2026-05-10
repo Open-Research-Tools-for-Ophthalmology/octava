@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import os
 from PIL import Image, ImageTk
+from scipy.ndimage import median_filter
 
 from modules.resize_image import *
 from modules.change_status import *
@@ -75,6 +76,24 @@ def binarise_onh_image(canvas, display: bool = True):
         return
 
     image_size = img.shape[0]
+
+    # ------------------------------------------------------------
+    # Optional median filtering, controlled by the shared Advanced
+    # Settings control. This is only read here for ONH; Retina code is
+    # not changed.
+    # ------------------------------------------------------------
+    if hasattr(canvas, "med_filt_bool") and canvas.med_filt_bool.get():
+        ksize = int(canvas.kernel_size.get()) if hasattr(canvas, "kernel_size") else 3
+        ksize = max(1, ksize)
+        img = median_filter(
+            img,
+            size=(ksize, ksize),
+            mode="constant",
+            cval=0.0,
+        )
+        img = np.where(roi_mask, img, 0).astype(np.float64)
+        roi_pixels = img[roi_mask]
+        print("ONH median filter selected. Kernel size:", ksize)
 
     # ------------------------------------------------------------
     # 3. Normalise image using ROI pixels only
@@ -184,68 +203,78 @@ def binarise_onh_image(canvas, display: bool = True):
     # Adaptive thresholding was too sensitive to OCTA speckle noise.
     # Frangi is used here because it enhances line-like / vessel-like structures.
 
-    frangi_opts = {
-        "sigmarange": (1, 4),
-        "sigmastepsize": 1,
-        "correctionconst1": 0.8,
-        "correctionconst2": 15,
-    }
+    use_frangi = True
+    if hasattr(canvas, "frangi_bool"):
+        use_frangi = bool(canvas.frangi_bool.get())
 
-    frangi_response = frangi_2Dfilter(
-        img_smooth.astype(np.float64),
-        frangi_opts
-    )
+    if use_frangi:
+        frangi_min = int(canvas.frangi_min.get()) if hasattr(canvas, "frangi_min") else 1
+        frangi_max = int(canvas.frangi_max.get()) if hasattr(canvas, "frangi_max") else 4
+        if frangi_max < frangi_min:
+            frangi_min, frangi_max = frangi_max, frangi_min
 
-    frangi_response = cv2.normalize(
-        frangi_response,
-        None,
-        0,
-        255,
-        cv2.NORM_MINMAX
-    ).astype(np.uint8)
+        frangi_opts = {
+            "sigmarange": (frangi_min, frangi_max),
+            "sigmastepsize": 1,
+            "correctionconst1": 0.8,
+            "correctionconst2": 15,
+        }
 
-    frangi_response = np.where(
-        roi_mask,
-        frangi_response,
-        0
-    ).astype(np.uint8)
+        frangi_response = frangi_2Dfilter(
+            img_smooth.astype(np.float64),
+            frangi_opts
+        )
 
-    roi_frangi_pixels = frangi_response[roi_mask]
+        frangi_response = cv2.normalize(
+            frangi_response,
+            None,
+            0,
+            255,
+            cv2.NORM_MINMAX
+        ).astype(np.uint8)
 
-    # Lower percentile = more fine vessels, more noise.
-    # Higher percentile = cleaner, but fewer fine vessels.
-    #
-    # Start with 70.
-    # If fine vessels are still missing, try 65 or 60.
-    # If too noisy, try 75 or 80.
-    fine_threshold = np.percentile(roi_frangi_pixels, 70)
+        frangi_response = np.where(
+            roi_mask,
+            frangi_response,
+            0
+        ).astype(np.uint8)
 
-    fine_vessel_candidate_mask = np.zeros_like(frangi_response, dtype=np.uint8)
-    fine_vessel_candidate_mask[
-        (frangi_response >= fine_threshold) & roi_mask
-    ] = 255
+        roi_frangi_pixels = frangi_response[roi_mask]
 
-    # Connect fragmented fine vessels gently.
-    fine_kernel_size = max(3, int(image_size * 0.004))
-    if fine_kernel_size % 2 == 0:
-        fine_kernel_size += 1
+        # Lower percentile = more fine vessels, more noise.
+        # Higher percentile = cleaner, but fewer fine vessels.
+        fine_threshold = np.percentile(roi_frangi_pixels, 70)
 
-    fine_kernel = cv2.getStructuringElement(
-        cv2.MORPH_ELLIPSE,
-        (fine_kernel_size, fine_kernel_size)
-    )
+        fine_vessel_candidate_mask = np.zeros_like(frangi_response, dtype=np.uint8)
+        fine_vessel_candidate_mask[
+            (frangi_response >= fine_threshold) & roi_mask
+        ] = 255
 
-    fine_vessel_candidate_mask = cv2.morphologyEx(
-        fine_vessel_candidate_mask,
-        cv2.MORPH_CLOSE,
-        fine_kernel
-    )
+        # Connect fragmented fine vessels gently.
+        fine_kernel_size = max(3, int(image_size * 0.004))
+        if fine_kernel_size % 2 == 0:
+            fine_kernel_size += 1
 
-    fine_vessel_candidate_mask = np.where(
-        roi_mask,
-        fine_vessel_candidate_mask,
-        0
-    ).astype(np.uint8)
+        fine_kernel = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE,
+            (fine_kernel_size, fine_kernel_size)
+        )
+
+        fine_vessel_candidate_mask = cv2.morphologyEx(
+            fine_vessel_candidate_mask,
+            cv2.MORPH_CLOSE,
+            fine_kernel
+        )
+
+        fine_vessel_candidate_mask = np.where(
+            roi_mask,
+            fine_vessel_candidate_mask,
+            0
+        ).astype(np.uint8)
+    else:
+        frangi_response = np.zeros_like(img_corrected, dtype=np.uint8)
+        fine_vessel_candidate_mask = np.zeros_like(img_corrected, dtype=np.uint8)
+        print("ONH Frangi filter disabled. Using bright-vessel seed only.")
 
     # ------------------------------------------------------------
     # 8. Combine bright-vessel seed and fine-vessel candidate masks
@@ -304,6 +333,8 @@ def binarise_onh_image(canvas, display: bool = True):
     # ------------------------------------------------------------
     # 11. Store result on canvas
     # ------------------------------------------------------------
+    canvas.onh_binary_overall = binary_image
+    canvas.onh_overall_vessel_img = binary_image
     canvas.binary_image = binary_image
     canvas.inverted_image = binary_image.copy()
 
