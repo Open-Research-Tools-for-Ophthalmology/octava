@@ -22,6 +22,8 @@ ONH_VIEW_TO_KEY = {
 
 ONH_REGIONAL_SHEET_NAME = "ONH Regional"
 RIGHT_EYE = "Right Eye"
+ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX = 15.0
+ONH_TORTUOSITY_MIN_LINK_LENGTH_PX = 15.0
 
 
 class ONHBiomarkerAnalyzer:
@@ -263,10 +265,18 @@ class ONHBiomarkerAnalyzer:
         )
         mean_diameter_um = float(np.mean(diameters_um)) if diameters_um.size > 0 else 0.0
 
+        valid_branch_link_indices = ONHBiomarkerAnalyzer._valid_link_indices(
+            links,
+            binary_mask.shape,
+            roi_mask,
+            min_link_length_px=ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX,
+        )
+
         branchpoint_count = ONHBiomarkerAnalyzer._branchpoint_count(
             nodes,
             binary_mask.shape,
             roi_mask,
+            valid_link_indices=valid_branch_link_indices,
         )
         branchpoint_density_per_mm2 = float(branchpoint_count / roi_area_mm2)
         branchpoint_density_per_mm = (
@@ -277,10 +287,11 @@ class ONHBiomarkerAnalyzer:
             skeleton_mask
         )
 
-        mean_tortuosity = ONHBiomarkerAnalyzer._mean_tortuosity(
+        mean_tortuosity, valid_tortuosity_link_count = ONHBiomarkerAnalyzer._mean_tortuosity(
             links,
             binary_mask.shape,
             roi_mask,
+            min_link_length_px=ONH_TORTUOSITY_MIN_LINK_LENGTH_PX,
             update_links=region_name is None,
         )
 
@@ -302,6 +313,11 @@ class ONHBiomarkerAnalyzer:
             "branchpoint_density_per_mm": float(branchpoint_density_per_mm),
             "fractal_dimension": float(fractal_dimension),
             "mean_tortuosity": float(mean_tortuosity),
+            "branchpoint_min_link_length_px": float(ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX),
+            "tortuosity_min_link_length_px": float(ONH_TORTUOSITY_MIN_LINK_LENGTH_PX),
+            "raw_link_count": int(len(links)) if links is not None else 0,
+            "valid_branch_link_count": int(len(valid_branch_link_indices)),
+            "valid_tortuosity_link_count": int(valid_tortuosity_link_count),
         }
 
         if onh_center is not None:
@@ -343,6 +359,50 @@ class ONHBiomarkerAnalyzer:
         return total_length_pixels
 
     @staticmethod
+    def _link_length_pixels_in_roi(
+        link,
+        image_shape,
+        roi_mask: np.ndarray,
+    ) -> float:
+        indices = np.asarray(getattr(link, "path", []), dtype=int)
+
+        if indices.size < 2:
+            return 0.0
+
+        rows, cols = np.unravel_index(indices, image_shape)
+        coords = np.column_stack((rows, cols)).astype(float)
+        valid = roi_mask[rows, cols]
+        diffs = np.diff(coords, axis=0)
+        step_lengths = np.linalg.norm(diffs, axis=1)
+        valid_steps = valid[:-1] & valid[1:]
+
+        return float(step_lengths[valid_steps].sum())
+
+    @staticmethod
+    def _valid_link_indices(
+        links,
+        image_shape,
+        roi_mask: np.ndarray,
+        min_link_length_px: float,
+    ) -> set[int]:
+        valid_indices = set()
+
+        if links is None:
+            return valid_indices
+
+        for link_idx, link in enumerate(links):
+            length_pixels = ONHBiomarkerAnalyzer._link_length_pixels_in_roi(
+                link,
+                image_shape,
+                roi_mask,
+            )
+
+            if length_pixels >= min_link_length_px:
+                valid_indices.add(link_idx)
+
+        return valid_indices
+
+    @staticmethod
     def _sample_diameters_um(
         binary_mask: np.ndarray,
         skeleton_mask: np.ndarray,
@@ -378,7 +438,12 @@ class ONHBiomarkerAnalyzer:
         return sampled * pixel_size_mm * 1000.0
 
     @staticmethod
-    def _branchpoint_count(nodes, image_shape, roi_mask: np.ndarray) -> int:
+    def _branchpoint_count(
+        nodes,
+        image_shape,
+        roi_mask: np.ndarray,
+        valid_link_indices: set[int] | None = None,
+    ) -> int:
         if nodes is None:
             return 0
 
@@ -393,8 +458,19 @@ class ONHBiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
-            if np.any(roi_mask[rows, cols]):
-                branchpoint_count += 1
+            if not np.any(roi_mask[rows, cols]):
+                continue
+
+            if valid_link_indices is not None:
+                connected_valid_links = [
+                    link_idx for link_idx in getattr(node, "links", [])
+                    if int(link_idx) in valid_link_indices
+                ]
+
+                if len(connected_valid_links) < 2:
+                    continue
+
+            branchpoint_count += 1
 
         return branchpoint_count
 
@@ -403,17 +479,28 @@ class ONHBiomarkerAnalyzer:
         links,
         image_shape,
         roi_mask: np.ndarray,
+        min_link_length_px: float = 0.0,
         update_links: bool = True,
-    ) -> float:
+    ) -> tuple[float, int]:
         tortuosity_values = []
+        valid_link_count = 0
 
         if links is None:
-            return 0.0
+            return 0.0, 0
 
         for link in links:
             indices = np.asarray(link.path, dtype=int)
 
             if indices.size < 3:
+                continue
+
+            length_pixels = ONHBiomarkerAnalyzer._link_length_pixels_in_roi(
+                link,
+                image_shape,
+                roi_mask,
+            )
+
+            if length_pixels < min_link_length_px:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
@@ -440,7 +527,11 @@ class ONHBiomarkerAnalyzer:
             if update_links and link_tortuosities:
                 link.tortuosity = float(np.mean(link_tortuosities))
 
-        return float(np.mean(tortuosity_values)) if tortuosity_values else 0.0
+            if link_tortuosities:
+                valid_link_count += 1
+
+        mean_tortuosity = float(np.mean(tortuosity_values)) if tortuosity_values else 0.0
+        return mean_tortuosity, valid_link_count
 
     @staticmethod
     def _valid_coord_runs(rows: np.ndarray, cols: np.ndarray, valid: np.ndarray):
@@ -530,6 +621,11 @@ class ONHBiomarkerAnalyzer:
             "Vessel length mm": metrics["vessel_length_mm"],
             "Branchpoint count": metrics["branchpoint_count"],
             "Branchpoint density per mm": metrics["branchpoint_density_per_mm"],
+            "Branchpoint min link length px": metrics["branchpoint_min_link_length_px"],
+            "Tortuosity min link length px": metrics["tortuosity_min_link_length_px"],
+            "Raw link count": metrics["raw_link_count"],
+            "Valid branch link count": metrics["valid_branch_link_count"],
+            "Valid tortuosity link count": metrics["valid_tortuosity_link_count"],
         }
 
     @staticmethod

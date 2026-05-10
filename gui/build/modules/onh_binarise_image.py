@@ -24,6 +24,10 @@ def binarise_onh_image(canvas, display: bool = True):
     - Use Frangi vesselness to detect fine line-like vessels.
     - Combine both masks into one overall binary vessel mask.
 
+    The default ONH parameters follow the selected "Version 3" tuning from
+    the ONH binarisation experiment notebook: fine-sensitive, but with an
+    explicit large-vessel seed so large vessels remain preserved.
+
     Expected outputs:
     - canvas.binary_image: 0/255 binary vessel mask
         - vessel = 255 white
@@ -114,10 +118,10 @@ def binarise_onh_image(canvas, display: bool = True):
     # ------------------------------------------------------------
     # 4. Local contrast enhancement with CLAHE
     # ------------------------------------------------------------
-    # If too noisy, reduce clipLimit to 1.5.
-    # If fine vessels are still weak, try 2.5.
+    # Selected ONH candidate uses slightly lower CLAHE than the first
+    # baseline to reduce speckle amplification while preserving fine vessels.
     clahe = cv2.createCLAHE(
-        clipLimit=2.0,
+        clipLimit=1.7,
         tileGridSize=(8, 8)
     )
 
@@ -143,7 +147,7 @@ def binarise_onh_image(canvas, display: bool = True):
         img_enhanced,
         1.0,
         background,
-        -0.5,
+        -0.65,
         0
     )
 
@@ -167,16 +171,16 @@ def binarise_onh_image(canvas, display: bool = True):
     # This preserves large/bright vessels so they remain solid.
     roi_enhanced_pixels = img_enhanced[roi_mask]
 
-    # If large vessels are incomplete, reduce to 80.
-    # If too much bright background is included, increase to 88 or 90.
-    bright_seed_threshold = np.percentile(roi_enhanced_pixels, 85)
+    # Keep this seed explicit so large vessels remain solid after Frangi
+    # captures the thinner vessel network.
+    bright_seed_threshold = np.percentile(roi_enhanced_pixels, 87)
 
     bright_vessel_seed_mask = np.zeros_like(img_enhanced, dtype=np.uint8)
     bright_vessel_seed_mask[
         (img_enhanced >= bright_seed_threshold) & roi_mask
     ] = 255
 
-    seed_kernel_size = max(5, int(image_size * 0.008))
+    seed_kernel_size = max(5, int(image_size * 0.007))
     if seed_kernel_size % 2 == 0:
         seed_kernel_size += 1
 
@@ -243,15 +247,22 @@ def binarise_onh_image(canvas, display: bool = True):
 
         # Lower percentile = more fine vessels, more noise.
         # Higher percentile = cleaner, but fewer fine vessels.
-        fine_threshold = np.percentile(roi_frangi_pixels, 70)
+        fine_threshold = np.percentile(roi_frangi_pixels, 69)
 
         fine_vessel_candidate_mask = np.zeros_like(frangi_response, dtype=np.uint8)
         fine_vessel_candidate_mask[
             (frangi_response >= fine_threshold) & roi_mask
         ] = 255
 
+        # Mild intensity support reduces isolated Frangi speckle in low-signal
+        # background while still allowing fine capillaries to remain visible.
+        corrected_support_threshold = np.percentile(img_corrected[roi_mask], 22)
+        fine_vessel_candidate_mask[
+            (img_corrected < corrected_support_threshold) & roi_mask
+        ] = 0
+
         # Connect fragmented fine vessels gently.
-        fine_kernel_size = max(3, int(image_size * 0.004))
+        fine_kernel_size = max(3, int(image_size * 0.003))
         if fine_kernel_size % 2 == 0:
             fine_kernel_size += 1
 
@@ -291,7 +302,7 @@ def binarise_onh_image(canvas, display: bool = True):
     # ------------------------------------------------------------
     # Only close small gaps. Do not perform strong opening here,
     # because opening can remove fine ONH vessels.
-    cleanup_kernel_size = max(3, int(image_size * 0.003))
+    cleanup_kernel_size = max(3, int(image_size * 0.002))
     if cleanup_kernel_size % 2 == 0:
         cleanup_kernel_size += 1
 
