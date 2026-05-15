@@ -173,6 +173,109 @@ class BiomarkerAnalyzer:
         }
 
     @staticmethod
+    def _matlab_round(value, ndigits=0):
+        """Round scalar metrics while preserving NaN for undefined MATLAB-like outputs."""
+        if value is None or not np.isfinite(value):
+            return np.nan
+        rounded = np.round(value, ndigits)
+        if ndigits == 0:
+            return int(rounded)
+        return float(rounded)
+
+    @staticmethod
+    def _sample_variance(values):
+        """Return MATLAB-style sample variance, with singleton vectors equal to zero."""
+        values = np.asarray(values, dtype=float)
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            return np.nan
+        if values.size == 1:
+            return 0.0
+        return float(np.var(values, ddof=1))
+
+    @staticmethod
+    def _skewness(values):
+        """Return MATLAB default skewness for finite values."""
+        values = np.asarray(values, dtype=float)
+        values = values[np.isfinite(values)]
+        n = values.size
+        if n < 3:
+            return np.nan
+        centered = values - np.mean(values)
+        std = np.sqrt(np.mean(centered ** 2))
+        if std == 0:
+            return np.nan
+        biased_skewness = np.mean(centered ** 3) / (std ** 3)
+        return float(np.sqrt(n * (n - 1)) / (n - 2) * biased_skewness)
+
+    @staticmethod
+    def _kurtosis(values):
+        """Return MATLAB default Pearson kurtosis for finite values."""
+        values = np.asarray(values, dtype=float)
+        values = values[np.isfinite(values)]
+        n = values.size
+        if n < 4:
+            return np.nan
+        centered = values - np.mean(values)
+        std = np.sqrt(np.mean(centered ** 2))
+        if std == 0:
+            return np.nan
+        biased_excess = np.mean(centered ** 4) / (std ** 4) - 3.0
+        unbiased_excess = ((n - 1) / ((n - 2) * (n - 3))) * ((n + 1) * biased_excess + 6.0)
+        return float(unbiased_excess + 3.0)
+
+    @staticmethod
+    def _compute_link_measurements(links, binary, diameter_map=None):
+        """Populate MATLAB-style per-link length, diameter, and tortuosity fields."""
+        if diameter_map is None:
+            diameter_map = distance_transform_edt(binary > 0) * 2
+
+        image_shape = binary.shape
+        link_lengths_pix = []
+        link_diameters_pix = []
+        link_tortuosities = []
+
+        for link in links:
+            indices = np.asarray(link.path, dtype=int)
+            if indices.size == 0:
+                continue
+
+            rows, cols = np.unravel_index(indices, image_shape)
+            coords = np.column_stack((cols, rows)).astype(float)
+
+            if coords.shape[0] >= 2:
+                diffs = np.diff(coords, axis=0)
+                length_pix = float(np.sum(np.sqrt(np.sum(diffs * diffs, axis=1))))
+                end2end_length = float(np.linalg.norm(coords[-1] - coords[0]))
+                tortuosity = length_pix / end2end_length if end2end_length > 0 else np.inf
+            else:
+                length_pix = 0.0
+                end2end_length = 0.0
+                tortuosity = np.inf
+
+            diameter_measurements = diameter_map[rows, cols]
+            diameter = float(np.mean(diameter_measurements)) if diameter_measurements.size > 0 else np.nan
+
+            link.x = rows
+            link.y = cols
+            link.pixLength = length_pix
+            link.end2endLength = end2end_length
+            link.tortuosity = tortuosity
+            link.diameterMeasurements = diameter_measurements
+            link.diameter = diameter
+
+            link_lengths_pix.append(length_pix)
+            if np.isfinite(diameter):
+                link_diameters_pix.append(diameter)
+            link_tortuosities.append(tortuosity)
+
+        return (
+            np.asarray(link_lengths_pix, dtype=float),
+            np.asarray(link_diameters_pix, dtype=float),
+            np.asarray(link_tortuosities, dtype=float),
+        )
+
+    @staticmethod
     def compute_new_tortuosity_metrics_from_mat_file(mat_path):
         """Load MATLAB link data and return summarized tortuosity metrics."""
         import scipy.io as sio
@@ -221,12 +324,21 @@ class BiomarkerAnalyzer:
 
         Nx, Ny = binary.shape
         image_size_mm = float(canvas.image_size_var.get())
+        full_im_size_pix = getattr(canvas, "fullImSizePix", None)
+        if full_im_size_pix is None:
+            full_im_size_pix = (Nx, Ny)
+        full_image_pixels = np.asarray(full_im_size_pix, dtype=float).ravel()
+        full_image_height_pix = float(full_image_pixels[0]) if full_image_pixels.size > 0 else float(Nx)
 
-        # Read optional image type from GUI
-        img_type = canvas.img_type_var.get() if hasattr(canvas, "img_type_var") else None
+        # Read optional image shape from MATLAB-compatible state. Default OCTA images are rectangular.
+        img_shape_name = str(getattr(canvas, "imgShape", "rect")).lower()
+        is_circular_roi = img_shape_name in {"circ", "circle", "circular"}
 
         # Image area in pixels
-        img_area_pix = float(Nx * Nx)
+        if is_circular_roi:
+            img_area_pix = float(np.pi * (Nx / 2.0) ** 2)
+        else:
+            img_area_pix = float(Nx * Nx)
 
         # Vessel Area Density (VAD %)
         vessel_sum = float(np.sum(binary))
@@ -234,71 +346,61 @@ class BiomarkerAnalyzer:
         vad_pct = round(vessel_pixels / img_area_pix * 100.0, 2)
 
         # Pixel size and physical areas (mm²)
-        if Nx > 0:
-            pix_size_mm = image_size_mm / Nx
+        if full_image_height_pix > 0:
+            pix_size_mm = image_size_mm / full_image_height_pix
         else:
             pix_size_mm = 0.0
 
         img_area_mm2 = img_area_pix * (pix_size_mm ** 2)
         vessel_area_mm2 = vessel_pixels * (pix_size_mm ** 2)
 
-        skel_mask = (skeleton > 0)
+        radius_map = distance_transform_edt(binary > 0)
+        diameter_map = radius_map * 2
+        link_lengths_pix, link_diameters_pix, tortuosities = BiomarkerAnalyzer._compute_link_measurements(
+            links,
+            binary,
+            diameter_map=diameter_map,
+        )
 
         # Vessel length density (mm per mm²)
-        total_length_pix = 0.0
-
-        for link in links:
-            indices = np.asarray(link.path, dtype=int)
-            if indices.size < 2:
-                continue
-
-            rows, cols = np.unravel_index(indices, binary.shape)
-            coords = np.column_stack((rows, cols)).astype(float)
-
-            diffs = np.diff(coords, axis=0)
-            step_lengths = np.linalg.norm(diffs, axis=1)
-            length_pix = float(step_lengths.sum())
-
-            total_length_pix += length_pix
-            link.pixLength = length_pix
-
+        total_length_pix = float(np.sum(link_lengths_pix))
         total_length_mm = total_length_pix * pix_size_mm
         length_area_mm2 = image_size_mm ** 2
         vessel_length_density = total_length_mm / length_area_mm2
+        vessel_length_density_pct = (
+            round((total_length_mm * pix_size_mm) / img_area_mm2, 4) * 100.0
+            if img_area_mm2 > 0
+            else 0.0
+        )
+        vessel_length_density_mminv = (
+            round(total_length_mm / img_area_mm2, 4)
+            if img_area_mm2 > 0
+            else 0.0
+        )
+
+        link_lengths_mm = link_lengths_pix * pix_size_mm
+        link_lengths_um = link_lengths_mm * 1000.0
+
+        if link_lengths_um.size > 0:
+            mean_length_um = round(float(np.mean(link_lengths_um)))
+            median_length_um = round(float(np.median(link_lengths_um)))
+        else:
+            mean_length_um = 0
+            median_length_um = 0
 
         # Mean diameter (output: μm)
-        if Nx > 0:
-            pix_size_mm = image_size_mm / Nx
-        else:
-            pix_size_mm = 0.0
-
-        radius_map = distance_transform_edt(binary > 0)
-        diameter_map = radius_map * 2
-
-        all_sampled_diameters = []
-        img_shape = (Nx, Ny)
-
-        for link in links:
-            indices = np.asarray(link.path, dtype=int)
-            if indices.size == 0:
-                continue
-
-            rows, cols = np.unravel_index(indices, img_shape)
-            vals = diameter_map[rows, cols]
-            all_sampled_diameters.extend(vals)
-
-        total_points = len(all_sampled_diameters)
-
-        diameters_pix = np.asarray(all_sampled_diameters, dtype=float)
+        diameters_pix = np.asarray(link_diameters_pix, dtype=float)
         diameters_um = diameters_pix * pix_size_mm * 1000.0
         canvas.vessel_diameters_um = diameters_um
 
-        if total_points > 0:
-            mean_diameter_pix = np.mean(all_sampled_diameters)
+        if diameters_um.size > 0:
+            mean_diameter_pix = np.mean(diameters_pix)
             mean_diameter_mm = mean_diameter_pix * pix_size_mm #pix_size_mm -> pix_to_mm
             mean_diameter_um = mean_diameter_mm * 1000.0
+            median_diameter_um = float(np.median(diameters_um))
         else:
             mean_diameter_um = 0.0
+            median_diameter_um = 0.0
 
         # Branchpoint density
         branchpoint_count = 0
@@ -362,32 +464,53 @@ class BiomarkerAnalyzer:
                 fractal_dim = 0.0
 
         # Mean tortuosity
-        tortuosity_list = []
-        image_shape = binary.shape
+        finite_tortuosities = tortuosities[np.isfinite(tortuosities)]
+        canvas.vessel_lengths_mm = link_lengths_mm
+        canvas.vessel_lengths_um = link_lengths_um
+        canvas.vessel_tortuosities = finite_tortuosities
 
-        for link in links:
-            indices = np.asarray(link.path, dtype=int)
-            if indices.size < 2:
-                continue
-
-            rows, cols = np.unravel_index(indices, image_shape)
-            coords = np.column_stack((rows, cols)).astype(float)
-
-            diffs = np.diff(coords, axis=0)
-            arc_length = np.sum(np.linalg.norm(diffs, axis=1))
-
-            start_point = coords[0]
-            end_point = coords[-1]
-            chord_length = np.linalg.norm(start_point - end_point)
-
-            if chord_length > 1e-6:
-                tortuosity = arc_length / chord_length
-                tortuosity_list.append(tortuosity)
-
-        if len(tortuosity_list) > 0:
-            mean_tortuosity = np.mean(tortuosity_list)
+        if finite_tortuosities.size > 0:
+            mean_tortuosity = np.mean(finite_tortuosities)
         else:
             mean_tortuosity = 0.0
+
+        total_length_rounded_mm = round(total_length_mm, 2)
+
+        diameter_variance = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._sample_variance(diameters_um),
+        )
+        diameter_skewness = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._skewness(diameters_um),
+            2,
+        )
+        diameter_kurtosis = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._kurtosis(diameters_um),
+            2,
+        )
+
+        length_variance = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._sample_variance(link_lengths_um),
+        )
+        length_skewness = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._skewness(link_lengths_um),
+            2,
+        )
+        length_kurtosis = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._kurtosis(link_lengths_um),
+            2,
+        )
+
+        tortuosity_variance = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._sample_variance(finite_tortuosities),
+            3,
+        )
+        tortuosity_skewness = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._skewness(finite_tortuosities),
+            2,
+        )
+        tortuosity_kurtosis = BiomarkerAnalyzer._matlab_round(
+            BiomarkerAnalyzer._kurtosis(finite_tortuosities),
+        )
 
         # Store metrics in canvas
         if not hasattr(canvas, "metrics"):
@@ -398,20 +521,48 @@ class BiomarkerAnalyzer:
             "vessel_area_mm2": float(vessel_area_mm2),
             "image_area_mm2": float(img_area_mm2),
             "vessel_length_density_mm_per_mm2": float(vessel_length_density),
+            "vessel_length_density_pct": float(vessel_length_density_pct),
+            "total_vessel_length_mm": float(total_length_rounded_mm),
+            "mean_length_um": float(mean_length_um),
+            "median_length_um": float(median_length_um),
             "mean_diameter_um": float(mean_diameter_um),
+            "median_diameter_um": float(median_diameter_um),
             "branchpoint_count": int(branchpoint_count),
             "branchpoint_density_per_mm2": float(branchpoint_density),
             "fractal_dimension": float(fractal_dim),
             "mean_tortuosity": float(mean_tortuosity),
+            "diameter_variance": diameter_variance,
+            "diameter_skewness": diameter_skewness,
+            "diameter_kurtosis": diameter_kurtosis,
+            "length_variance": length_variance,
+            "length_skewness": length_skewness,
+            "length_kurtosis": length_kurtosis,
+            "tortuosity_variance": tortuosity_variance,
+            "tortuosity_skewness": tortuosity_skewness,
+            "tortuosity_kurtosis": tortuosity_kurtosis,
         })
         micro_stats = {
             "name": canvas.FileLabelName,
             "Vessel area density": float(vad_pct),
-            "Vessel length density": float(vessel_length_density),
+            "Total vessel length": float(total_length_rounded_mm),
+            "VLD_pct": float(vessel_length_density_pct),
+            "VLD_mminv": float(vessel_length_density_mminv),
+            "Mean length": float(mean_length_um),
+            "Median length": float(median_length_um),
+            "varLengths": length_variance,
+            "skewLengths": length_skewness,
+            "kurtLengths": length_kurtosis,
             "Mean diameter": float(mean_diameter_um),
+            "Median diameter": float(median_diameter_um),
+            "varDiams": diameter_variance,
+            "skewDiams": diameter_skewness,
+            "kurtDiams": diameter_kurtosis,
             "Branchpoint density": float(branchpoint_density),
             "Fractal dimension": float(fractal_dim),
             "Mean tortuosity": float(mean_tortuosity),
+            "varTort": tortuosity_variance,
+            "skewTort": tortuosity_skewness,
+            "kurtTort": tortuosity_kurtosis,
         }
 
         # Compute new tortuosity metrics and add to micro_stats

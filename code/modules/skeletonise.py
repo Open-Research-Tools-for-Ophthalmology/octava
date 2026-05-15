@@ -5,6 +5,7 @@ from modules.change_status import change_status_to_waiting
 from modules.Skel2Graph3D import skel2graph3d
 from modules.Graph2Skel3D import graph2skel3d
 from modules.resize_image import *
+from modules.biomarker import BiomarkerAnalyzer
 import scipy.io as sio
 import time
 from skimage.morphology import medial_axis
@@ -59,31 +60,19 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
       nodes, links = skel2graph3d(skel2, 0)
       wl_new = sum([len(n.links) for n in nodes])
 
-      # iterate until stable (throttle expensive skel2graph rebuild)
+      # Iterate exactly like MATLAB until the graph link count is stable.
       start_loop = time.time()
 
-      rebuild_every = 4   # only rebuild graph every N iterations
-      max_iters = 30      # safety guard
-
       iter_i = 0
-      prev_pixels = np.count_nonzero(skel2)
+      max_iters = 1000
 
       while (wl_new != wl) and (iter_i < max_iters):
         wl = wl_new
         iter_i += 1
 
         skel2 = graph2skel3d(nodes, links, y, x, 1)
-
-        # cheap convergence check to avoid rebuilding graph too often
-        curr_pixels = np.count_nonzero(skel2)
-        if curr_pixels == prev_pixels:
-          break
-        prev_pixels = curr_pixels
-
-        # rebuild graph only occasionally
-        if (iter_i % rebuild_every) == 0:
-          nodes, links = skel2graph3d(skel2, 0)
-          wl_new = sum([len(n.links) for n in nodes])
+        nodes, links = skel2graph3d(skel2, 0)
+        wl_new = sum([len(n.links) for n in nodes])
 
       # final rebuild to keep nodes/links consistent with final skeleton
       nodes, links = skel2graph3d(skel2, 0)
@@ -96,6 +85,7 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
   canvas.skeleton_image = skel2[:, :, 0]
   canvas.skeleton_nodes = nodes
   canvas.skeleton_links = links
+  BiomarkerAnalyzer._compute_link_measurements(links, L, diameter_map=D)
 
   if display:
     skel_uint8 = binary_dilation(canvas.skeleton_image, iterations=1).astype(np.uint8) * 255
