@@ -208,12 +208,28 @@ def binarise_onh_image(canvas, display: bool = True):
     # Frangi is used here because it enhances line-like / vessel-like structures.
 
     use_frangi = True
-    if hasattr(canvas, "frangi_bool"):
-        use_frangi = bool(canvas.frangi_bool.get())
+    frangi_bool_var = getattr(
+        canvas,
+        "onh_frangi_bool",
+        getattr(canvas, "frangi_bool", None),
+    )
+    if frangi_bool_var is not None:
+        use_frangi = bool(frangi_bool_var.get())
 
     if use_frangi:
-        frangi_min = int(canvas.frangi_min.get()) if hasattr(canvas, "frangi_min") else 1
-        frangi_max = int(canvas.frangi_max.get()) if hasattr(canvas, "frangi_max") else 4
+        frangi_min_var = getattr(
+            canvas,
+            "onh_frangi_min",
+            getattr(canvas, "frangi_min", None),
+        )
+        frangi_max_var = getattr(
+            canvas,
+            "onh_frangi_max",
+            getattr(canvas, "frangi_max", None),
+        )
+
+        frangi_min = int(frangi_min_var.get()) if frangi_min_var is not None else 1
+        frangi_max = int(frangi_max_var.get()) if frangi_max_var is not None else 4
         if frangi_max < frangi_min:
             frangi_min, frangi_max = frangi_max, frangi_min
 

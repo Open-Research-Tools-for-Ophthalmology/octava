@@ -221,17 +221,9 @@ def _update_onh_metric_labels(canvas: Canvas, metrics: dict) -> None:
             text=f"{metrics.get('mean_diameter_um', 0.0):.2f} um",
         )
 
-    if hasattr(canvas, "branch_density_value_id"):
-        canvas.itemconfig(
-            canvas.branch_density_value_id,
-            text=f"{metrics.get('branchpoint_density_per_mm2', 0.0):.2f} /mm^2",
-        )
-
-    if hasattr(canvas, "fractal_dim_value_id"):
-        canvas.itemconfig(
-            canvas.fractal_dim_value_id,
-            text=f"{metrics.get('fractal_dimension', 0.0):.3f}",
-        )
+    # Branchpoint density and fractal dimension are not part of the final ONH
+    # metric display because their interpretation is weaker in annulus ROI
+    # analysis. The original labels are still used by the Retina workflow.
 
     if hasattr(canvas, "tortuosity_value_id"):
         canvas.itemconfig(

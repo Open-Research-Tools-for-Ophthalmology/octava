@@ -77,6 +77,7 @@ class ONHBiomarkerAnalyzer:
                 ONHBiomarkerAnalyzer._excel_row(metrics),
                 canvas.lastMetricsPath,
                 sheet_name=sheet_name,
+                replace_sheet=True,
             )
 
             summary_rows.append(ONHBiomarkerAnalyzer._summary_row(metrics))
@@ -86,6 +87,7 @@ class ONHBiomarkerAnalyzer:
                 pd.DataFrame(summary_rows),
                 canvas.lastMetricsPath,
                 sheet_name="ONH Summary",
+                replace_sheet=True,
             )
 
         canvas.onh_metrics_by_type = metrics_by_type
@@ -158,6 +160,7 @@ class ONHBiomarkerAnalyzer:
                 pd.DataFrame(regional_rows),
                 canvas.lastMetricsPath,
                 sheet_name=ONH_REGIONAL_SHEET_NAME,
+                replace_sheet=True,
             )
             canvas.onh_regional_metrics = regional_rows
 
@@ -265,27 +268,32 @@ class ONHBiomarkerAnalyzer:
         )
         mean_diameter_um = float(np.mean(diameters_um)) if diameters_um.size > 0 else 0.0
 
-        valid_branch_link_indices = ONHBiomarkerAnalyzer._valid_link_indices(
-            links,
-            binary_mask.shape,
-            roi_mask,
-            min_link_length_px=ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX,
-        )
-
-        branchpoint_count = ONHBiomarkerAnalyzer._branchpoint_count(
-            nodes,
-            binary_mask.shape,
-            roi_mask,
-            valid_link_indices=valid_branch_link_indices,
-        )
-        branchpoint_density_per_mm2 = float(branchpoint_count / roi_area_mm2)
-        branchpoint_density_per_mm = (
-            float(branchpoint_count / total_length_mm) if total_length_mm > 0 else 0.0
-        )
-
-        fractal_dimension = ONHBiomarkerAnalyzer._box_counting_fractal_dimension(
-            skeleton_mask
-        )
+        # Branchpoint density and fractal dimension were tested during ONH
+        # development, but they are not calculated in the final ONH output
+        # because the annulus ROI can cut vessels at the inner and outer
+        # boundaries, making these metrics less interpretable.
+        #
+        # valid_branch_link_indices = ONHBiomarkerAnalyzer._valid_link_indices(
+        #     links,
+        #     binary_mask.shape,
+        #     roi_mask,
+        #     min_link_length_px=ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX,
+        # )
+        #
+        # branchpoint_count = ONHBiomarkerAnalyzer._branchpoint_count(
+        #     nodes,
+        #     binary_mask.shape,
+        #     roi_mask,
+        #     valid_link_indices=valid_branch_link_indices,
+        # )
+        # branchpoint_density_per_mm2 = float(branchpoint_count / roi_area_mm2)
+        # branchpoint_density_per_mm = (
+        #     float(branchpoint_count / total_length_mm) if total_length_mm > 0 else 0.0
+        # )
+        #
+        # fractal_dimension = ONHBiomarkerAnalyzer._box_counting_fractal_dimension(
+        #     skeleton_mask
+        # )
 
         mean_tortuosity, valid_tortuosity_link_count = ONHBiomarkerAnalyzer._mean_tortuosity(
             links,
@@ -308,15 +316,9 @@ class ONHBiomarkerAnalyzer:
             "vessel_length_mm": float(total_length_mm),
             "vessel_length_density_mm_per_mm2": float(vessel_length_density),
             "mean_diameter_um": float(mean_diameter_um),
-            "branchpoint_count": int(branchpoint_count),
-            "branchpoint_density_per_mm2": float(branchpoint_density_per_mm2),
-            "branchpoint_density_per_mm": float(branchpoint_density_per_mm),
-            "fractal_dimension": float(fractal_dimension),
             "mean_tortuosity": float(mean_tortuosity),
-            "branchpoint_min_link_length_px": float(ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX),
             "tortuosity_min_link_length_px": float(ONH_TORTUOSITY_MIN_LINK_LENGTH_PX),
             "raw_link_count": int(len(links)) if links is not None else 0,
-            "valid_branch_link_count": int(len(valid_branch_link_indices)),
             "valid_tortuosity_link_count": int(valid_tortuosity_link_count),
         }
 
@@ -613,18 +615,12 @@ class ONHBiomarkerAnalyzer:
             "Vessel area density": metrics["vessel_area_density_pct"],
             "Vessel length density": metrics["vessel_length_density_mm_per_mm2"],
             "Mean diameter": metrics["mean_diameter_um"],
-            "Branchpoint density": metrics["branchpoint_density_per_mm2"],
-            "Fractal dimension": metrics["fractal_dimension"],
             "Mean tortuosity": metrics["mean_tortuosity"],
             "Vessel area mm2": metrics["vessel_area_mm2"],
             "ONH ROI area mm2": metrics["onh_roi_area_mm2"],
             "Vessel length mm": metrics["vessel_length_mm"],
-            "Branchpoint count": metrics["branchpoint_count"],
-            "Branchpoint density per mm": metrics["branchpoint_density_per_mm"],
-            "Branchpoint min link length px": metrics["branchpoint_min_link_length_px"],
             "Tortuosity min link length px": metrics["tortuosity_min_link_length_px"],
             "Raw link count": metrics["raw_link_count"],
-            "Valid branch link count": metrics["valid_branch_link_count"],
             "Valid tortuosity link count": metrics["valid_tortuosity_link_count"],
         }
 
@@ -664,9 +660,6 @@ class ONHBiomarkerAnalyzer:
             "image_area_mm2": metrics["onh_roi_area_mm2"],
             "vessel_length_density_mm_per_mm2": metrics["vessel_length_density_mm_per_mm2"],
             "mean_diameter_um": metrics["mean_diameter_um"],
-            "branchpoint_count": metrics["branchpoint_count"],
-            "branchpoint_density_per_mm2": metrics["branchpoint_density_per_mm2"],
-            "fractal_dimension": metrics["fractal_dimension"],
             "mean_tortuosity": metrics["mean_tortuosity"],
         })
 
@@ -690,23 +683,9 @@ class ONHBiomarkerAnalyzer:
                 text=f"{metrics['mean_diameter_um']:.2f} um",
             )
 
-        if hasattr(canvas, "branch_count_value_id"):
-            canvas.itemconfig(
-                canvas.branch_count_value_id,
-                text=f"{metrics['branchpoint_count']:d}",
-            )
-
-        if hasattr(canvas, "branch_density_value_id"):
-            canvas.itemconfig(
-                canvas.branch_density_value_id,
-                text=f"{metrics['branchpoint_density_per_mm2']:.2f} /mm^2",
-            )
-
-        if hasattr(canvas, "fractal_dim_value_id"):
-            canvas.itemconfig(
-                canvas.fractal_dim_value_id,
-                text=f"{metrics['fractal_dimension']:.3f}",
-            )
+        # Branchpoint density and fractal dimension are not displayed for the
+        # final ONH output. The original canvas labels remain for the Retina
+        # workflow.
 
         if hasattr(canvas, "tortuosity_value_id"):
             canvas.itemconfig(

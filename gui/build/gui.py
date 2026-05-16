@@ -69,6 +69,9 @@ canvas = Canvas(
 canvas.frangi_bool = IntVar(value=1)  # Variable for Frangi checkbox, default to true
 canvas.frangi_min = IntVar(value=1)  # Variable for Frangi min sigma
 canvas.frangi_max = IntVar(value=4)  # Variable for Frangi max sigma
+canvas.onh_frangi_bool = IntVar(value=1)  # ONH-only Frangi checkbox
+canvas.onh_frangi_min = IntVar(value=1)  # ONH-only Frangi min sigma
+canvas.onh_frangi_max = IntVar(value=4)  # ONH-only Frangi max sigma
 canvas.med_filt_bool = IntVar(value=0)  # Variable for Median Filter checkbox
 canvas.twig_size = IntVar(value=8)  # Variable for Twig Size Spinbox
 canvas.kernel_size = IntVar(value=3)  # Variable for Kernel Size Spinbox
@@ -424,16 +427,18 @@ def update_onh_results_layout():
 
     canvas.coords(canvas.vad_label_id, 460.0, 470.0)
     canvas.coords(canvas.vad_value_id, 603.0, 470.0)
-    canvas.coords(canvas.length_density_label_id, 460.0, 500.0)
-    canvas.coords(canvas.length_density_value_id, 616.0, 500.0)
-    canvas.coords(canvas.mean_diameter_label_id, 460.0, 530.0)
-    canvas.coords(canvas.mean_diameter_value_id, 575.0, 530.0)
-    canvas.coords(canvas.branch_density_label_id, 460.0, 560.0)
-    canvas.coords(canvas.branch_density_value_id, 607.0, 560.0)
-    canvas.coords(canvas.fractal_dim_label_id, 460.0, 590.0)
-    canvas.coords(canvas.fractal_dim_value_id, 593.0, 590.0)
-    canvas.coords(canvas.tortuosity_label_id, 460.0, 620.0)
-    canvas.coords(canvas.tortuosity_value_id, 580.0, 620.0)
+    canvas.coords(canvas.length_density_label_id, 460.0, 525.0)
+    canvas.coords(canvas.length_density_value_id, 616.0, 525.0)
+    canvas.coords(canvas.mean_diameter_label_id, 460.0, 580.0)
+    canvas.coords(canvas.mean_diameter_value_id, 575.0, 580.0)
+    set_canvas_items_state([
+        canvas.branch_density_label_id,
+        canvas.branch_density_value_id,
+        canvas.fractal_dim_label_id,
+        canvas.fractal_dim_value_id,
+    ], "hidden")
+    canvas.coords(canvas.tortuosity_label_id, 460.0, 635.0)
+    canvas.coords(canvas.tortuosity_value_id, 580.0, 635.0)
 
 
 def update_default_results_layout():
@@ -457,6 +462,12 @@ def update_default_results_layout():
     canvas.coords(canvas.length_density_value_id, 866.0, 500.0)
     canvas.coords(canvas.mean_diameter_label_id, 710.0, 530.0)
     canvas.coords(canvas.mean_diameter_value_id, 825.0, 530.0)
+    set_canvas_items_state([
+        canvas.branch_density_label_id,
+        canvas.branch_density_value_id,
+        canvas.fractal_dim_label_id,
+        canvas.fractal_dim_value_id,
+    ], "normal")
     canvas.coords(canvas.branch_density_label_id, 710.0, 560.0)
     canvas.coords(canvas.branch_density_value_id, 857.0, 560.0)
     canvas.coords(canvas.fractal_dim_label_id, 710.0, 590.0)

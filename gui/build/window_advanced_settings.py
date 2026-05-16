@@ -34,6 +34,13 @@ def subwindow1(canvas):
   small_vessels_var = IntVar(value=0)
   artery_var = IntVar(value=0)
   veins_var = IntVar(value=0)
+  frangi_bool_var = canvas.frangi_bool
+  frangi_min_var = canvas.frangi_min
+  frangi_max_var = canvas.frangi_max
+  if is_onh_mode:
+      frangi_bool_var = getattr(canvas, "onh_frangi_bool", canvas.frangi_bool)
+      frangi_min_var = getattr(canvas, "onh_frangi_min", canvas.frangi_min)
+      frangi_max_var = getattr(canvas, "onh_frangi_max", canvas.frangi_max)
 
 
   subcanvas1 = Canvas(
@@ -144,7 +151,7 @@ def subwindow1(canvas):
   frangi_filt_checkbox = Checkbutton(
       subwindow,
       text="Frangi filter",
-      variable=canvas.frangi_bool,
+      variable=frangi_bool_var,
       bg=subwindow_bg_colour,
       fg="#10203F",
       font=("Roboto", 14 * -1)
@@ -168,7 +175,7 @@ def subwindow1(canvas):
       from_=1,
       to=10,
       width=2,
-      textvariable=canvas.frangi_min,
+      textvariable=frangi_min_var,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 12 * -1),
@@ -194,7 +201,7 @@ def subwindow1(canvas):
       from_=1,
       to=10,
       width=2,
-      textvariable=canvas.frangi_max,
+      textvariable=frangi_max_var,
       bg=subwindow_bg_colour,
       fg=text_colour,
       font=("Roboto", 12 * -1),
