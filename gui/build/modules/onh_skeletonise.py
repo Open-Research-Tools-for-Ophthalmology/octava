@@ -196,6 +196,11 @@ def skeletonise_onh(
     # For 1500x1500 images:
     # image_size * image_size * 0.00001 = 22.5 pixels
     pre_min_area = max(20, int(image_size * image_size * 0.00001))
+    if key == "large":
+        pre_min_area = max(
+            pre_min_area,
+            int(image_size * image_size * 0.00003),
+        )
 
     vessel_mask_clean = remove_small_objects(
         vessel_mask.astype(bool),
@@ -221,6 +226,22 @@ def skeletonise_onh(
     # This is usually more stable for diameter calculation.
     distance_map = distance_transform_edt(vessel_mask_clean)
 
+    if key == "large":
+        height, width = vessel_mask_clean.shape
+        image_size_mm = float(canvas.image_size_var.get())
+        pixel_size_mm = image_size_mm / float(width) if width > 0 else 0.0
+        threshold_um = getattr(canvas, "onh_large_vessel_threshold_um_used", 40.0)
+        min_large_skeleton_diameter_um = float(threshold_um) * 0.62
+        skeleton_diameter_um = distance_map * 2.0 * pixel_size_mm * 1000.0
+        skeleton_bool = skeleton_bool & (
+            skeleton_diameter_um >= min_large_skeleton_diameter_um
+        )
+        setattr(
+            canvas,
+            f"onh_large_skeleton_min_diameter_um_{key}",
+            min_large_skeleton_diameter_um,
+        )
+
     # ------------------------------------------------------------
     # 5. Skeleton component pruning
     # ------------------------------------------------------------
@@ -238,6 +259,8 @@ def skeletonise_onh(
     # If graph is still too complex:
     #   onh_twig_size = max(10, int(retina_twig_size))
     onh_twig_size = max(8, int(retina_twig_size))
+    if key == "large":
+        onh_twig_size = max(14, int(round(retina_twig_size * 1.75)))
 
     skeleton_clean = remove_small_objects(
         skeleton_bool.astype(bool),
@@ -253,6 +276,8 @@ def skeletonise_onh(
     # Removes short endpoint branches attached to larger networks.
     # This should reduce endpoints, branch nodes, and short noisy links.
     spur_prune_length = max(10, int(onh_twig_size * 1.5))
+    if key == "large":
+        spur_prune_length = max(24, int(onh_twig_size * 2.0))
 
     before_spur_pixels = np.count_nonzero(skeleton_clean)
 
