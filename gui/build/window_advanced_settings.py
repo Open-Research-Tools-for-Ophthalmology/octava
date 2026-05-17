@@ -247,7 +247,7 @@ def subwindow1(canvas):
 
       onh_large_threshold_spinbox = Spinbox(
           subwindow,
-          from_=60,
+          from_=30,
           to=200,
           increment=5,
           width=4,

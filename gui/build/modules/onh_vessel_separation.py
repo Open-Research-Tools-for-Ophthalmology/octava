@@ -22,7 +22,7 @@ def get_onh_large_vessel_threshold_um(canvas: Canvas) -> float:
 
     if hasattr(canvas, "onh_large_vessel_threshold_um"):
         try:
-            return max(60.0, float(canvas.onh_large_vessel_threshold_um.get()))
+            return max(30.0, float(canvas.onh_large_vessel_threshold_um.get()))
         except Exception:
             pass
 
@@ -489,7 +489,7 @@ def save_onh_vessel_separation_images(canvas: Canvas) -> None:
     os.makedirs(images_dir, exist_ok=True)
 
     file_label = getattr(canvas, "FileLabelName", "ONH_Image")
-    threshold_um = getattr(canvas, "onh_large_vessel_threshold_um_used", 40.0)
+    threshold_um = getattr(canvas, "onh_large_vessel_threshold_um_used", 60.0)
 
     outputs = {
         "ONH_Binary_Overall": getattr(canvas, "onh_binary_overall", None),
