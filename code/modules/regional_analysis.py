@@ -755,8 +755,8 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_um))
 						links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
 						canvas.regional_metrics[i]["varLengths"] = round(np.var(links_length_um_flatten, ddof=1))
-						canvas.regional_metrics[i]["skewLengths"] = round(skew(links_length_um_flatten, bias=False), 2)
-						canvas.regional_metrics[i]["kurtLengths"] = round(kurtosis(links_length_um_flatten, fisher=False, bias=True), 2)
+						canvas.regional_metrics[i]["skewLengths"] = round(skew(links_length_um_flatten), 2)
+						canvas.regional_metrics[i]["kurtLengths"] = round(kurtosis(links_length_um_flatten, fisher=False), 2)
 
 						# Mean / Median diameter (µm)
 						links_diameter_pix = compute_diameter_list(links, binaryReg[i])
@@ -765,8 +765,8 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["MedianDiam"] = round(np.median(links_diameter_um))
 						links_diameter_um_flatten = links_diameter_um.flatten() # Flatten to 1d
 						canvas.regional_metrics[i]["varDiams"] = round(np.var(links_diameter_um_flatten, ddof=1))
-						canvas.regional_metrics[i]["skewDiams"] = round(skew(links_diameter_um_flatten, bias=False), 2)
-						canvas.regional_metrics[i]["kurtDiams"] = round(kurtosis(links_diameter_um_flatten, fisher=False, bias=True), 2)
+						canvas.regional_metrics[i]["skewDiams"] = round(skew(links_diameter_um_flatten), 2)
+						canvas.regional_metrics[i]["kurtDiams"] = round(kurtosis(links_diameter_um_flatten, fisher=False), 2)
 
 						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
@@ -783,8 +783,8 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["mTort"] = round(np.mean(tortuosity_arr), 4)
 						tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
 						canvas.regional_metrics[i]["varTort"] = round(np.var(tortuosity_arr_flatten, ddof=1), 3)
-						canvas.regional_metrics[i]["skewTort"] = round(skew(tortuosity_arr_flatten, bias=False), 2)
-						canvas.regional_metrics[i]["kurtTort"] = int(kurtosis(tortuosity_arr_flatten, fisher=False, bias=True))
+						canvas.regional_metrics[i]["skewTort"] = round(skew(tortuosity_arr_flatten), 2)
+						canvas.regional_metrics[i]["kurtTort"] = int(kurtosis(tortuosity_arr_flatten, fisher=False))
 
 				# If no skeleton graph
 				else:
