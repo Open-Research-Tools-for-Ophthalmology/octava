@@ -5,7 +5,7 @@ import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
 from modules.write_excel import *
-
+from scipy.stats import skew, kurtosis
 
 class BiomarkerAnalyzer:
     """
@@ -266,16 +266,31 @@ class BiomarkerAnalyzer:
         length_area_mm2 = image_size_mm ** 2
         vessel_length_density = total_length_mm / length_area_mm2
 
-        # Mean diameter (output: μm)
         if Nx > 0:
             pix_size_mm = image_size_mm / Nx
         else:
             pix_size_mm = 0.0
 
+        # Length metrics
+        if links is not None and len(links) > 0:
+            links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
+            links_length_um = np.asarray(links_length_pix) * pix_size_mm * 1000
+            links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
+            var_length = np.var(links_length_um_flatten, ddof=1)
+            skew_length = skew(links_length_um_flatten) # Matlab flag=1(default) -> don't correct for bias -> bias=True(default) Scipy
+            kurt_length = kurtosis(links_length_um_flatten, fisher=False) # Matlab pearson(default) -> fisher=False Scipy
+        else:
+            var_length = 0.0
+            skew_length = 0.0
+            kurt_length = 0.0
+
+        # Diameter metrics (output: μm)
         radius_map = distance_transform_edt(binary > 0)
         diameter_map = radius_map * 2
 
-        all_sampled_diameters = []
+        # all_sampled_diameters: the original per-pixel diameter maps, per_link_mean_diameters: one mean per link to match Matlab's metrics link.diameter = mean(diameterMeasurements)
+        all_sampled_diameters = []   
+        per_link_mean_diameters = []
         img_shape = (Nx, Ny)
 
         for link in links:
@@ -286,19 +301,26 @@ class BiomarkerAnalyzer:
             rows, cols = np.unravel_index(indices, img_shape)
             vals = diameter_map[rows, cols]
             all_sampled_diameters.extend(vals)
-
-        total_points = len(all_sampled_diameters)
+            if vals.size > 0:
+                per_link_mean_diameters.append(float(np.mean(vals)))
 
         diameters_pix = np.asarray(all_sampled_diameters, dtype=float)
         diameters_um = diameters_pix * pix_size_mm * 1000.0
         canvas.vessel_diameters_um = diameters_um
 
-        if total_points > 0:
-            mean_diameter_pix = np.mean(all_sampled_diameters)
-            mean_diameter_mm = mean_diameter_pix * pix_size_mm #pix_size_mm -> pix_to_mm
-            mean_diameter_um = mean_diameter_mm * 1000.0
+        # var/skew/kurt computed on per-link mean diameters (one value per vessel, matching MATLAB)
+        if per_link_mean_diameters:
+            diameters_scaled_um = np.asarray(per_link_mean_diameters) * pix_size_mm * 1000.0
+            mean_diameter_um = np.mean(diameters_scaled_um)
+            diameters_scaled_um_flatten = diameters_scaled_um.flatten()
+            var_diameter_um = np.var(diameters_scaled_um_flatten, ddof=1)
+            skew_diameter_um = skew(diameters_scaled_um_flatten)
+            kurt_diameter_um = kurtosis(diameters_scaled_um_flatten, fisher=False)
         else:
             mean_diameter_um = 0.0
+            var_diameter_um = 0.0
+            skew_diameter_um = 0.0
+            kurt_diameter_um = 0.0
 
         # Branchpoint density
         branchpoint_count = 0
@@ -361,7 +383,7 @@ class BiomarkerAnalyzer:
             else:
                 fractal_dim = 0.0
 
-        # Mean tortuosity
+        # Tortuosity metrics
         tortuosity_list = []
         image_shape = binary.shape
 
@@ -386,8 +408,16 @@ class BiomarkerAnalyzer:
 
         if len(tortuosity_list) > 0:
             mean_tortuosity = np.mean(tortuosity_list)
+            tortuosity_arr = np.asarray(tortuosity_list)
+            tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
+            var_tortuosity = np.var(tortuosity_arr_flatten, ddof=1)
+            skew_tortuosity = skew(tortuosity_arr_flatten)
+            kurt_tortuosity = kurtosis(tortuosity_arr_flatten, fisher=False)
         else:
             mean_tortuosity = 0.0
+            var_tortuosity = 0.0
+            skew_tortuosity = 0.0
+            kurt_tortuosity = 0.0
 
         # Store metrics in canvas
         if not hasattr(canvas, "metrics"):
@@ -408,14 +438,23 @@ class BiomarkerAnalyzer:
             "name": canvas.FileLabelName,
             "Vessel area density": float(vad_pct),
             "Vessel length density": float(vessel_length_density),
-            "Mean diameter": float(mean_diameter_um),
+            "varLengths": int(var_length),
+            "skewLengths": round(float(skew_length), 2),
+            "kurtLengths": round(float(kurt_length), 2),
+            "MeanDiam": float(mean_diameter_um),
+            "varDiams": int(var_diameter_um),
+            "skewDiams": round(float(skew_diameter_um), 2),
+            "kurtDiams": round(float(kurt_diameter_um), 2),
             "Branchpoint density": float(branchpoint_density),
             "Fractal dimension": float(fractal_dim),
-            "Mean tortuosity": float(mean_tortuosity),
+            "mTort": float(mean_tortuosity),
+            "varTort": round(float(var_tortuosity), 3),
+            "skewTort": round(float(skew_tortuosity), 2),
+            "kurtTort": int(kurt_tortuosity),
         }
 
         canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
-            links=canvas.skeleton_links,
+            links=links,
             binary_image=canvas.binary_image,
             image_size_var=canvas.image_size_var,
             fullImSizePix=canvas.fullImSizePix,

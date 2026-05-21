@@ -10,6 +10,7 @@ from modules.biomarker import BiomarkerAnalyzer
 from enum import Enum
 import math
 from scipy.ndimage import distance_transform_edt
+from scipy.stats import skew, kurtosis
 import os
 from openpyxl import Workbook
 import cv2
@@ -749,13 +750,23 @@ def run_analysis_on_regions(
 
 						# Mean / Median length (µm)
 						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
-						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_pix)*pix_to_mm*1000)
-						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_pix)*pix_to_mm*1000)
+						links_length_um = np.asarray(links_length_pix) * pix_to_mm * 1000
+						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_um))
+						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_um))
+						links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
+						canvas.regional_metrics[i]["varLengths"] = round(np.var(links_length_um_flatten, ddof=1))
+						canvas.regional_metrics[i]["skewLengths"] = round(skew(links_length_um_flatten), 2)
+						canvas.regional_metrics[i]["kurtLengths"] = round(kurtosis(links_length_um_flatten, fisher=False), 2)
 
 						# Mean / Median diameter (µm)
-						mean_diam_um, median_diam_um = compute_diameter(links, binaryReg[i], pix_to_mm)
-						canvas.regional_metrics[i]["MeanDiam"] = round(mean_diam_um)
-						canvas.regional_metrics[i]["MedianDiam"] = round(median_diam_um)
+						links_diameter_pix = compute_diameter_list(links, binaryReg[i])
+						links_diameter_um = np.asarray(links_diameter_pix) * pix_to_mm * 1000
+						canvas.regional_metrics[i]["MeanDiam"] = round(np.mean(links_diameter_um))
+						canvas.regional_metrics[i]["MedianDiam"] = round(np.median(links_diameter_um))
+						links_diameter_um_flatten = links_diameter_um.flatten() # Flatten to 1d
+						canvas.regional_metrics[i]["varDiams"] = round(np.var(links_diameter_um_flatten, ddof=1))
+						canvas.regional_metrics[i]["skewDiams"] = round(skew(links_diameter_um_flatten), 2)
+						canvas.regional_metrics[i]["kurtDiams"] = round(kurtosis(links_diameter_um_flatten, fisher=False), 2)
 
 						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
@@ -767,7 +778,13 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 
 						# mean tortuosity
-						canvas.regional_metrics[i]["mTort"] = compute_mean_tortuosity(links, binaryReg[i])
+						tortuosity_list = compute_tortuosity_list(links, binaryReg[i])
+						tortuosity_arr = np.asarray(tortuosity_list)
+						canvas.regional_metrics[i]["mTort"] = round(np.mean(tortuosity_arr), 4)
+						tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
+						canvas.regional_metrics[i]["varTort"] = round(np.var(tortuosity_arr_flatten, ddof=1), 3)
+						canvas.regional_metrics[i]["skewTort"] = round(skew(tortuosity_arr_flatten), 2)
+						canvas.regional_metrics[i]["kurtTort"] = int(kurtosis(tortuosity_arr_flatten, fisher=False))
 
 				# If no skeleton graph
 				else:
@@ -779,12 +796,21 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["VLD_mminv"] = 0
 						canvas.regional_metrics[i]["MeanLength"] = 0
 						canvas.regional_metrics[i]["MedianLength"] = 0
+						canvas.regional_metrics[i]["varLengths"] = 0
+						canvas.regional_metrics[i]["skewLengths"] = 0
+						canvas.regional_metrics[i]["kurtLengths"] = 0
 						canvas.regional_metrics[i]["MeanDiam"] = 0
 						canvas.regional_metrics[i]["MedianDiam"] = 0
+						canvas.regional_metrics[i]["varDiams"] = 0
+						canvas.regional_metrics[i]["skewDiams"] = 0
+						canvas.regional_metrics[i]["kurtDiams"] = 0
 						canvas.regional_metrics[i]["BD"] = 0
 						slope = compute_fractal_dimension(canvas)
 						canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
+						canvas.regional_metrics[i]["varTort"] = 0
+						canvas.regional_metrics[i]["skewTort"] = 0
+						canvas.regional_metrics[i]["kurtTort"] = 0
 
 				new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
 						links=canvas.skeleton_links,
@@ -848,16 +874,15 @@ def compute_length(links, binary, pix_to_mm):
 	return total_length_mm
 
 
-def compute_diameter(links, binary, pix_to_mm):
-	"""Compute mean and median vessel diameter for a region.
+def compute_diameter_list(links, binary):
+	"""Compute vessel diameter list for a region.
 
 	Args:
 		links: List of vessel link objects with ``path`` attributes.
 		binary: Binary vessel mask used to build a distance transform.
-		pix_to_mm: Physical scale conversion from pixels to millimeters.
 
 	Returns:
-		tuple[float, float]: Mean and median diameters in micrometers.
+		list[float]: List of sampled diameters in micrometers (in pix).
 	"""
 	radius_map = distance_transform_edt(binary > 0)
 	diameter_map = radius_map * 2
@@ -874,20 +899,7 @@ def compute_diameter(links, binary, pix_to_mm):
 			vals = diameter_map[rows, cols]
 			all_sampled_diameters.extend(vals)
 
-	total_points = len(all_sampled_diameters)
-
-	if total_points > 0:
-			mean_diameter_pix = np.mean(all_sampled_diameters)
-			mean_diameter_mm = mean_diameter_pix * pix_to_mm #pix_size_mm -> pix_to_mm
-			mean_diameter_um = mean_diameter_mm * 1000.0
-			median_diameter_pix = np.median(all_sampled_diameters)
-			median_diameter_mm = median_diameter_pix*pix_to_mm
-			median_diameter_um = median_diameter_mm * 1000.0
-	else:
-			mean_diameter_um = 0.0
-			median_diameter_um = 0.0
-
-	return mean_diameter_um, median_diameter_um
+	return all_sampled_diameters
 
 
 def count_branchpoints(nodes):
@@ -967,16 +979,15 @@ def compute_fractal_dimension(canvas):
 		P = np.polyfit(np.log(r), -np.log(n_r), 1)
 		return float(P[0])
 
-
-def compute_mean_tortuosity(links, binary):
-	"""Compute mean arc-over-chord tortuosity across vessel links.
+def compute_tortuosity_list(links, binary):
+	"""Return tortuosity_list
 
 	Args:
 		links: List of vessel link objects with ``path`` attributes.
 		binary: Binary vessel mask whose shape defines index decoding.
 
 	Returns:
-		float: Mean tortuosity across valid links.
+		list: Tortuosity values across valid links (in pix).
 	"""
 	tortuosity_list = []
 	image_shape = binary.shape
@@ -999,9 +1010,4 @@ def compute_mean_tortuosity(links, binary):
 			if chord_length > 1e-6:
 					tortuosity = arc_length / chord_length
 					tortuosity_list.append(tortuosity)
-
-	if len(tortuosity_list) > 0:
-			mean_tortuosity = round(np.mean(tortuosity_list),4)
-	else:
-			mean_tortuosity = 0.0
-	return mean_tortuosity
+	return tortuosity_list

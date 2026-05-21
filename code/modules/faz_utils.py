@@ -237,6 +237,7 @@ def measure_faz(canvas: Canvas):
     
     # Create statistics dictionary
     FAZ_stats = {
+        'name': canvas.FileLabelName,
         'Area': round(area_mm2, 3),
         'Centroid_1': round(Cx * pix_to_mm, 3),  # X coordinate in mm
         'Centroid_2': round(Cy * pix_to_mm, 3),  # Y coordinate in mm
@@ -248,7 +249,6 @@ def measure_faz(canvas: Canvas):
         'acircularity_index': round(acircularity_index, 2),
         'axis_ratio': round(axis_ratio, 2),
         'FD_300': round(FD_300, 1) if image_size_mm >= 1 else 'N/A',
-        'name': canvas.FileLabelName,
     }
     
     # Save images/excel to local
