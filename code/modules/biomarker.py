@@ -213,7 +213,7 @@ class BiomarkerAnalyzer:
             "PWAOC": PWAOC,
             "SOAM": SOAM,
         }
-
+gi
     @staticmethod
     def _compute_new_tortuosity_metrics_from_xy_paper_soam(
         vessel_x,
