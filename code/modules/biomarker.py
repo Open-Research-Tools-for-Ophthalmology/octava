@@ -1,5 +1,7 @@
 # modules/biomarker.py
 
+from turtle import width
+
 import numpy as np
 import pandas as pd
 from tkinter import Canvas
@@ -442,53 +444,102 @@ class BiomarkerAnalyzer:
             branchpoint_density = 0.0
 
         # Fractal dimension
-        Z = (skeleton > 0)
+        Z_skeleton = (skeleton > 0)
+        Z_binary = (binary > 0)
 
-        h, w = Z.shape
+        h, w = Z_skeleton.shape
         Nx = max(h, w)
 
         if Nx < 2:
-            fractal_dim = 0.0
+            fractal_dim = {
+                'skeleton': {4: 0.0, 8: 0.0},
+                'binary': {4: 0.0, 8: 0.0}
+            }
         else:
             import math
 
-            exponent = math.ceil(math.log2(Nx))
-            width = 2 ** exponent
+            fractal_dim = {
+                'skeleton': {4: 0.0, 8: 0.0},
+                'binary': {4: 0.0, 8: 0.0}
+            }
 
-            Z_pad = np.zeros((width, width), dtype=bool)
-            Z_pad[:h, :w] = Z
+            # exponent = math.ceil(math.log2(Nx))
+            # width = 2 ** exponent
 
-            counts = []
-            r_values = []
+            # 0529 Find the largest box size
+            # Take the floor so the largest box size is around half of the image.
+            exponent_end = math.floor(math.log2(Nx))
+            # check if duplication of the largest box size is way over the original resolution so we dont pad too much (acceptable +- 10%)
+            if exponent_end > 0 and 2 ** exponent_end > Nx * 1.1:
+                exponent_end -= 1
 
-            counts.append(np.sum(Z_pad))
-            r_values.append(1)
+            width = 2 ** (exponent_end + 1)
+            print(f'Fractal Dimension: Original image width={Nx}, After truncation/padding={width}, Largest box size={2 ** exponent_end}')
 
-            current_img = Z_pad
+            Z_pad = {
+                'skeleton': np.zeros((width, width), dtype=bool),
+                'binary': np.zeros((width, width), dtype=bool)
+            }
+            Z_pad['skeleton'][:min(Nx, width), :min(Nx, width)] = Z_skeleton
+            Z_pad['binary'][:min(Nx, width), :min(Nx, width)] = Z_binary
 
-            for i in range(1, exponent + 1):
-                rows, cols = current_img.shape
-                if rows < 2 or cols < 2:
-                    break
+            counts = {
+                'skeleton': {4: [], 8: []},
+                'binary': {4: [], 8: []}
+            }
 
-                shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+            r_values = {
+                'skeleton': {4: [], 8: []},
+                'binary': {4: [], 8: []}
+            }
 
-                n_box = np.sum(shrunk_img)
-                counts.append(n_box)
-                r_values.append(2 ** i)
+            counts['skeleton'][4].append(np.sum(Z_pad['skeleton']))
+            counts['binary'][4].append(np.sum(Z_pad['binary']))
+            counts['skeleton'][8].append(np.sum(Z_pad['skeleton']))
+            counts['binary'][8].append(np.sum(Z_pad['binary']))
 
-                current_img = shrunk_img
+            r_values['skeleton'][4].append(4)
+            r_values['binary'][4].append(4)
+            r_values['skeleton'][8].append(8)
+            r_values['binary'][8].append(8)
 
-            valid_indices = [i for i, c in enumerate(counts) if c > 0]
+            for img_type, img in {
+                'skeleton': Z_pad['skeleton'],
+                'binary': Z_pad['binary']
+            }.items():
+                # start 4 [4, 8, ..., 2^exponent] box sizes
+                # start 8 [8, 16, ..., 2^exponent] box sizes
+                for exponent_start in [2, 3]:
+                    current_img = img
+                    for i in range(exponent_start, exponent_end + 1):
+                        rows, cols = current_img.shape
+                        if rows < 2 or cols < 2:
+                            break
 
-            if len(valid_indices) >= 2:
-                x = np.log([r_values[i] for i in valid_indices])
-                y = -np.log([counts[i] for i in valid_indices])
+                        # Reshape to half of current size
+                        shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
 
-                coeffs = np.polyfit(x, y, 1)
-                fractal_dim = float(coeffs[0])
-            else:
-                fractal_dim = 0.0
+                        # Get number of boxes needed to cover the shape
+                        n_box = np.sum(shrunk_img)
+                        
+                        # Store counts and box sizes for later regression
+                        counts[img_type][2 ** exponent_start].append(n_box)
+                        r_values[img_type][2 ** exponent_start].append(2 ** i)
+
+                        print(f'Using {img_type} image, Starting Box size: {2 ** exponent_start}, Current Box size: {2 ** i}, # of Box {n_box}')
+                        current_img = shrunk_img
+
+                    valid_indices = [i for i, c in enumerate(counts[img_type][2 ** exponent_start]) if c > 0]
+                    print(f'Valid indices for {img_type} with starting box size {2 ** exponent_start}: {valid_indices}')
+
+                    if len(valid_indices) >= 2:
+                        x = np.log([r_values[img_type][2 ** exponent_start][i] for i in valid_indices])
+                        y = -np.log([counts[img_type][2 ** exponent_start][i] for i in valid_indices])
+
+                        coeffs = np.polyfit(x, y, 1)
+                        fractal_dim[img_type][2 ** exponent_start] = float(coeffs[0])
+                    else:
+                        fractal_dim[img_type][2 ** exponent_start] = 0.0
 
         # Tortuosity metrics
         tortuosity_list = []
@@ -538,7 +589,7 @@ class BiomarkerAnalyzer:
             "mean_diameter_um": float(mean_diameter_um),
             "branchpoint_count": int(branchpoint_count),
             "branchpoint_density_per_mm2": float(branchpoint_density),
-            "fractal_dimension": float(fractal_dim),
+            "fractal_dimension": float(fractal_dim['skeleton'][4]),  # Displaying the box_size=4 skeleton FD by default
             "mean_tortuosity": float(mean_tortuosity),
         })
         micro_stats = {
@@ -553,7 +604,10 @@ class BiomarkerAnalyzer:
             "skewDiams": round(float(skew_diameter_um), 2),
             "kurtDiams": round(float(kurt_diameter_um), 2),
             "Branchpoint density": float(branchpoint_density),
-            "Fractal dimension": float(fractal_dim),
+            "Fractal dimension (Skeleton, box_size_from=4)": float(fractal_dim['skeleton'][4]),
+            "Fractal dimension (Skeleton, box_size_from=8)": float(fractal_dim['skeleton'][8]),
+            "Fractal dimension (Binary, box_size_from=4)": float(fractal_dim['binary'][4]),
+            "Fractal dimension (Binary, box_size_from=8)": float(fractal_dim['binary'][8]),
             "mTort": float(mean_tortuosity),
             "varTort": round(float(var_tortuosity), 3),
             "skewTort": round(float(skew_tortuosity), 2),
@@ -595,7 +649,7 @@ class BiomarkerAnalyzer:
             )
 
         if hasattr(canvas, "fractal_dim_value_id"):
-            canvas.itemconfig(canvas.fractal_dim_value_id, text=f"{fractal_dim:.3f}")
+            canvas.itemconfig(canvas.fractal_dim_value_id, text=f"{fractal_dim['skeleton'][4]:.3f}")
 
         if hasattr(canvas, "tortuosity_value_id"):
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
