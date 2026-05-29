@@ -35,6 +35,66 @@ class BiomarkerAnalyzer:
         return out
 
     @staticmethod
+    def _remove_duplicate_xy_points(points):
+        """Remove consecutive duplicate points that create zero-length vectors."""
+        points = np.asarray(points, dtype=float)
+        if points.shape[0] <= 1:
+            return points
+
+        keep = np.ones(points.shape[0], dtype=bool)
+        keep[1:] = np.linalg.norm(np.diff(points, axis=0), axis=1) > np.finfo(float).eps
+        return points[keep]
+
+    @staticmethod
+    def _resample_xy_by_arclength(points, spacing):
+        """Resample a centerline to approximately even physical spacing."""
+        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        if points.shape[0] < 2 or spacing <= 0:
+            return points
+
+        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
+        arc_positions = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+        arc_length = arc_positions[-1]
+        if arc_length <= 0:
+            return points[:0]
+
+        sample_positions = np.arange(0.0, arc_length, spacing)
+        if sample_positions.size == 0:
+            sample_positions = np.array([0.0])
+        if sample_positions[-1] < arc_length:
+            sample_positions = np.append(sample_positions, arc_length)
+
+        resampled_x = np.interp(sample_positions, arc_positions, points[:, 0])
+        resampled_y = np.interp(sample_positions, arc_positions, points[:, 1])
+        return np.column_stack((resampled_x, resampled_y))
+
+    @staticmethod
+    def _compute_soam_from_evenly_spaced_xy(points):
+        """Compute SOAM as summed turning angle per resampled arc length."""
+        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        if points.shape[0] < 3:
+            return 0.0
+
+        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
+        arc_length = np.sum(segment_lengths)
+        if arc_length <= 0:
+            return 0.0
+
+        eps = np.finfo(float).eps
+        total_angle = 0.0
+        for j in range(1, points.shape[0] - 1):
+            v1 = points[j] - points[j - 1]
+            v2 = points[j + 1] - points[j]
+            denom = np.linalg.norm(v1) * np.linalg.norm(v2)
+            if denom <= eps:
+                continue
+
+            cos_theta = np.clip(np.dot(v1, v2) / denom, -1, 1)
+            total_angle += np.arccos(cos_theta)
+
+        return total_angle / arc_length
+
+    @staticmethod
     def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
         """Compute PWAOC and SOAM tortuosity metrics for one vessel centerline."""
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
@@ -145,12 +205,57 @@ class BiomarkerAnalyzer:
                 )
                 totalWeightedAngle += np.arccos(cosTheta)
 
-            SOAM = totalWeightedAngle / arcLength
+            SOAM = totalWeightedAngle / arcLength # radians/mm
+            # convert SOAM to radians/cm
+            # SOAM = SOAM * 10.0
 
         return {
             "PWAOC": PWAOC,
             "SOAM": SOAM,
         }
+
+    @staticmethod
+    def _compute_new_tortuosity_metrics_from_xy_paper_soam(
+        vessel_x,
+        vessel_y,
+        pix2mm,
+        soam_sample_spacing_mm=0.03,
+        soam_smoothing_window=10,
+    ):
+        """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
+
+        PWAOC is intentionally delegated to the existing implementation. SOAM is
+        recomputed after smoothing and physical arc-length resampling because the
+        paper requires evenly spaced points.
+        """
+        metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+            vessel_x,
+            vessel_y,
+            pix2mm,
+        )
+        if metrics is None:
+            return None
+
+        vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
+        vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
+        if vesselX.size < 3 or vesselY.size < 3:
+            return metrics
+
+        smooth_window = max(int(soam_smoothing_window), 1)
+        smoothedX = BiomarkerAnalyzer._movmean(vesselX, smooth_window)
+        smoothedY = BiomarkerAnalyzer._movmean(vesselY, smooth_window)
+        smoothedX[0], smoothedX[-1] = vesselX[0], vesselX[-1]
+        smoothedY[0], smoothedY[-1] = vesselY[0], vesselY[-1]
+
+        points = np.column_stack((smoothedX, smoothedY))
+        resampled = BiomarkerAnalyzer._resample_xy_by_arclength(
+            points,
+            soam_sample_spacing_mm,
+        )
+
+        metrics = metrics.copy()
+        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam_from_evenly_spaced_xy(resampled)
+        return metrics
 
     @staticmethod
     def _summarize_new_tort_metrics(per_link_metrics):
@@ -200,7 +305,9 @@ class BiomarkerAnalyzer:
             if not hasattr(link, "x") or not hasattr(link, "y"):
                 continue
 
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
+                link.x,
                 link.x,
                 link.y,
                 pix2mm,
@@ -520,7 +627,8 @@ class BiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
                 cols,
                 rows,
                 pix2mm,
@@ -533,7 +641,7 @@ class BiomarkerAnalyzer:
  
     @staticmethod
     def new_tortuosity_metrics_all(canvas: Canvas) -> None:
-        """Compute the legacy full tortuosity metric set for every link on the canvas."""
+        """Compute the legacy full tortuosity metric set for every link on the canvas. Not in use but kept for reference."""
         import numpy as np
 
         links = canvas.skeleton_links
