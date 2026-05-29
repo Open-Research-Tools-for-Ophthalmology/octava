@@ -213,14 +213,14 @@ class BiomarkerAnalyzer:
             "PWAOC": PWAOC,
             "SOAM": SOAM,
         }
-gi
+
     @staticmethod
     def _compute_new_tortuosity_metrics_from_xy_paper_soam(
         vessel_x,
         vessel_y,
         pix2mm,
         soam_sample_spacing_mm=0.03,
-        soam_smoothing_window=3,
+        soam_smoothing_window=10,
     ):
         """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
 
