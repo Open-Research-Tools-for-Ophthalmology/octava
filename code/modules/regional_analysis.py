@@ -773,9 +773,9 @@ def run_analysis_on_regions(
 								canvas.regional_metrics[i]["nodes"] / canvas.regional_metrics[i]["totalLength"], 2
 						)
 
-						# fractalDimension(app)
-						slope = compute_fractal_dimension(canvas)
-						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+						# Update: 20260603 fractalDimension(app) disabled from subregional analysis 
+						# slope = compute_fractal_dimension(canvas)
+						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
 
 						# mean tortuosity
 						tortuosity_list = compute_tortuosity_list(links, binaryReg[i])
@@ -805,8 +805,8 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["skewDiams"] = 0
 						canvas.regional_metrics[i]["kurtDiams"] = 0
 						canvas.regional_metrics[i]["BD"] = 0
-						slope = compute_fractal_dimension(canvas)
-						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+						# slope = compute_fractal_dimension(canvas)
+						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
 						canvas.regional_metrics[i]["varTort"] = 0
 						canvas.regional_metrics[i]["skewTort"] = 0
