@@ -268,15 +268,27 @@ class BiomarkerAnalyzer:
             return {
                 "PWAOC_mean": np.nanmean(pwaoc_vals),
                 "PWAOC_std": np.nanstd(pwaoc_vals),
+                "varPWAOC": np.nanvar(pwaoc_vals, ddof=1),
+                "skewPWAOC": skew(pwaoc_vals), # Matlab flag=1(default) -> don't correct for bias -> bias=True(default) Scipy
+                "kurtPWAOC": kurtosis(pwaoc_vals, fisher=False), # Matlab pearson(default) -> fisher=False Scipy
                 "SOAM_mean": np.nanmean(soam_vals),
                 "SOAM_std": np.nanstd(soam_vals),
+                "varSOAM": np.nanvar(soam_vals, ddof=1),
+                "skewSOAM": skew(soam_vals), # Matlab flag=1(default) -> don't correct for bias -> bias=True(default) Scipy
+                "kurtSOAM": kurtosis(soam_vals, fisher=False), # Matlab pearson(default) -> fisher=False Scipy
             }
 
         return {
             "PWAOC_mean": np.nan,
             "PWAOC_std": np.nan,
+            "varPWAOC": np.nan,
+            "skewPWAOC": np.nan,
+            "kurtPWAOC": np.nan,
             "SOAM_mean": np.nan,
             "SOAM_std": np.nan,
+            "varSOAM": np.nan,
+            "skewSOAM": np.nan,
+            "kurtSOAM": np.nan,
         }
 
     @staticmethod
@@ -652,8 +664,14 @@ class BiomarkerAnalyzer:
             return {
                 "PWAOC_mean": np.nan,
                 "PWAOC_std": np.nan,
+                "varPWAOC": np.nan,
+                "skewPWAOC": np.nan,
+                "kurtPWAOC": np.nan,
                 "SOAM_mean": np.nan,
                 "SOAM_std": np.nan,
+                "varSOAM": np.nan,
+                "skewSOAM": np.nan,
+                "kurtSOAM": np.nan,
             }
 
         # Image scale
