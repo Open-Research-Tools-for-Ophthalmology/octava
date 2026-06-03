@@ -727,8 +727,9 @@ def run_analysis_on_regions(
 				nodes = getattr(canvas, "skeleton_nodes", None)
 
 				if links is not None and len(links) > 0:
+						# 0603 Remove nodes metrics from reporting
 						# sum(~[app.Gnodes.ep])
-						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
+						# canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
 
 						# sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
@@ -770,7 +771,7 @@ def run_analysis_on_regions(
 
 						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
-								canvas.regional_metrics[i]["nodes"] / canvas.regional_metrics[i]["totalLength"], 2
+							count_branchpoints(nodes) / canvas.regional_metrics[i]["totalLength"], 2
 						)
 
 						# Update: 20260603 fractalDimension(app) disabled from subregional analysis 
@@ -788,7 +789,7 @@ def run_analysis_on_regions(
 
 				# If no skeleton graph
 				else:
-						canvas.regional_metrics[i]["nodes"] = 0
+						# canvas.regional_metrics[i]["nodes"] = 0
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 						canvas.regional_metrics[i]["totalLength"] = 0
