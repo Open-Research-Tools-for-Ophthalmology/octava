@@ -836,7 +836,7 @@ def normalize_regional_tortuosity_metrics(metrics):
 		"""Convert undefined regional tortuosity outputs into stable numeric values."""
 		normalized = {}
 
-		for key in ("PWAOC_mean", "PWAOC_std", "SOAM_mean", "SOAM_std"):
+		for key in ("PWAOC_mean", "PWAOC_std", "varPWAOC", "skewPWAOC", "kurtPWAOC", "SOAM_mean", "SOAM_std", "varSOAM", "skewSOAM", "kurtSOAM"):
 				value = metrics.get(key, np.nan)
 				normalized[key] = float(value) if np.isfinite(value) else 0.0
 
