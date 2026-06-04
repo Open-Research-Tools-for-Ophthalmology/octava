@@ -11,6 +11,7 @@ from modules.regional_analysis import *
 import threading
 import os
 import datetime
+import traceback
 
 skipped_images = []  # List to track images that failed to load during batch processing
 
@@ -184,10 +185,10 @@ def start_batch_processing_threaded(canvas: Canvas):
             start_processing_threaded(canvas, batch=True)
 
         except Exception as e:
-            print(f"Failed to load image {image_file}: {e}")
+            print(f"Failed to process image {image_file}: {e} {traceback.format_exc()}")
             messagebox.showerror(
-                "Image Load Error",
-                f"Failed to load image {image_file}."
+                "Image Processing Error",
+                f"Failed to process image {image_file}: {e} {traceback.format_exc()}"
             )
             skipped_images.append(image_file)
             continue  # Skip to next image
@@ -198,8 +199,15 @@ def start_batch_processing_threaded(canvas: Canvas):
     # Dictionary to hold DataFrames by sheet name
     all_metrics_df = {}
     
+    base_save_dir = getattr(canvas, "save_dir", None)
+    results_save_folder = None
+    if base_save_dir:
+        results_save_folder = os.path.join(base_save_dir)
+    else:
+        results_save_folder = os.path.join(canvas.bp_selected_folder_path)
+
     for (index, image_file) in enumerate(processed_images, start=1):
-        image_folder_path = os.path.join(canvas.bp_selected_folder_path, os.path.splitext(image_file)[0])
+        image_folder_path = os.path.join(results_save_folder, os.path.splitext(image_file)[0])
         
         # 1. Read the latest generated spreadsheets from this folder
         spreadsheets = [
@@ -207,6 +215,10 @@ def start_batch_processing_threaded(canvas: Canvas):
             if f.lower().endswith('.xlsx')
         ]
         
+        if len(spreadsheets) == 0:
+            print(f"No spreadsheets found for image {image_file} in {image_folder_path}. Skipping metrics extraction")
+            continue
+
         # Sort by datetime in filename (same strptime %d-%b-%Y %H%M%S")
         def get_file_datetime(file_name):
             """Parse the timestamp embedded in an exported metrics workbook filename."""
@@ -244,7 +256,7 @@ def start_batch_processing_threaded(canvas: Canvas):
                 all_metrics_df[sheet_name].append(sheet_df)
 
     # 2. Concat df for each sheet and save the overall metrics spreadsheet
-    results_file_path = os.path.join(canvas.bp_selected_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
+    results_file_path = os.path.join(results_save_folder, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
     
     with pd.ExcelWriter(results_file_path, engine='openpyxl') as writer:
         for sheet_name, df_list in all_metrics_df.items():
