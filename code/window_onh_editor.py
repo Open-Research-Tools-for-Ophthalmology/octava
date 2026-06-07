@@ -196,7 +196,8 @@ def window_onh_editor(canvas):
         if subwindow_onh.canvas_height_prev is None:
             center_x = display_width // 2
             center_y = display_height // 2
-            default_radius = size_to_pixels(2) * (display_width / canvas.original_img.shape[0]) # 2mm radius == 4mm diameter default mask scaled rel. canvas
+            image_size_mm = float(canvas.image_size_var.get())
+            default_radius = (2.0 / image_size_mm) * display_width
             subwindow_onh.sq_start = (center_x - default_radius, center_y - default_radius)
             subwindow_onh.sq_end = (center_x + default_radius, center_y + default_radius)
             print("Initializing default ring positions at the center x, y:", subwindow_onh.sq_start, subwindow_onh.sq_end)

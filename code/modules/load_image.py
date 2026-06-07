@@ -15,6 +15,8 @@ def resize_from_spinbox(canvas):
     if not hasattr(canvas, "full_res_img"):
         return
 
+    clear_onh_image_state(canvas)
+
     mm_value = canvas.image_size_var.get()
     target_pixels = size_to_pixels(mm_value)
 

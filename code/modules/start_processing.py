@@ -56,6 +56,13 @@ def start_processing(canvas: Canvas):
         )
         return
 
+    if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
+        messagebox.showinfo(
+            "Batch Processing Unavailable",
+            "Batch processing is currently available for Retina images only."
+        )
+        return
+
     # Clear previous results from the canvas
     clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
     

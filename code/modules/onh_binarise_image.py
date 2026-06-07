@@ -99,6 +99,25 @@ def binarise_onh_image(canvas, display: bool = True):
         roi_pixels = img[roi_mask]
         print("ONH median filter selected. Kernel size:", ksize)
 
+    if np.ptp(roi_pixels) <= 1e-8:
+        binary_image = np.zeros_like(img, dtype=np.uint8)
+        canvas.onh_binary_overall = binary_image
+        canvas.onh_overall_vessel_img = binary_image
+        canvas.binary_image = binary_image
+        canvas.inverted_image = binary_image.copy()
+        canvas.onh_bright_vessel_seed_mask_debug = binary_image.copy()
+        canvas.onh_fine_vessel_candidate_mask_debug = binary_image.copy()
+        canvas.onh_enhanced_debug = binary_image.copy()
+        canvas.onh_corrected_debug = binary_image.copy()
+        canvas.onh_frangi_response_debug = binary_image.copy()
+
+        if display:
+            display_onh_binarised_image(canvas, binary_image)
+
+        save_onh_binary_image(canvas, binary_image)
+        print("ONH ROI has no intensity variation. Returning an empty vessel mask.")
+        return
+
     # ------------------------------------------------------------
     # 3. Normalise image using ROI pixels only
     # ------------------------------------------------------------
