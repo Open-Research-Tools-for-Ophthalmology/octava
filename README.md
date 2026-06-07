@@ -14,32 +14,41 @@ xxx. https://doi.org/xxx/xxx
 | _`OCTAVA` processing OCTA images with binarisation, skeletonisation, FAZ segmentation and microvascular analysis_
 
 # Getting Started
+
 ## Quick Download
+
 📩 See the latest releases in the [Github Releases](https://github.com/milanaveed/octava/releases) page 📩.
-Find the distribution that is suitable for your Operating System (Windows/MacOS/Linux) and Hardware Architecture (X86_64/Arm64). 
+Find the distribution that is suitable for your Operating System (Windows/MacOS/Linux) and Hardware Architecture (X86_64/Arm64).
 
 _Some distributions (e.g. Windows/Linux on Arm64, MacOS on X86_64) are not available due to limited resources, in this case you can try to install on your own by following the guide down below._
 
 ## Build Locally
+
 First `git clone` or download zip from this repository.
 
 ### Prerequisites
-Install python [3.10.19](https://www.python.org/downloads/release/python-31019/) or compatible versions. 
+
+Install python [3.10.19](https://www.python.org/downloads/release/python-31019/) or compatible versions.
 
 ### One-Line Build
+
 ```
 python build_executable.py
 ```
 
 ## Develop Locally
+
 For those who read source code for fun or would like to apply your own changes. The following steps describe the process for running the project locally.
 
 Run the following command to install necessary packages:
+
 ```
 pip install -r requirements.txt
 ```
-**For Conda Users:** ```conda env create -f environment.yml```\
+
+**For Conda Users:** `conda env create -f environment.yml`\
 (update as often as possible)
 
 ### Post-Installation
-Run ```python gui/build/gui.py``` to launch the application
+
+Run `python code/gui.py` to launch the application
