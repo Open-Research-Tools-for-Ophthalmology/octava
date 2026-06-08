@@ -8,6 +8,9 @@ from PIL import Image, ImageTk
 from modules.change_status import *
 import cv2
 import os
+import matlab
+from modules.mat_eng import mat_eng
+from skimage.filters import sato
 
 def binarise_image(canvas: Canvas, display:bool=True):
     """
@@ -20,11 +23,17 @@ def binarise_image(canvas: Canvas, display:bool=True):
     change_status_to_waiting(canvas, status="● Wait...Binarising")
 
     # --- Apply median filter if selected ---
-    if canvas.med_filt_bool.get():
+    # FIXME denoising
+    if canvas.med_filt_bool.get() or True:
+        # FIXME Median
         print("Median filter selected.")
         ksize = canvas.kernel_size.get()  # assuming scalar
         img = median_filter(canvas.original_img, size=(ksize, ksize),
                                     mode='constant', cval=0.0)
+        
+        # FIXME bilateral
+        img = cv2.bilateralFilter(img, d=ksize, sigmaColor=75, sigmaSpace=75)
+        
     else:
         print("Median filter not selected.")
         img = canvas.original_img
@@ -38,6 +47,23 @@ def binarise_image(canvas: Canvas, display:bool=True):
             'correctionconst2': 15
         }
         img = frangi_2Dfilter(img, opts)
+
+        # FIXME jerman vesselness2D(I, 1:5, [1;1], 1, false)
+        # jerman_opts = {
+        #     'sigmas': [1, 2, 3, 4, 5],
+        #     'spacing': [[1], [1]],
+        #     'tau': 0.5
+        # }
+        # img_mat = mat_eng.vessel_jerman(matlab.single(img.tolist()), matlab.double(jerman_opts['sigmas']), matlab.double(jerman_opts['spacing']), jerman_opts['tau'], True, nargout=1)
+        # img = np.array(img_mat) # cast to numpy again (MATLAB functions return matlab.double objects)
+
+        # FIXME sato from skimage
+        # sato_opts = {
+        #     'start': 1,
+        #     'stop': 5,
+        #     'step': 1,
+        # }
+        # img = sato(img, np.arange(sato_opts['start'], sato_opts['stop'], sato_opts['step']), black_ridges=False)
 
     # --- Always use Fuzzy Means ---
     nth = 2
@@ -58,7 +84,13 @@ def binarise_image(canvas: Canvas, display:bool=True):
 
     # --- Save binary image to local ---
     curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if 'Binarymask' in f])
-    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Binarymask_{curr_idx}.png")
+
+    # FIXME jerman
+    # img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_jerman_sigmas={jerman_opts['sigmas']}_sp={jerman_opts['spacing'][0][0]}_tau={jerman_opts['tau']}.png")
+    
+    # FIXME sato
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_sato_range({sato_opts['start']}-{sato_opts['stop']}-{sato_opts['step']}).png")
+    
     cv2.imwrite(img_path, binary_image)
 
 def display_binarised_image(canvas: Canvas, image: np.ndarray):
