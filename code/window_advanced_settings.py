@@ -32,7 +32,7 @@ def relative_to_assets(path: str) -> Path:
 def subwindow1(canvas):
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
-  subwindow.geometry("360x515")
+  subwindow.geometry("360x465")
   subwindow.configure(bg = subwindow_bg_colour)
 
   large_vessels_var = IntVar(value=0)
@@ -44,7 +44,7 @@ def subwindow1(canvas):
   subcanvas1 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 515,
+      height = 465,
       width = 360,
       bd = 0,
       highlightthickness = 0,
@@ -121,7 +121,7 @@ def subwindow1(canvas):
 
   # twig size Spinbox
   subcanvas1.create_text(
-      170.0,
+      50.0,
       100.0,
       anchor="nw",
       text="Twig size",
@@ -141,7 +141,7 @@ def subwindow1(canvas):
       highlightthickness=0,  # removes the focus highlight border
   )
   twig_size_spinbox.place(
-      x=250.0,
+      x=120.0,
       y=100.0
   )
 
@@ -220,11 +220,11 @@ def subwindow1(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=50, y=205)
+  button1.place(x=50, y=215)
 
   subcanvas1.create_text(
       45.0,
-      274.0,
+      284.0,
       anchor="nw",
       text="Additional Segmentation Settings",
       fill="#10203F",
@@ -242,7 +242,7 @@ def subwindow1(canvas):
   )
   large_vessels_checkbox.place(
       x=40.0,
-      y=300.0
+      y=310.0
   )
 
   # small vessels checkbox
@@ -256,35 +256,7 @@ def subwindow1(canvas):
   )
   small_vessels_checkbox.place(
       x=40.0,
-      y=330.0
-  )
-
-  # artery checkbox
-  artery_checkbox = Checkbutton(
-      subwindow,
-      text="Artery (Retina only, not yet available)",
-      variable=artery_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  artery_checkbox.place(
-      x=40.0,
-      y=360.0
-  )
-
-  # veins checkbox
-  veins_checkbox = Checkbutton(
-      subwindow,
-      text="Veins (Retina only, not yet available)",
-      variable=veins_var,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  veins_checkbox.place(
-      x=40.0,
-      y=390.0
+      y=340.0
   )
 
   #close
@@ -297,7 +269,7 @@ def subwindow1(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=114, y=450)
+  button_close.place(x=114, y=390)
 
   subwindow.resizable(False, False)
   return subwindow
