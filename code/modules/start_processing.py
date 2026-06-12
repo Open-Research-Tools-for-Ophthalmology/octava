@@ -11,6 +11,7 @@ from modules.regional_analysis import *
 import threading
 import os
 import datetime
+from natsort import natsorted
 
 skipped_images = []  # List to track images that failed to load during batch processing
 
@@ -137,6 +138,9 @@ def start_batch_processing_threaded(canvas: Canvas):
         if f.lower().endswith(f".{canvas.bp_file_type_var.get().lower()}")
     ]
 
+    # Natural sort the image files for sequential processing
+    image_files = natsorted(image_files)
+
     if len(image_files) == 0:
         print("No images found in the selected folder.")
         messagebox.showwarning(
@@ -195,6 +199,9 @@ def start_batch_processing_threaded(canvas: Canvas):
     # Process only successfully loaded images
     processed_images = [img for img in image_files if img not in skipped_images]
     
+    # Natural sort the image files for sequential aggregation
+    processed_images = natsorted(processed_images)
+
     # Dictionary to hold DataFrames by sheet name
     all_metrics_df = {}
     

@@ -1,3 +1,4 @@
+from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
@@ -22,6 +23,7 @@ from modules.clear import *
 from modules.faz_utils import *
 from modules.histogram import HistogramPlotter
 from test import *
+from resource_path import ICONS_PATH
 
 #command for bundling on mac with pyinstaller: pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
 
@@ -342,11 +344,11 @@ button_process = ctk.CTkButton(window, text="Start Processing",
 button_process.place(x=30, y=585)
 
 
-round_rectangle(canvas, 430, 100, 240, 275, radius=8)
+box_original = round_rectangle(canvas, 430, 100, 240, 275, radius=8)
 
-round_rectangle(canvas, 685, 100, 240, 275, radius=8)
+box_binarised = round_rectangle(canvas, 685, 100, 240, 275, radius=8)
 
-round_rectangle(canvas, 940, 100, 240, 275, radius=8)
+box_skeletonised = round_rectangle(canvas, 940, 100, 240, 275, radius=8)
 
 
 canvas.create_text(
@@ -387,7 +389,7 @@ canvas.create_text(
     font=("Roboto", 16 * -1)
 )
 
-round_rectangle(canvas, 430, 395, 240, 270, radius=8)
+box_faz_segmented = round_rectangle(canvas, 430, 395, 240, 270, radius=8)
 round_rectangle(canvas, 685, 395, 500, 270, radius=8)
 
 canvas.create_text(
@@ -398,6 +400,21 @@ canvas.create_text(
     fill=theme_blue,
     font=("Roboto", 16 * -1)
 )
+
+# Show full-screen icon when hovering on thumbnails
+# canvas.tag_bind(box_original, "<Button-1>", lambda: open_window('original_image', open_image_window, canvas, "Original Image"))
+# canvas.tag_bind(box_original, "<Button-1>", lambda: open_window('original_image', open_image_window, canvas, "Original Image"))
+# canvas.tag_bind(box_original, "<Button-1>", lambda: open_window('original_image', open_image_window, canvas, "Original Image"))
+
+# button overlay for zooming the thumbnails
+# icon_zoom_pil = ImageTk.PhotoImage(Image.open(ICONS_PATH / "fullscreen.png").resize((20, 20)))
+# button_zoom_binarised = canvas.create_image(856, 255, image=icon_zoom_pil)
+# button_zoom_skeletonised = canvas.create_image(1060, 255, image=icon_zoom_pil)
+# button_zoom_faz_segmented = canvas.create_image(550, 550, image=icon_zoom_pil)
+
+# canvas.tag_bind(button_zoom_binarised, "<Button-1>", lambda: invert_binarised_image(canvas))
+# canvas.tag_bind(button_zoom_skeletonised, "<Button-2>", lambda: invert_binarised_image(canvas))
+# canvas.tag_bind(button_zoom_faz_segmented, "<Button-3>", lambda: invert_binarised_image(canvas))
 
 canvas.create_text(
     910.0,
