@@ -577,6 +577,9 @@ class BiomarkerAnalyzer:
             skew_tortuosity = 0.0
             kurt_tortuosity = 0.0
 
+        # Store tortuosity values for histogram display
+        canvas.vessel_tortuosity = np.asarray(tortuosity_list, dtype=float)
+
         # Store metrics in canvas
         if not hasattr(canvas, "metrics"):
             canvas.metrics = {}
@@ -745,7 +748,7 @@ class BiomarkerAnalyzer:
             if arr.size == 0:
                 return np.nan
             arr = np.sort(arr)
-            trim = int(np.floor(0.05 * arr.size))
+            trim = int(np.floor(0.1 * arr.size))
             if arr.size - 2 * trim <= 0:
                 return np.mean(arr)
             return np.mean(arr[trim:arr.size - trim])

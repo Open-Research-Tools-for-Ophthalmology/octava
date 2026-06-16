@@ -47,11 +47,18 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
   if hasattr(canvas, "_image_refs"):
     original_img_ref = canvas._image_refs.get("original_img")
     binary_img_ref = canvas._image_refs.get("binary_img") if canvas.prebinary_var.get() else None
-    canvas._image_refs.clear() 
+    canvas._image_refs.clear()
     if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and original_img_ref:
       canvas._image_refs["original_img"] = original_img_ref
     if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and binary_img_ref:
       canvas._image_refs["binary_img"] = binary_img_ref
+
+  # Reset thumbnail zoom/pan states
+  if hasattr(canvas, "thumbnail_state"):
+    for st in canvas.thumbnail_state.values():
+      st["zoom"] = 1.0
+      st["pan_x"] = 0.0
+      st["pan_y"] = 0.0
 
   for key, val in canvas.__dict__.items():
     if key.endswith("_value_id"):

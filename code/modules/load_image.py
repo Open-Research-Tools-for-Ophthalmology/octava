@@ -141,6 +141,10 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     canvas.original_img_id = img_id
     canvas.filename_text_id = text_id
 
+    # Reset zoom/pan for original thumbnail
+    if hasattr(canvas, 'thumbnail_state') and 'original' in canvas.thumbnail_state:
+        canvas.thumbnail_state['original'].update({"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0})
+
     # Attach spinbox trace to dynamically resize
     if hasattr(canvas, "image_size_var"):
         canvas.image_size_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))

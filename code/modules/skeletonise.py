@@ -120,4 +120,8 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
     canvas.skeleton_img_id = canvas.create_image(1060, 255, image=img_tk)
     canvas._image_refs["skeleton_img"] = img_tk
 
+    # Reset zoom/pan for skeletonised thumbnail
+    if hasattr(canvas, 'thumbnail_state') and 'skeletonised' in canvas.thumbnail_state:
+        canvas.thumbnail_state['skeletonised'].update({"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0})
+
   return skel2, nodes, links
