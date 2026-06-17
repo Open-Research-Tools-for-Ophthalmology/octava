@@ -411,8 +411,7 @@ thumbnail_config = {
         cx=550,
         cy=255,
         img_id_attr="original_img_id",
-        base_attr="full_res_img",
-        base_mode="pil"
+        base_attr="original_img"
     ),
     "binarised": dict(
         box_tag=box_binarised,
@@ -420,7 +419,6 @@ thumbnail_config = {
         cy=255,
         img_id_attr="binary_img_id",
         base_attr="binary_image",
-        base_mode="numpy_uint8"
     ),
     "skeletonised": dict(
         box_tag=box_skeletonised,
@@ -428,7 +426,6 @@ thumbnail_config = {
         cy=255,
         img_id_attr="skeleton_img_id",
         base_attr="skeleton_image",
-        base_mode="numpy_bool"
     ),
     "faz": dict(
         box_tag=box_faz_segmented,
@@ -436,7 +433,6 @@ thumbnail_config = {
         cy=550,
         img_id_attr="faz_img_id",
         base_attr="faz_grayscale_img",
-        base_mode="pil"
     ),
 }
 
