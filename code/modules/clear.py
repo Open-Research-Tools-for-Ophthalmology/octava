@@ -46,12 +46,18 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
   # Clear all visual images on the canvas
   if hasattr(canvas, "_image_refs"):
     original_img_ref = canvas._image_refs.get("original_img")
-    binary_img_ref = canvas._image_refs.get("binary_img") if canvas.prebinary_var.get() else None
-    canvas._image_refs.clear()
-    if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and original_img_ref:
-      canvas._image_refs["original_img"] = original_img_ref
-    if clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING and binary_img_ref:
-      canvas._image_refs["binary_img"] = binary_img_ref
+    binary_img_ref = canvas._image_refs.get("binary_img")
+    
+    # Clear image refs case dependent
+    # Image to be cleared at all cases
+    canvas._image_refs.pop("skeleton_img", None)
+    canvas._image_refs.pop("faz_img", None)
+    # Don't clear loaded original / prebinary image
+    if clear_screen_mode != ClearMode.CLEAR_BEFORE_PROCESSING and original_img_ref:
+      if original_img_ref:
+        canvas._image_refs.pop("original_img", None)
+      if binary_img_ref and not canvas.prebinary_var.get():
+        canvas._image_refs.pop("binary_img", None)
 
   # Reset thumbnail zoom/pan states
   if hasattr(canvas, "thumbnail_state"):
