@@ -4,6 +4,7 @@ Adds scroll-to-zoom and drag-to-pan behaviour to to main GUI's four thumbnail im
 
 from PIL import Image, ImageTk
 import numpy as np
+from scipy.ndimage import binary_dilation
 
 # Size (px) at which each thumbnail is rendered inside its box
 THUMB_DISPLAY_SIZE = 200
@@ -27,13 +28,18 @@ def init_thumbnail_zoom_pan(canvas, thumbnail_cfg, thumb_boxes):
         raw = getattr(canvas, cfg["base_attr"], None)
         if raw is None:
             return None
-        mode = cfg["base_mode"]
-        if mode == "pil":
-            return raw.convert("L") if raw.mode != "L" else raw
-        elif mode == "numpy_uint8":
+        img_id = cfg["img_id_attr"]
+        if img_id == "original_img_id":
+            return Image.fromarray(raw) # already in 8-bit
+        elif img_id == "binary_img_id":
             return Image.fromarray(raw.astype("uint8"))
-        elif mode == "numpy_bool":
-            return Image.fromarray((raw * 255).astype("uint8"), mode="L")
+        elif img_id == "skeleton_img_id":
+            # Same display logic as skeleonisation to dilate vessels thicker
+            skel_uint8 = binary_dilation(raw, iterations=1).astype(np.uint8) * 255
+            return Image.fromarray(skel_uint8, mode="L")
+            # return Image.fromarray((raw * 255).astype("uint8"), mode="L")
+        elif img_id == "faz_img_id":
+            return raw
         return None
 
     def redraw(key):
