@@ -16,8 +16,31 @@ import numpy as np
 import threading
 import os
 import datetime
+from natsort import natsorted
+from theme import *
 
 skipped_images = []  # List to track images that failed to load during batch processing
+
+def abort_processing(canvas: Canvas):
+    """Signal the running processing to stop at the next checkpoint."""
+    canvas.abort_flag = True
+    canvas.process_button.configure(
+        text="Abort (Stop after the current checkpoint)",
+        fg_color=button_yellow_colour,
+        hover_color=button_yellow_hover,
+        command=lambda: abort_processing(canvas)
+    )
+    change_status_to_waiting(canvas, "● Aborting...")
+
+def restore_process_button(canvas: Canvas):
+    """Restore the process button to its default 'Start Processing' state."""
+    if hasattr(canvas, 'process_button'):
+        canvas.after(0, lambda: canvas.process_button.configure(
+            text="Start Processing",
+            fg_color=button_blue_colour,
+            hover_color=button_blue_hover,
+            command=lambda: start_processing(canvas)
+        ))
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     """Return whether a batch input folder has been selected."""
@@ -66,6 +89,15 @@ def start_processing(canvas: Canvas):
     # Clear previous results from the canvas
     clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
     
+    canvas.abort_flag = False
+    if hasattr(canvas, 'process_button'):
+        canvas.process_button.configure(
+            text="Abort (Stop at the next checkpoint)",
+            fg_color=button_yellow_colour,
+            hover_color=button_yellow_hover,
+            command=lambda: abort_processing(canvas)
+        )
+
     if not is_batch_processing_enabled(canvas):
         # Preliminary image saving folder setup
         make_save_folder(canvas)
@@ -118,11 +150,21 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
-        
+        if getattr(canvas, 'abort_flag', False):
+            if not batch:
+                restore_process_button(canvas)
+                canvas.after(0, lambda: change_status_to_ready(canvas))
+            return
+
     # display = not batch  # only display skeleton in single image mode
     display = True
     skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
     print("Skeletonisation completed.")
+    if getattr(canvas, 'abort_flag', False):
+        if not batch:
+            restore_process_button(canvas)
+            canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
 
     BiomarkerAnalyzer.process(canvas)
 
@@ -130,23 +172,52 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
     def refresh_histogram_ui():
         """Refresh and persist the vessel-diameter histogram from the latest measurements."""
         if hasattr(canvas, "hist_plotter"):
-            diameters = getattr(canvas, "vessel_diameters_um", [])
-            canvas.hist_plotter.set_data(diameters)
-            canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+            # Always update both datasets; display whichever mode is active
+            diameters   = getattr(canvas, "vessel_diameters_um", [])
+            tortuosity  = getattr(canvas, "vessel_tortuosity", [])
+            hist_mode   = getattr(canvas, "_hist_mode", "diameter")
+            tort_bin    = float(getattr(canvas, "tort_bin_size_var", type("_", (), {"get": lambda s: 0.1})()).get())
+            diam_bin    = int(canvas.bin_size_var.get())
+
+            if hist_mode == "tortuosity":
+                canvas.hist_plotter.set_data(tortuosity)
+                canvas.hist_plotter.update_plot(tort_bin)
+            else:
+                canvas.hist_plotter.set_data(diameters)
+                canvas.hist_plotter.update_plot(diam_bin)
+
             images_dir = os.path.join(canvas.current_save_folder, "images")
             os.makedirs(images_dir, exist_ok=True)
 
-            bin_size = int(canvas.bin_size_var.get())
-            hist_path = os.path.join(
-                images_dir,
-                f"{canvas.FileLabelName}_VDD_Bin{bin_size}.png"
-            )
+            # Save diameter histogram
+            canvas.hist_plotter.set_data(diameters)
+            canvas.hist_plotter.update_plot(diam_bin)
+            hist_path = os.path.join(images_dir, f"{canvas.FileLabelName}_VDD_Bin{diam_bin}.png")
             canvas.hist_plotter.save_to_file(hist_path)
+
+            # Save tortuosity histogram
+            canvas.hist_plotter.set_data(tortuosity)
+            canvas.hist_plotter.update_plot(tort_bin)
+            tort_path = os.path.join(images_dir, f"{canvas.FileLabelName}_Tortuosity_Hist.png")
+            canvas.hist_plotter.save_to_file(tort_path)
+
+            # Restore to active mode
+            if hist_mode == "tortuosity":
+                canvas.hist_plotter.set_data(tortuosity)
+                canvas.hist_plotter.update_plot(tort_bin)
+            else:
+                canvas.hist_plotter.set_data(diameters)
+                canvas.hist_plotter.update_plot(diam_bin)
 
     canvas.after(0, refresh_histogram_ui)
 
     print("Biomarker analyzer processing completed.")
-    
+    if getattr(canvas, 'abort_flag', False):
+        if not batch:
+            restore_process_button(canvas)
+            canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
     # Additional processing if batch mode is on
     if batch:
         if canvas.bp_segment_faz_var.get() == 1:
@@ -162,6 +233,8 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
 
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))
+    if not batch:
+        restore_process_button(canvas)
 
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
@@ -309,6 +382,9 @@ def start_batch_processing_threaded(canvas: Canvas):
         if f.lower().endswith(f".{canvas.bp_file_type_var.get().lower()}")
     ]
 
+    # Natural sort the image files for sequential processing
+    image_files = natsorted(image_files)
+
     if len(image_files) == 0:
         print("No images found in the selected folder.")
         messagebox.showwarning(
@@ -319,6 +395,13 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Process each image
     for (index, image_file) in enumerate(image_files, start=1):
+        # Check for abort request before starting next image
+        if getattr(canvas, 'abort_flag', False):
+            print("Batch processing aborted by user.")
+            canvas.after(0, lambda: change_status_to_ready(canvas))
+            restore_process_button(canvas)
+            return
+
         #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
         print(f"Processing image: {image_path}")
@@ -367,6 +450,9 @@ def start_batch_processing_threaded(canvas: Canvas):
     # Process only successfully loaded images
     processed_images = [img for img in image_files if img not in skipped_images]
     
+    # Natural sort the image files for sequential aggregation
+    processed_images = natsorted(processed_images)
+
     # Dictionary to hold DataFrames by sheet name
     all_metrics_df = {}
     
@@ -431,3 +517,5 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
+
+    restore_process_button(canvas)

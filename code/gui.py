@@ -1,3 +1,4 @@
+from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
@@ -22,7 +23,9 @@ from modules.clear import *
 from modules.faz_utils import *
 from modules.onh_vessel_separation import *
 from modules.histogram import HistogramPlotter
+from modules.preview_thumbnail import init_thumbnail_zoom_pan
 from test import *
+from resource_path import ICONS_PATH
 
 #command for bundling on mac with pyinstaller: pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
 
@@ -66,7 +69,8 @@ canvas = Canvas(
     relief = "ridge"
 )
 
-canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox
+canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox (diameter mode)
+canvas.tort_bin_size_var = DoubleVar(value=0.1)  # Variable for Bin Size Spinbox (tortuosity mode)
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
 
@@ -489,12 +493,13 @@ button_process = ctk.CTkButton(window, text="Start Processing",
                         border_color=button_border_colour)
 button_process.place(x=30, y=585)
 
+canvas.process_button = button_process  # store ref so start_processing can toggle it
 
-round_rectangle(canvas, 430, 100, 240, 275, radius=8)
+box_original = round_rectangle(canvas, 430, 100, 240, 275, radius=8)
 
-round_rectangle(canvas, 685, 100, 240, 275, radius=8)
+box_binarised = round_rectangle(canvas, 685, 100, 240, 275, radius=8)
 
-round_rectangle(canvas, 940, 100, 240, 275, radius=8)
+box_skeletonised = round_rectangle(canvas, 940, 100, 240, 275, radius=8)
 
 
 canvas.create_text(
@@ -578,9 +583,49 @@ canvas.onh_segmentation_dropdown.bind(
     on_onh_segmentation_dropdown_change
 )
 
+# Thumbnail zoom / pan editor
+thumbnail_config = {
+    "original": dict(
+        box_tag=box_original,
+        cx=550,
+        cy=255,
+        img_id_attr="original_img_id",
+        base_attr="original_img"
+    ),
+    "binarised": dict(
+        box_tag=box_binarised,
+        cx=805,
+        cy=255,
+        img_id_attr="binary_img_id",
+        base_attr="binary_image",
+    ),
+    "skeletonised": dict(
+        box_tag=box_skeletonised,
+        cx=1060,
+        cy=255,
+        img_id_attr="skeleton_img_id",
+        base_attr="skeleton_image",
+    ),
+    "faz": dict(
+        box_tag=box_faz_segmented,
+        cx=550,
+        cy=550,
+        img_id_attr="faz_img_id",
+        base_attr="faz_grayscale_img",
+    ),
+}
+
+thumbnail_boxes = {
+    "original":     (430, 100, 670, 375),
+    "binarised":    (685, 100, 925, 375),
+    "skeletonised": (940, 100, 1180, 375),
+    "faz":          (430, 395, 670, 665),
+}
+
+init_thumbnail_zoom_pan(canvas, thumbnail_config, thumbnail_boxes)
 
 canvas.results_title_id = canvas.create_text(
-    910.0,
+    880.0,
     410.0,
     anchor="nw",
     text="Results",
@@ -589,7 +634,7 @@ canvas.results_title_id = canvas.create_text(
 )
 
 canvas.bin_size_label_id = canvas.create_text(
-    990.0,
+    960.0,
     410.0,
     anchor="nw",
     text="Bin size for histogram",
@@ -598,7 +643,7 @@ canvas.bin_size_label_id = canvas.create_text(
 )
 
 hist_frame = ctk.CTkFrame(window, fg_color=bg_colour, width=230, height=180)
-hist_frame.place(x=945, y=455)
+hist_frame.place(x=945, y=450)
 
 canvas.hist_plotter = HistogramPlotter(
     master_frame=hist_frame,
@@ -612,17 +657,19 @@ canvas.hist_plotter = HistogramPlotter(
 binsize_spinbox = Spinbox(
     from_=1,
     to=10,
-    width=2,
+    width=4,
     textvariable=canvas.bin_size_var,
-    command=lambda: canvas.hist_plotter.update_plot(canvas.bin_size_var.get()),
+    command=lambda: canvas.hist_plotter.update_plot(
+        canvas.tort_bin_size_var.get() if canvas._hist_mode == "tortuosity" else canvas.bin_size_var.get()
+    ),
     bg=bg_colour,
     fg=text_colour,
     font=("Roboto", 12 * -1),
-    bd=0.5,                  # removes the border thickness
-    highlightthickness=0  # removes the focus highlight border
+    bd=0.5,
+    highlightthickness=0
 )
 binsize_spinbox.place(
-    x=1121.0,
+    x=1082.0,
     y=408.0
 )
 
@@ -635,13 +682,44 @@ canvas.micro_metrics_title_id = canvas.create_text(
     font=("Roboto", 14 * -1)
 )
 
-canvas.vdd_title_id = canvas.create_text(
-    980.0,
-    435.0,
-    anchor="nw",
-    text="Vessel Diameter Distribution",
-    fill=theme_blue,
-    font=("Roboto", 14 * -1)
+# Histogram mode toggle (Diameter ↔ Tortuosity)
+canvas._hist_mode = "diameter"   # "diameter" or "tortuosity"
+
+def toggle_hist_mode():
+    if canvas._hist_mode == "diameter":
+        canvas._hist_mode = "tortuosity"
+        canvas.hist_title_id and canvas.itemconfig(canvas.hist_title_id, text="Tortuosity Distribution")
+        data     = getattr(canvas, "vessel_tortuosity", [])
+        bin_size = canvas.tort_bin_size_var.get()
+        binsize_spinbox.configure(from_=0.05, to=2.0, increment=0.05,
+                                  textvariable=canvas.tort_bin_size_var)
+    else:
+        canvas._hist_mode = "diameter"
+        canvas.hist_title_id and canvas.itemconfig(canvas.hist_title_id, text="Vessel Diameter Distribution")
+        data     = getattr(canvas, "vessel_diameters_um", [])
+        bin_size = canvas.bin_size_var.get()
+        binsize_spinbox.configure(from_=1, to=10, increment=1,
+                                  textvariable=canvas.bin_size_var)
+    canvas.hist_plotter.set_data(data)
+    canvas.hist_plotter.update_plot(bin_size)
+
+hist_toggle_btn = ctk.CTkButton(
+    window, text="Swap",
+    command=toggle_hist_mode,
+    width=50, height=22,
+    font=("Roboto", 11 * -1),
+    text_color=text_colour,
+    fg_color=button_blue_colour,
+    corner_radius=4, border_width=1,
+    hover_color=button_blue_hover,
+    border_color=button_border_colour
+)
+hist_toggle_btn.place(x=1128, y=406.0)
+
+# TODO Dayu - Check if vdd_title_id is used anywhere
+canvas.hist_title_id = canvas.create_text(
+    980.0, 435.0, anchor="nw", text="Vessel Diameter Distribution",
+    fill=theme_blue, font=("Roboto", 14 * -1)
 )
 
 canvas.vad_label_id = canvas.create_text(

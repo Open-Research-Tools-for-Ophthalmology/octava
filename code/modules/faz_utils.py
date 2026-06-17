@@ -25,6 +25,10 @@ def display_faz_image(canvas: Canvas):
         canvas._image_refs = {}
     canvas._image_refs["faz_img"] = img_tk
 
+    # Reset zoom/pan for FAZ thumbnail
+    if hasattr(canvas, 'thumbnail_state') and 'faz' in canvas.thumbnail_state:
+        canvas.thumbnail_state['faz'].update({"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0})
+
 # Edit: Load existing FAZ grayscale array into polygon points
 def load_faz_grayscale_arr(canvas: Canvas):
     """Extract a simplified contour point list from the current FAZ mask."""

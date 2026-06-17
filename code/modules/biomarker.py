@@ -577,6 +577,9 @@ class BiomarkerAnalyzer:
             skew_tortuosity = 0.0
             kurt_tortuosity = 0.0
 
+        # Store tortuosity values for histogram display
+        canvas.vessel_tortuosity = np.asarray(tortuosity_list, dtype=float)
+
         # Store metrics in canvas
         if not hasattr(canvas, "metrics"):
             canvas.metrics = {}
@@ -614,6 +617,17 @@ class BiomarkerAnalyzer:
             "kurtTort": int(kurt_tortuosity),
         }
 
+        # Function parameters (Frangi, MedFilt, etc.)
+        param_stats = {
+            "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool else "N/A",
+            "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool else "N/A",
+            "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool else 0,
+            "Binarization": "Fuzzy means", # We don't have anything else besides FUZZY means yet
+            "TwigSize": int(canvas.twig_size.get()),
+        }
+        micro_stats.update(param_stats)
+
+        # Tortuosity metrics (PWAOC, SOAM, etc.)
         canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
             links=links,
             binary_image=canvas.binary_image,
@@ -745,7 +759,7 @@ class BiomarkerAnalyzer:
             if arr.size == 0:
                 return np.nan
             arr = np.sort(arr)
-            trim = int(np.floor(0.05 * arr.size))
+            trim = int(np.floor(0.1 * arr.size))
             if arr.size - 2 * trim <= 0:
                 return np.mean(arr)
             return np.mean(arr[trim:arr.size - trim])

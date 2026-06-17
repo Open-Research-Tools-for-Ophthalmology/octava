@@ -151,7 +151,7 @@ def subwindow1(canvas):
 
   # twig size Spinbox
   subcanvas1.create_text(
-      170.0,
+      50.0,
       100.0,
       anchor="nw",
       text="Twig size",
@@ -171,7 +171,7 @@ def subwindow1(canvas):
       highlightthickness=0,  # removes the focus highlight border
   )
   twig_size_spinbox.place(
-      x=250.0,
+      x=120.0,
       y=100.0
   )
 
@@ -250,10 +250,11 @@ def subwindow1(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=50, y=205)
+  button1.place(x=50, y=215)
 
   close_y = 450
 
+  # TODO Dayu - Re-position the twig size spinbox
   if is_onh_mode and hasattr(canvas, "onh_large_vessel_threshold_um"):
       subcanvas1.create_text(
           45.0,

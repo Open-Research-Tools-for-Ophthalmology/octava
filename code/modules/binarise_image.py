@@ -73,6 +73,10 @@ def display_binarised_image(canvas: Canvas, image: np.ndarray):
     # Prevent garbage collection. Without this, the image will not display.
     canvas._image_refs["binary_img"] = img_tk
 
+    # Reset zoom/pan for binarised thumbnail
+    if hasattr(canvas, 'thumbnail_state') and 'binarised' in canvas.thumbnail_state:
+        canvas.thumbnail_state['binarised'].update({"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0})
+
 
 def invert_binarised_image(canvas: Canvas):
     """Invert the currently displayed binary mask and refresh the preview."""

@@ -36,7 +36,7 @@ def close(subwindow):
 def subwindow3(canvas, open_window_fn=None):
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
-    subwindow.geometry("350x455")
+    subwindow.geometry("350x450")
     subwindow.configure(bg="#FBE3D6")
     
     # Trace checkbox to enable/disable batch resize entry
@@ -45,7 +45,7 @@ def subwindow3(canvas, open_window_fn=None):
     subcanvas3 = Canvas(
         subwindow,
         bg="#FBE3D6",
-        height=455,
+        height=450,
         width=350,
         bd=0,
         highlightthickness=0,
