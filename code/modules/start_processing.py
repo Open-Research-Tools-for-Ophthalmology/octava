@@ -21,27 +21,6 @@ from theme import *
 
 skipped_images = []  # List to track images that failed to load during batch processing
 
-def abort_processing(canvas: Canvas):
-    """Signal the running processing to stop at the next checkpoint."""
-    canvas.abort_flag = True
-    canvas.process_button.configure(
-        text="Abort (Stop after the current checkpoint)",
-        fg_color=button_yellow_colour,
-        hover_color=button_yellow_hover,
-        command=lambda: abort_processing(canvas)
-    )
-    change_status_to_waiting(canvas, "● Aborting...")
-
-def restore_process_button(canvas: Canvas):
-    """Restore the process button to its default 'Start Processing' state."""
-    if hasattr(canvas, 'process_button'):
-        canvas.after(0, lambda: canvas.process_button.configure(
-            text="Start Processing",
-            fg_color=button_blue_colour,
-            hover_color=button_blue_hover,
-            command=lambda: start_processing(canvas)
-        ))
-
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
     """Return whether a batch input folder has been selected."""
     return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
@@ -65,6 +44,35 @@ def is_prebinary_enabled(canvas:Canvas) ->bool:
 def get_image_type(canvas: Canvas) -> str:
     return canvas.img_type_var.get()
 
+def toggle_processing_and_continue(canvas: Canvas):
+    print("toggle_processing_and_continue called. Current process_flag:", getattr(canvas, 'process_flag', False), "abort_flag:", getattr(canvas, 'abort_flag', False))
+    if not getattr(canvas, 'process_flag', False):
+        print("If not processing, start processing and swap button to abort")
+        # If not processing, start processing and swap button to abort
+        canvas.abort_flag = False
+        canvas.process_flag = True
+        canvas.after(0, lambda:canvas.process_button.configure(
+            text="Abort (Stop after the current checkpoint)",
+            fg_color=button_yellow_colour,
+            hover_color=button_yellow_hover,
+        ))
+        return True
+    elif getattr(canvas, 'process_flag', False) and not getattr(canvas, 'abort_flag', False):
+        print("If is processing and not aborting, request abort")
+        # If is processing and not aborting, request abort
+        canvas.abort_flag = True
+        canvas.after(0, lambda: canvas.process_button.configure(
+            text="Start Processing",
+            fg_color=button_blue_colour,
+            hover_color=button_blue_hover,
+        ))
+        canvas.after(1, lambda: change_status_to_waiting(canvas, "● Aborting..."))
+        return False
+    elif getattr(canvas, 'abort_flag', False):
+        print("If is currently aborting, skip action")
+        # If is currently aborting, skip action
+        return False
+
 def start_processing(canvas: Canvas):
     """
     Start the image processing pipeline on the loaded image in the canvas.
@@ -86,17 +94,13 @@ def start_processing(canvas: Canvas):
         )
         return
 
+    # Toggle process button to either process or abort
+    continue_flag = toggle_processing_and_continue(canvas)
+    if not continue_flag:
+        return
+
     # Clear previous results from the canvas
     clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
-    
-    canvas.abort_flag = False
-    if hasattr(canvas, 'process_button'):
-        canvas.process_button.configure(
-            text="Abort (Stop at the next checkpoint)",
-            fg_color=button_yellow_colour,
-            hover_color=button_yellow_hover,
-            command=lambda: abort_processing(canvas)
-        )
 
     if not is_batch_processing_enabled(canvas):
         # Preliminary image saving folder setup
@@ -151,9 +155,8 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
         if getattr(canvas, 'abort_flag', False):
-            if not batch:
-                restore_process_button(canvas)
-                canvas.after(0, lambda: change_status_to_ready(canvas))
+            print("Processing aborted by user after binarisation.")
+            canvas.after(0, lambda: change_status_to_ready(canvas))
             return
 
     # display = not batch  # only display skeleton in single image mode
@@ -161,9 +164,8 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
     skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
     print("Skeletonisation completed.")
     if getattr(canvas, 'abort_flag', False):
-        if not batch:
-            restore_process_button(canvas)
-            canvas.after(0, lambda: change_status_to_ready(canvas))
+        print("Processing aborted by user after skeletonisation.")
+        canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
     BiomarkerAnalyzer.process(canvas)
@@ -213,9 +215,8 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
 
     print("Biomarker analyzer processing completed.")
     if getattr(canvas, 'abort_flag', False):
-        if not batch:
-            restore_process_button(canvas)
-            canvas.after(0, lambda: change_status_to_ready(canvas))
+        print("Processing aborted by user after biomarker analysis.")
+        canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
     # Additional processing if batch mode is on
@@ -233,8 +234,6 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
 
     # Switch back to READY (must be done on main thread)
     canvas.after(0, lambda: change_status_to_ready(canvas))
-    if not batch:
-        restore_process_button(canvas)
 
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
@@ -375,7 +374,7 @@ def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
 def start_batch_processing_threaded(canvas: Canvas):
     """Iterate through the selected batch folder and process each supported image."""
     print("Starting batch image processing...")
-
+    
     # Get images of selected file type from directory
     image_files = [
         f for f in os.listdir(canvas.bp_selected_folder_path)
@@ -391,6 +390,12 @@ def start_batch_processing_threaded(canvas: Canvas):
             "No Images Found",
             "No images found in the selected folder."
         )
+        print("Processing aborted due to no images found.")
+        canvas.after(0, lambda: canvas.process_button.configure(
+            text="Start Processing",
+            fg_color=button_blue_colour,
+            hover_color=button_blue_hover,
+        ))
         return change_status_to_ready(canvas)
 
     # Process each image
@@ -399,7 +404,7 @@ def start_batch_processing_threaded(canvas: Canvas):
         if getattr(canvas, 'abort_flag', False):
             print("Batch processing aborted by user.")
             canvas.after(0, lambda: change_status_to_ready(canvas))
-            restore_process_button(canvas)
+            canvas.after(0, lambda: change_queue_status(canvas, status=""))
             return
 
         #todo: limit this to only images
@@ -514,8 +519,7 @@ def start_batch_processing_threaded(canvas: Canvas):
 
     # Switch back to READY
     change_status_to_ready(canvas)
-
+    
     # Reset queue status
     change_queue_status(canvas, status="Processed", fill=theme_blue)
 
-    restore_process_button(canvas)

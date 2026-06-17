@@ -152,7 +152,8 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
         canvas.image_size_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))
 
 
-    change_status_to_ready(canvas)
+    if not silent:
+        change_status_to_ready(canvas)
 
     return {
         "path": path,
