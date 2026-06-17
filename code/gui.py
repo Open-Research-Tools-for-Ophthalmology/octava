@@ -402,7 +402,7 @@ def update_onh_results_layout():
 
     canvas.coords(canvas.micro_metrics_title_id, 460.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="ONH Microvascular Metrics")
-    canvas.coords(canvas.vdd_title_id, 880.0, 435.0)
+    canvas.coords(canvas.hist_title_id, 880.0, 435.0)
     hist_frame.place(x=890, y=455)
 
     canvas.coords(canvas.vad_label_id, 460.0, 470.0)
@@ -433,7 +433,7 @@ def update_default_results_layout():
 
     canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
-    canvas.coords(canvas.vdd_title_id, 980.0, 435.0)
+    canvas.coords(canvas.hist_title_id, 980.0, 435.0)
     hist_frame.place(x=945, y=455)
 
     canvas.coords(canvas.vad_label_id, 710.0, 470.0)
@@ -586,28 +586,24 @@ canvas.onh_segmentation_dropdown.bind(
 # Thumbnail zoom / pan editor
 thumbnail_config = {
     "original": dict(
-        box_tag=box_original,
         cx=550,
         cy=255,
         img_id_attr="original_img_id",
         base_attr="original_img"
     ),
     "binarised": dict(
-        box_tag=box_binarised,
         cx=805,
         cy=255,
         img_id_attr="binary_img_id",
         base_attr="binary_image",
     ),
     "skeletonised": dict(
-        box_tag=box_skeletonised,
         cx=1060,
         cy=255,
         img_id_attr="skeleton_img_id",
         base_attr="skeleton_image",
     ),
     "faz": dict(
-        box_tag=box_faz_segmented,
         cx=550,
         cy=550,
         img_id_attr="faz_img_id",
@@ -716,7 +712,6 @@ hist_toggle_btn = ctk.CTkButton(
 )
 hist_toggle_btn.place(x=1128, y=406.0)
 
-# TODO Dayu - Check if vdd_title_id is used anywhere
 canvas.hist_title_id = canvas.create_text(
     980.0, 435.0, anchor="nw", text="Vessel Diameter Distribution",
     fill=theme_blue, font=("Roboto", 14 * -1)
