@@ -27,4 +27,5 @@ def round_rectangle(canvas, x1, y1, width, height, radius=16, fill="#EFEFEF", ou
 
     # Edges
     canvas.create_rectangle(x1 + radius, y1, x2 - radius, y2, fill=fill, outline=outline)
-    canvas.create_rectangle(x1, y1 + radius, x2, y2 - radius, fill=fill, outline=outline)
+    roi = canvas.create_rectangle(x1, y1 + radius, x2, y2 - radius, fill=fill, outline=outline)
+    return roi

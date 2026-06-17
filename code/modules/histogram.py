@@ -35,13 +35,19 @@ class HistogramPlotter:
         """
         self.current_bin_size = bin_size
         self.ax.clear()
-        
-        size = int(bin_size)
 
-        # Calculate bins
+        size = float(bin_size)
+        if size <= 0:
+            size = 1.0
+
+        # Calculate bins — cap at 500 bins to prevent runaway arange
         if len(self.data) > 0:
+            data_min, data_max = float(min(self.data)), float(max(self.data))
+            data_range = data_max - data_min
+            if data_range > 0 and (data_range / size) > 500:
+                size = data_range / 500.0
             self.ax.axis('on')
-            bins = np.arange(min(self.data), max(self.data) + size, size)
+            bins = np.arange(data_min, data_max + size, size)
             self.ax.hist(self.data, bins=bins, color=self.bar_color, 
                          alpha=0.8, edgecolor='black', linewidth=0.5)
             self.ax.spines['top'].set_visible(False)
