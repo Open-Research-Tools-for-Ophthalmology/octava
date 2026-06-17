@@ -2,12 +2,17 @@ from tkinter import Canvas
 from tkinter import messagebox
 from modules.change_status import *
 from modules.binarise_image import *
+from modules.onh_binarise_image import *
 from modules.biomarker import *
 from modules.skeletonise import *
 from modules.faz_utils import *
 from modules.load_image import *
 from modules.clear import *
 from modules.regional_analysis import *
+from modules.onh_vessel_separation import *
+from modules.onh_skeletonise import *
+from modules.onh_biomarker import *
+import numpy as np
 import threading
 import os
 import datetime
@@ -47,9 +52,18 @@ def is_regional_analysis_enabled(canvas:Canvas) ->bool:
         return hasattr(canvas, "bp_regional_analysis_var") and canvas.bp_regional_analysis_var.get() == 1
     return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()
 
+def is_onh_quadrant_analysis_enabled(canvas: Canvas) -> bool:
+    return (
+        hasattr(canvas, "onh_quadrant_analysis_bool")
+        and canvas.onh_quadrant_analysis_bool.get() == 1
+    )
+
 def is_prebinary_enabled(canvas:Canvas) ->bool:
     """Return whether the loaded image should be treated as pre-binarized input."""
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
+
+def get_image_type(canvas: Canvas) -> str:
+    return canvas.img_type_var.get()
 
 def start_processing(canvas: Canvas):
     """
@@ -62,6 +76,13 @@ def start_processing(canvas: Canvas):
         messagebox.showwarning(
             "No Image Loaded", 
             "Please load an image before processing."
+        )
+        return
+
+    if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
+        messagebox.showinfo(
+            "Batch Processing Unavailable",
+            "Batch processing is currently available for Retina images only."
         )
         return
 
@@ -106,11 +127,27 @@ def make_save_folder(canvas: Canvas):
     canvas.lastMetricsPath = os.path.join(canvas.current_save_folder, canvas.FileLabelName + '_' + datetime.datetime.now().strftime("%d-%b-%Y %H%M%S") + '.xlsx')
 
 # Single image processing
-# @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
-    """Run the single-image processing pipeline off the main Tk thread."""
+    """Dispatch processing to the pipeline selected for the current image type."""
+    img_type = get_image_type(canvas)
+
+    print(f"Image type selected: {img_type}")
+
+    if img_type == "Retina":
+        start_retina_processing_threaded(canvas, batch)
+    elif img_type == "ONH":
+        start_onh_processing_threaded(canvas, batch)
+    elif img_type == "Skin":
+        start_skin_processing_threaded(canvas, batch)
+    else:
+        raise ValueError(f"Unsupported image type: {img_type}")
+
+
+# @param {batch} bool = True for batch processing (will additionally process FAZ)
+def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting Retina processing...")
     if not is_prebinary_enabled(canvas):
-        print("Starting binarising...")
+        print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
         if getattr(canvas, 'abort_flag', False):
@@ -198,6 +235,141 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
     canvas.after(0, lambda: change_status_to_ready(canvas))
     if not batch:
         restore_process_button(canvas)
+
+def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting ONH processing...")
+
+    if batch:
+        canvas.after(0, lambda: messagebox.showinfo(
+            "ONH Batch Processing",
+            "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
+        ))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
+    if not hasattr(canvas, "onh_mask_img") or not hasattr(canvas, "onh_mask_arr"):
+        canvas.after(0, lambda: messagebox.showwarning(
+            "ONH Mask Missing",
+            "Please open ONH Mask and confirm the ring mask before processing."
+        ))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
+    try:
+        # 1. ONH-specific overall binarisation
+        if is_prebinary_enabled(canvas):
+            print("ONH prebinary selected. Using loaded image as ONH overall binary mask.")
+            prepare_onh_prebinary_overall(canvas)
+        else:
+            print("Starting ONH-specific binarisation...")
+            binarise_onh_image(canvas, display=False)
+            print("ONH-specific binarisation completed.")
+
+        # 2. ONH large/small vessel separation
+        print("Starting ONH large/small vessel separation...")
+        separate_onh_vessels(canvas, canvas.onh_binary_overall, display=False)
+        print("ONH large/small vessel separation completed.")
+
+        # 3. ONH-specific skeletonisation for each vessel class
+        print("Starting ONH skeletonisation for overall, large, and small vessels...")
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_overall,
+            display=False,
+            label="overall",
+            set_active=True,
+        )
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_large,
+            display=False,
+            label="large",
+            set_active=False,
+        )
+        skeletonise_onh(
+            canvas,
+            canvas.onh_binary_small,
+            display=False,
+            label="small",
+            set_active=False,
+        )
+        print("ONH skeletonisation completed for all vessel classes.")
+
+        # 4. ONH metrics for all vessel classes
+        ONHBiomarkerAnalyzer.process(canvas)
+
+        if is_onh_quadrant_analysis_enabled(canvas):
+            print("Running ONH quadrant analysis...")
+            ONHBiomarkerAnalyzer.process_quadrants(canvas)
+            print("ONH quadrant analysis completed.")
+
+        selected_view = "Overall"
+        if hasattr(canvas, "onh_segmentation_view_var"):
+            selected_view = canvas.onh_segmentation_view_var.get()
+
+        canvas.after(
+            0,
+            lambda view=selected_view: update_onh_segmentation_dropdown_display(canvas, view)
+        )
+
+        def refresh_histogram_ui():
+            if hasattr(canvas, "hist_plotter"):
+                diameters = getattr(canvas, "vessel_diameters_um", [])
+                canvas.hist_plotter.set_data(diameters)
+                canvas.hist_plotter.update_plot(canvas.bin_size_var.get())
+                images_dir = os.path.join(canvas.current_save_folder, "images")
+                os.makedirs(images_dir, exist_ok=True)
+
+                bin_size = int(canvas.bin_size_var.get())
+                hist_path = os.path.join(
+                    images_dir,
+                    f"{canvas.FileLabelName}_ONH_VDD_{selected_view.replace(' ', '_')}_Bin{bin_size}.png"
+                )
+                canvas.hist_plotter.save_to_file(hist_path)
+
+        canvas.after(0, refresh_histogram_ui)
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return
+
+    except Exception as e:
+        err_msg = str(e)
+        print(f"ONH processing failed: {err_msg}")
+        canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+
+
+def prepare_onh_prebinary_overall(canvas: Canvas):
+    if hasattr(canvas, "binary_image"):
+        source = canvas.binary_image
+    elif hasattr(canvas, "original_img"):
+        source = canvas.original_img
+    else:
+        raise ValueError("No loaded image found for ONH prebinary processing.")
+
+    roi_mask = canvas.onh_mask_arr.astype(bool)
+
+    if source.shape != roi_mask.shape:
+        raise ValueError("ONH prebinary image and ONH mask have different sizes.")
+
+    binary = ((source > 0) & roi_mask).astype(np.uint8) * 255
+
+    canvas.onh_binary_overall = binary
+    canvas.onh_overall_vessel_img = binary
+    canvas.binary_image = binary
+    canvas.inverted_image = binary.copy()
+
+    save_onh_binary_image(canvas, binary)
+
+# Skin pipeline not implemented yet
+def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
+    print("Starting Skin processing...")
+    print("Skin processing pipeline is not implemented in the current project scope.")
+
+    canvas.after(0, lambda: messagebox.showinfo(
+        "Skin Processing",
+        "Skin processing pipeline is not implemented in the current project scope."
+    ))
+    canvas.after(0, lambda: change_status_to_ready(canvas))
 
 # batch processing
 def start_batch_processing_threaded(canvas: Canvas):

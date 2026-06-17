@@ -14,6 +14,7 @@ def init_regional_analysis_settings(canvas: Canvas):
   canvas.extended_etdrs_bool = IntVar(value=0)
   canvas.foveal_ring_bool = IntVar(value=0)
   canvas.optic_nerve_head_bool = IntVar(value=0)
+  canvas.onh_quadrant_analysis_bool = IntVar(value=0)
   canvas.apply_regional_analysis_bool = IntVar(value=0)
   canvas.RAlabels = []
 
@@ -62,75 +63,94 @@ def subwindow2(canvas):
       height=30.0
   )
 
-  # square grid checkbox
-  square_grid_checkbox = Checkbutton(
-      subwindow,
-      text="Square grid",
-      variable=canvas.square_grid_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  square_grid_checkbox.place(
-      x=40.0,
-      y=100.0
+  is_onh_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "ONH"
   )
 
-  # etdrs grid checkbox
-  etdrs_grid_checkbox = Checkbutton(
-      subwindow,
-      text="ETDRS grid",
-      variable=canvas.etdrs_grid_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  etdrs_grid_checkbox.place(
-      x=40.0,
-      y=130.0
-  )
+  if is_onh_mode:
+      onh_quadrant_checkbox = Checkbutton(
+          subwindow,
+          text="ONH quadrant analysis",
+          variable=canvas.onh_quadrant_analysis_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      onh_quadrant_checkbox.place(
+          x=40.0,
+          y=110.0
+      )
+  else:
+      # square grid checkbox
+      square_grid_checkbox = Checkbutton(
+          subwindow,
+          text="Square grid",
+          variable=canvas.square_grid_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      square_grid_checkbox.place(
+          x=40.0,
+          y=100.0
+      )
 
-  # extended etdrs grid checkbox
-  extended_etdrs_checkbox = Checkbutton(
-      subwindow,
-      text="Extended ETDRS grid",
-      variable=canvas.extended_etdrs_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  extended_etdrs_checkbox.place(
-      x=40.0,
-      y=160.0
-  )
+      # etdrs grid checkbox
+      etdrs_grid_checkbox = Checkbutton(
+          subwindow,
+          text="ETDRS grid",
+          variable=canvas.etdrs_grid_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      etdrs_grid_checkbox.place(
+          x=40.0,
+          y=130.0
+      )
 
-  # foveal rings checkbox
-  foveal_rings_checkbox = Checkbutton(
-      subwindow,
-      text="Foveal rings",
-      variable=canvas.foveal_ring_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  foveal_rings_checkbox.place(
-      x=40.0,
-      y=190.0
-  )
+      # extended etdrs grid checkbox
+      extended_etdrs_checkbox = Checkbutton(
+          subwindow,
+          text="Extended ETDRS grid",
+          variable=canvas.extended_etdrs_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      extended_etdrs_checkbox.place(
+          x=40.0,
+          y=160.0
+      )
 
-  # optic nerve head checkbox
-  optic_nerve_head_checkbox = Checkbutton(
-      subwindow,
-      text="Optic nerve head",
-      variable=canvas.optic_nerve_head_bool,
-      bg=subwindow_bg_colour,
-      fg=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  optic_nerve_head_checkbox.place(
-      x=40.0,
-      y=220.0
-  )
+      # foveal rings checkbox
+      foveal_rings_checkbox = Checkbutton(
+          subwindow,
+          text="Foveal rings",
+          variable=canvas.foveal_ring_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      foveal_rings_checkbox.place(
+          x=40.0,
+          y=190.0
+      )
+
+      # optic nerve head checkbox
+      optic_nerve_head_checkbox = Checkbutton(
+          subwindow,
+          text="Optic nerve head",
+          variable=canvas.optic_nerve_head_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      optic_nerve_head_checkbox.place(
+          x=40.0,
+          y=220.0
+      )
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
