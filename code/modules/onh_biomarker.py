@@ -20,7 +20,6 @@ ONH_VIEW_TO_KEY = {
     "Small Vessels": "small",
 }
 
-ONH_REGIONAL_SHEET_NAME = "ONH Regional"
 RIGHT_EYE = "Right Eye"
 ONH_BRANCHPOINT_MIN_LINK_LENGTH_PX = 15.0
 ONH_TORTUOSITY_MIN_LINK_LENGTH_PX = 15.0
@@ -111,21 +110,30 @@ class ONHBiomarkerAnalyzer:
         print("ONH biomarker analysis completed for:", list(metrics_by_type.keys()))
 
     @staticmethod
-    def process_quadrants(canvas: Canvas) -> None:
+    def process_subregions(canvas: Canvas, divider: str = "quadrant") -> None:
         if not hasattr(canvas, "onh_mask_arr"):
-            raise ValueError("No ONH annulus mask found for ONH quadrant analysis.")
+            raise ValueError(f"No ONH annulus mask found for ONH {divider} analysis.")
 
         if not hasattr(canvas, "onh_center"):
-            raise ValueError("No ONH center found for ONH quadrant analysis.")
+            raise ValueError(f"No ONH center found for ONH {divider} analysis.")
 
-        quadrant_masks = ONHBiomarkerAnalyzer.make_quadrant_masks(canvas)
+        QUADRANT_NAMES = ("TEMP", "SUP", "NASAL", "INF")
+        OCTANT_NAMES = ("ST", "SN", "NS", "NI", "IN", "IT", "TI", "TS")
+        
+        if divider == "quadrant":
+            region_masks = ONHBiomarkerAnalyzer.make_quadrant_masks(canvas)
+            REGION_NAMES = QUADRANT_NAMES
+        else:
+            region_masks = ONHBiomarkerAnalyzer.make_octant_masks(canvas)
+            REGION_NAMES = OCTANT_NAMES
+        
         center_x, center_y = canvas.onh_center
         eye = canvas.eye_var.get() if hasattr(canvas, "eye_var") else RIGHT_EYE
         eye_code = "OD" if eye == RIGHT_EYE else "OS"
         regional_rows = []
 
-        for region_name in ("TEMP", "SUP", "NASAL", "INF"):
-            region_mask = quadrant_masks[region_name]
+        for region_name in REGION_NAMES:
+            region_mask = region_masks[region_name]
 
             for key, label, _sheet_name in ONH_METRIC_TYPES:
                 binary = getattr(canvas, f"onh_binary_{key}", None)
@@ -159,12 +167,12 @@ class ONHBiomarkerAnalyzer:
             write_excel(
                 pd.DataFrame(regional_rows),
                 canvas.lastMetricsPath,
-                sheet_name=ONH_REGIONAL_SHEET_NAME,
+                sheet_name=f"ONH regional_{divider}",
                 replace_sheet=True,
             )
             canvas.onh_regional_metrics = regional_rows
 
-        print("ONH quadrant analysis completed.")
+        print(f"ONH {divider} analysis completed.")
 
     @staticmethod
     def make_quadrant_masks(canvas: Canvas) -> dict[str, np.ndarray]:
@@ -205,6 +213,53 @@ class ONHBiomarkerAnalyzer:
             for idx, region_name in enumerate(region_names)
         }
 
+    @staticmethod
+    def make_octant_masks(canvas: Canvas) -> dict[str, np.ndarray]:
+        annulus_mask = canvas.onh_mask_arr.astype(bool)
+        height, width = annulus_mask.shape
+        center_x, center_y = canvas.onh_center
+
+        rows, cols = np.indices((height, width))
+        angles = np.degrees(np.arctan2(-(rows - center_y), cols - center_x))
+
+        eye = canvas.eye_var.get() if hasattr(canvas, "eye_var") else RIGHT_EYE
+        if eye == RIGHT_EYE:
+            region_centers = {
+                "ST": 112.5,
+                "SN": 67.5,
+                "NS": 22.5,
+                "NI": -22.5,
+                "IN": -67.5,
+                "IT": -112.5,
+                "TI": -157.5,
+                "TS": 157.5,
+            }
+        else:
+            region_centers = {
+                "ST": 67.5,
+                "SN": 112.5,
+                "NS": 157.5,
+                "NI": -157.5,
+                "IN": -112.5,
+                "IT": -67.5,
+                "TI": -22.5,
+                "TS": 22.5,
+            }
+
+        region_names = ("ST", "SN", "NS", "NI", "IN", "IT", "TI", "TS")
+        distances = []
+        for region_name in region_names:
+            center_angle = region_centers[region_name]
+            dist = np.abs((angles - center_angle + 180.0) % 360.0 - 180.0)
+            distances.append(dist)
+
+        nearest_region = np.argmin(np.stack(distances, axis=0), axis=0)
+
+        return {
+            region_name: annulus_mask & (nearest_region == idx)
+            for idx, region_name in enumerate(region_names)
+        }
+    
     @staticmethod
     def compute_metrics(
         canvas: Canvas,

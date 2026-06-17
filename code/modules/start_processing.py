@@ -37,6 +37,12 @@ def is_onh_quadrant_analysis_enabled(canvas: Canvas) -> bool:
         and canvas.onh_quadrant_analysis_bool.get() == 1
     )
 
+def is_onh_octant_analysis_enabled(canvas: Canvas) -> bool:
+    return (
+        hasattr(canvas, "onh_octant_analysis_bool")
+        and canvas.onh_octant_analysis_bool.get() == 1
+    )
+
 def is_prebinary_enabled(canvas:Canvas) ->bool:
     """Return whether the loaded image should be treated as pre-binarized input."""
     return hasattr(canvas, "prebinary_var") and canvas.prebinary_var.get() == 1
@@ -299,8 +305,13 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
 
         if is_onh_quadrant_analysis_enabled(canvas):
             print("Running ONH quadrant analysis...")
-            ONHBiomarkerAnalyzer.process_quadrants(canvas)
+            ONHBiomarkerAnalyzer.process_subregions(canvas, divider="quadrant")
             print("ONH quadrant analysis completed.")
+
+        if is_onh_octant_analysis_enabled(canvas):
+            print("Running ONH octant analysis...")
+            ONHBiomarkerAnalyzer.process_subregions(canvas, divider="octant")
+            print("ONH octant analysis completed.")
 
         selected_view = "Overall"
         if hasattr(canvas, "onh_segmentation_view_var"):
