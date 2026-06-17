@@ -427,9 +427,9 @@ def update_default_results_layout():
     set_canvas_items_state(canvas.onh_results_panel_ids, "hidden")
     canvas.itemconfigure(canvas.segmentation_title_id, state="normal")
 
-    canvas.coords(canvas.results_title_id, 910.0, 410.0)
-    canvas.coords(canvas.bin_size_label_id, 990.0, 410.0)
-    binsize_spinbox.place(x=1121.0, y=408.0)
+    canvas.coords(canvas.results_title_id, 880.0, 410.0)
+    canvas.coords(canvas.bin_size_label_id, 960.0, 410.0)
+    binsize_spinbox.place(x=1082.0, y=408.0)
 
     canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
@@ -839,6 +839,19 @@ def on_prebinary_toggle():
         clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
 
 prebinary_checkbox.configure(command=on_prebinary_toggle)
+
+# Show swap to tortuosity histogram if in Retina analysis
+def on_img_type_toggle(event):
+    if img_type.get() == "Retina":
+        hist_toggle_btn.place(x=1128, y=406.0)
+    else:
+        # Swap back to diameter
+        if canvas._hist_mode != "diameter":
+            toggle_hist_mode()
+        # Hide swap button
+        hist_toggle_btn.place_forget()
+
+img_type.bind("<<ComboboxSelected>>", on_img_type_toggle)
 
 window.resizable(False, False)
 window.mainloop()
