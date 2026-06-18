@@ -12,7 +12,10 @@ def change_status_to_waiting(canvas:Canvas, status:str="● Wait"):
 
 def change_status_to_ready(canvas:Canvas):
   """Set the main status label to the ready state."""
+  print("change_status_to_ready: Changing status to ready.")
   change_status(canvas, status="● Ready", colour=theme_blue)
+  canvas.abort_flag = False
+  canvas.process_flag = False
 
 def change_queue_status(canvas:Canvas, status:str="Processed", fill:str=theme_blue):
   """Update the batch-processing queue status label."""

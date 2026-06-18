@@ -254,11 +254,10 @@ def subwindow1(canvas):
 
   close_y = 450
 
-  # TODO Dayu - Re-position the twig size spinbox
   if is_onh_mode and hasattr(canvas, "onh_large_vessel_threshold_um"):
       subcanvas1.create_text(
           45.0,
-          274.0,
+          284.0,
           anchor="nw",
           text="ONH Settings",
           fill="#10203F",
@@ -312,7 +311,7 @@ def subwindow1(canvas):
       )
       large_vessels_checkbox.place(
           x=40.0,
-          y=300.0
+          y=310.0
       )
 
       # small vessels checkbox
@@ -326,35 +325,7 @@ def subwindow1(canvas):
       )
       small_vessels_checkbox.place(
           x=40.0,
-          y=330.0
-      )
-
-      # artery checkbox
-      artery_checkbox = Checkbutton(
-          subwindow,
-          text="Artery (Retina only, not yet available)",
-          variable=artery_var,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      artery_checkbox.place(
-          x=40.0,
-          y=360.0
-      )
-
-      # veins checkbox
-      veins_checkbox = Checkbutton(
-          subwindow,
-          text="Veins (Retina only, not yet available)",
-          variable=veins_var,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      veins_checkbox.place(
-          x=40.0,
-          y=390.0
+          y=340.0
       )
 
   #close

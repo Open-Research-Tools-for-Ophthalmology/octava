@@ -402,7 +402,7 @@ def update_onh_results_layout():
 
     canvas.coords(canvas.micro_metrics_title_id, 460.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="ONH Microvascular Metrics")
-    canvas.coords(canvas.vdd_title_id, 880.0, 435.0)
+    canvas.coords(canvas.hist_title_id, 880.0, 435.0)
     hist_frame.place(x=890, y=455)
 
     canvas.coords(canvas.vad_label_id, 460.0, 470.0)
@@ -427,13 +427,13 @@ def update_default_results_layout():
     set_canvas_items_state(canvas.onh_results_panel_ids, "hidden")
     canvas.itemconfigure(canvas.segmentation_title_id, state="normal")
 
-    canvas.coords(canvas.results_title_id, 910.0, 410.0)
-    canvas.coords(canvas.bin_size_label_id, 990.0, 410.0)
-    binsize_spinbox.place(x=1121.0, y=408.0)
+    canvas.coords(canvas.results_title_id, 880.0, 410.0)
+    canvas.coords(canvas.bin_size_label_id, 960.0, 410.0)
+    binsize_spinbox.place(x=1082.0, y=408.0)
 
     canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
-    canvas.coords(canvas.vdd_title_id, 980.0, 435.0)
+    canvas.coords(canvas.hist_title_id, 980.0, 435.0)
     hist_frame.place(x=945, y=455)
 
     canvas.coords(canvas.vad_label_id, 710.0, 470.0)
@@ -586,28 +586,24 @@ canvas.onh_segmentation_dropdown.bind(
 # Thumbnail zoom / pan editor
 thumbnail_config = {
     "original": dict(
-        box_tag=box_original,
         cx=550,
         cy=255,
         img_id_attr="original_img_id",
         base_attr="original_img"
     ),
     "binarised": dict(
-        box_tag=box_binarised,
         cx=805,
         cy=255,
         img_id_attr="binary_img_id",
         base_attr="binary_image",
     ),
     "skeletonised": dict(
-        box_tag=box_skeletonised,
         cx=1060,
         cy=255,
         img_id_attr="skeleton_img_id",
         base_attr="skeleton_image",
     ),
     "faz": dict(
-        box_tag=box_faz_segmented,
         cx=550,
         cy=550,
         img_id_attr="faz_img_id",
@@ -716,7 +712,6 @@ hist_toggle_btn = ctk.CTkButton(
 )
 hist_toggle_btn.place(x=1128, y=406.0)
 
-# TODO Dayu - Check if vdd_title_id is used anywhere
 canvas.hist_title_id = canvas.create_text(
     980.0, 435.0, anchor="nw", text="Vessel Diameter Distribution",
     fill=theme_blue, font=("Roboto", 14 * -1)
@@ -844,6 +839,19 @@ def on_prebinary_toggle():
         clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
 
 prebinary_checkbox.configure(command=on_prebinary_toggle)
+
+# Show swap to tortuosity histogram if in Retina analysis
+def on_img_type_toggle(event):
+    if img_type.get() == "Retina":
+        hist_toggle_btn.place(x=1128, y=406.0)
+    else:
+        # Swap back to diameter
+        if canvas._hist_mode != "diameter":
+            toggle_hist_mode()
+        # Hide swap button
+        hist_toggle_btn.place_forget()
+
+img_type.bind("<<ComboboxSelected>>", on_img_type_toggle)
 
 window.resizable(False, False)
 window.mainloop()

@@ -15,6 +15,7 @@ def init_regional_analysis_settings(canvas: Canvas):
   canvas.foveal_ring_bool = IntVar(value=0)
   canvas.optic_nerve_head_bool = IntVar(value=0)
   canvas.onh_quadrant_analysis_bool = IntVar(value=0)
+  canvas.onh_octant_analysis_bool = IntVar(value=0)
   canvas.apply_regional_analysis_bool = IntVar(value=0)
   canvas.RAlabels = []
 
@@ -80,6 +81,19 @@ def subwindow2(canvas):
       onh_quadrant_checkbox.place(
           x=40.0,
           y=110.0
+      )
+
+      onh_octant_checkbox = Checkbutton(
+          subwindow,
+          text="ONH octant analysis",
+          variable=canvas.onh_octant_analysis_bool,
+          bg=subwindow_bg_colour,
+          fg=text_colour,
+          font=("Roboto", 14 * -1)
+      )
+      onh_octant_checkbox.place(
+          x=40.0,
+          y=140.0
       )
   else:
       # square grid checkbox
