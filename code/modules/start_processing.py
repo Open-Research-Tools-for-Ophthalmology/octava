@@ -79,6 +79,20 @@ def toggle_processing_and_continue(canvas: Canvas):
         # If is currently aborting, skip action
         return False
 
+def abort_if_requested(canvas: Canvas):
+    if getattr(canvas, 'abort_flag', False):
+        print("Processing aborted by user after binarisation.")
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+        return True
+    return False
+
+def reset_processing_on_error(canvas: Canvas):
+    canvas.after(0, lambda: canvas.process_button.configure(
+        text="Start Processing",
+        fg_color=button_blue_colour,
+        hover_color=button_blue_hover,
+    ))
+
 def start_processing(canvas: Canvas):
     """
     Start the image processing pipeline on the loaded image in the canvas.
@@ -91,6 +105,7 @@ def start_processing(canvas: Canvas):
             "No Image Loaded", 
             "Please load an image before processing."
         )
+        reset_processing_on_error(canvas)
         return
 
     if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
@@ -98,6 +113,7 @@ def start_processing(canvas: Canvas):
             "Batch Processing Unavailable",
             "Batch processing is currently available for Retina images only."
         )
+        reset_processing_on_error(canvas)
         return
 
     # Toggle process button to either process or abort
@@ -160,19 +176,13 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
-        if getattr(canvas, 'abort_flag', False):
-            print("Processing aborted by user after binarisation.")
-            canvas.after(0, lambda: change_status_to_ready(canvas))
-            return
+        if abort_if_requested(canvas): return
 
     # display = not batch  # only display skeleton in single image mode
     display = True
     skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
     print("Skeletonisation completed.")
-    if getattr(canvas, 'abort_flag', False):
-        print("Processing aborted by user after skeletonisation.")
-        canvas.after(0, lambda: change_status_to_ready(canvas))
-        return
+    if abort_if_requested(canvas): return
 
     BiomarkerAnalyzer.process(canvas)
 
@@ -220,10 +230,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
     canvas.after(0, refresh_histogram_ui)
 
     print("Biomarker analyzer processing completed.")
-    if getattr(canvas, 'abort_flag', False):
-        print("Processing aborted by user after biomarker analysis.")
-        canvas.after(0, lambda: change_status_to_ready(canvas))
-        return
+    if abort_if_requested(canvas): return
 
     # Additional processing if batch mode is on
     if batch:
@@ -232,6 +239,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
             display_faz_image(canvas)
             measure_faz(canvas)
             print("FAZ generation and metrics measurement completed.")
+            if abort_if_requested(canvas): return
 
     if is_regional_analysis_enabled(canvas):
         print("Running regional analysis...")
@@ -249,6 +257,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             "ONH Batch Processing",
             "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
         ))
+        reset_processing_on_error(canvas)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -257,6 +266,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             "ONH Mask Missing",
             "Please open ONH Mask and confirm the ring mask before processing."
         ))
+        reset_processing_on_error(canvas)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -265,15 +275,18 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         if is_prebinary_enabled(canvas):
             print("ONH prebinary selected. Using loaded image as ONH overall binary mask.")
             prepare_onh_prebinary_overall(canvas)
+            if abort_if_requested(canvas): return
         else:
             print("Starting ONH-specific binarisation...")
             binarise_onh_image(canvas, display=False)
+            if abort_if_requested(canvas): return
             print("ONH-specific binarisation completed.")
 
         # 2. ONH large/small vessel separation
         print("Starting ONH large/small vessel separation...")
         separate_onh_vessels(canvas, canvas.onh_binary_overall, display=False)
         print("ONH large/small vessel separation completed.")
+        if abort_if_requested(canvas): return
 
         # 3. ONH-specific skeletonisation for each vessel class
         print("Starting ONH skeletonisation for overall, large, and small vessels...")
@@ -284,6 +297,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="overall",
             set_active=True,
         )
+        if abort_if_requested(canvas): return
         skeletonise_onh(
             canvas,
             canvas.onh_binary_large,
@@ -291,6 +305,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="large",
             set_active=False,
         )
+        if abort_if_requested(canvas): return
         skeletonise_onh(
             canvas,
             canvas.onh_binary_small,
@@ -298,20 +313,24 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="small",
             set_active=False,
         )
+        if abort_if_requested(canvas): return
         print("ONH skeletonisation completed for all vessel classes.")
 
         # 4. ONH metrics for all vessel classes
         ONHBiomarkerAnalyzer.process(canvas)
+        if abort_if_requested(canvas): return
 
         if is_onh_quadrant_analysis_enabled(canvas):
             print("Running ONH quadrant analysis...")
             ONHBiomarkerAnalyzer.process_subregions(canvas, divider="quadrant")
             print("ONH quadrant analysis completed.")
+            if abort_if_requested(canvas): return
 
         if is_onh_octant_analysis_enabled(canvas):
             print("Running ONH octant analysis...")
             ONHBiomarkerAnalyzer.process_subregions(canvas, divider="octant")
             print("ONH octant analysis completed.")
+            if abort_if_requested(canvas): return
 
         selected_view = "Overall"
         if hasattr(canvas, "onh_segmentation_view_var"):
@@ -345,7 +364,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         err_msg = str(e)
         print(f"ONH processing failed: {err_msg}")
         canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
-        canvas.after(0, lambda: change_status_to_ready(canvas))
+        reset_processing_on_error(canvas)
 
 
 def prepare_onh_prebinary_overall(canvas: Canvas):
@@ -379,6 +398,7 @@ def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
         "Skin Processing",
         "Skin processing pipeline is not implemented in the current project scope."
     ))
+    reset_processing_on_error(canvas)
     canvas.after(0, lambda: change_status_to_ready(canvas))
 
 # batch processing
@@ -402,11 +422,7 @@ def start_batch_processing_threaded(canvas: Canvas):
             "No images found in the selected folder."
         )
         print("Processing aborted due to no images found.")
-        canvas.after(0, lambda: canvas.process_button.configure(
-            text="Start Processing",
-            fg_color=button_blue_colour,
-            hover_color=button_blue_hover,
-        ))
+        reset_processing_on_error(canvas)
         return change_status_to_ready(canvas)
 
     # Process each image
