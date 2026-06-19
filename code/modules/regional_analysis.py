@@ -728,7 +728,7 @@ def run_analysis_on_regions(
 
 				if links is not None and len(links) > 0:
 						# sum(~[app.Gnodes.ep])
-						canvas.regional_metrics[i]["nodes"] = count_branchpoints(nodes)
+						nodes_count = count_branchpoints(nodes)
 
 						# sum(sum(binaryReg{i})) / 255 / imgArea_pix
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
@@ -770,12 +770,12 @@ def run_analysis_on_regions(
 
 						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
-								canvas.regional_metrics[i]["nodes"] / canvas.regional_metrics[i]["totalLength"], 2
+							nodes_count / canvas.regional_metrics[i]["totalLength"], 2
 						)
 
 						# fractalDimension(app)
-						slope = compute_fractal_dimension(canvas)
-						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+						# slope = compute_fractal_dimension(canvas)
+						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
 
 						# mean tortuosity
 						tortuosity_list = compute_tortuosity_list(links, binaryReg[i])
@@ -788,7 +788,6 @@ def run_analysis_on_regions(
 
 				# If no skeleton graph
 				else:
-						canvas.regional_metrics[i]["nodes"] = 0
 						vessel_pixels = np.sum(binaryReg[i]) / 255.0
 						canvas.regional_metrics[i]["VAD"] = round(vessel_pixels / imgArea_pix, 4) * 100
 						canvas.regional_metrics[i]["totalLength"] = 0
@@ -805,8 +804,8 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["skewDiams"] = 0
 						canvas.regional_metrics[i]["kurtDiams"] = 0
 						canvas.regional_metrics[i]["BD"] = 0
-						slope = compute_fractal_dimension(canvas)
-						canvas.regional_metrics[i]["FD"] = round(slope, 4)
+						# slope = compute_fractal_dimension(canvas)
+						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
 						canvas.regional_metrics[i]["mTort"] = 0
 						canvas.regional_metrics[i]["varTort"] = 0
 						canvas.regional_metrics[i]["skewTort"] = 0
