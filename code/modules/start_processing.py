@@ -237,7 +237,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         if canvas.bp_segment_faz_var.get() == 1:
             generate_faz_mask(canvas, batch=True)
             display_faz_image(canvas)
-            measure_faz(canvas)
+            measure_faz(canvas, silent=True)
             print("FAZ generation and metrics measurement completed.")
             if abort_if_requested(canvas): return
 

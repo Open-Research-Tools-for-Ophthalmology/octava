@@ -34,6 +34,8 @@ OPEN_WINDOWS = {}
 
 # If window exists, bring to front, otherwise create
 def open_window(key, callback, *args, **kwargs):
+    if disable_click_if_busy(canvas): return # Disable clicking if currently busy
+
     global OPEN_WINDOWS
     
     # Check if window already exists

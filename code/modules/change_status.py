@@ -1,6 +1,16 @@
-from tkinter import Canvas
+from tkinter import Canvas, messagebox
 from theme import *
 
+def disable_click_if_busy(canvas: Canvas):
+  # Prevent clicking if currently processing an image
+  status_text = canvas.itemcget(canvas.status_id, "text") 
+  queue_text = canvas.itemcget(canvas.queue_id, "text") 
+  if (status_text and status_text != "● Ready") or (queue_text and queue_text != ""):
+    print("Currently processing an image. Please wait...")
+    messagebox.showinfo("Please Wait", "Currently processing an image. Please wait...")
+    return True
+  return False
+    
 def change_status(canvas: Canvas, status: str, colour: str = theme_blue):
   """Update the main status label and flush the Tk event queue."""
   canvas.itemconfigure(canvas.status_id, text=status, fill=colour)

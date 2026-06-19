@@ -119,9 +119,11 @@ def generate_faz_mask(canvas: Canvas, batch: bool = False):
         change_status_to_ready(canvas)
 
 # measure 1. contour in red 2. contour with 300 micron expansion in yellow 3. binary mask 4. double contours
-def measure_faz(canvas: Canvas):
+def measure_faz(canvas: Canvas, silent: bool = False):
     """Measure FAZ morphology and FD_300, then export the metrics and validation images."""
     print("Measuring FAZ metrics...")
+    if not silent and disable_click_if_busy(canvas): return # Disable clicking if currently busy
+
     if not hasattr(canvas, 'faz_grayscale_arr') or not hasattr(canvas, 'faz_grayscale_img') or not hasattr(canvas, 'faz_img_id') or not canvas._image_refs.get("faz_img"):
         return messagebox.showwarning("Empty FAZ mask", "FAZ mask required")
     if not hasattr(canvas, 'binary_image') or not canvas._image_refs.get('binary_img'):

@@ -31,6 +31,8 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
 
 def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: int = 220):
     """Prompt for an output folder, render its label, and store the real path on the canvas."""
+
+    if disable_click_if_busy(canvas): return # Disable clicking if currently busy
     change_status_to_waiting(canvas)
 
     dir_path = filedialog.askdirectory(title="Select a folder", mustexist=True)

@@ -49,6 +49,8 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     - Stores original grayscale PIL image in canvas.original_img
     - Displays a 200x200 resized preview (not aspect preserved)
     """
+
+    if not silent and disable_click_if_busy(canvas): return # Disable clicking if currently busy
     change_status_to_waiting(canvas)
 
     # Method 1: Load from given path

@@ -87,7 +87,7 @@ def invert_binarised_image(canvas: Canvas):
       )
       return
 
-    change_status_to_waiting(canvas, status="● Wait...Inverting Binarised Image")
+    # change_status_to_waiting(canvas, status="● Wait...Inverting Binarised Image")
 
     print ("Inverting binarised image...")
 
@@ -99,4 +99,4 @@ def invert_binarised_image(canvas: Canvas):
 
     print ("Inverted binarised image.")
 
-    change_status_to_ready(canvas)
+    # change_status_to_ready(canvas)
