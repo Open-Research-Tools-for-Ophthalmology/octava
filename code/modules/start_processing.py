@@ -59,8 +59,8 @@ def toggle_processing_and_continue(canvas: Canvas):
         canvas.process_flag = True
         canvas.after(0, lambda:canvas.process_button.configure(
             text="Abort (Stop after the current checkpoint)",
-            fg_color=button_yellow_colour,
-            hover_color=button_yellow_hover,
+            fg_color=button_green_colour,
+            hover_color=button_green_hover,
         ))
         return True
     elif getattr(canvas, 'process_flag', False) and not getattr(canvas, 'abort_flag', False):
@@ -68,9 +68,9 @@ def toggle_processing_and_continue(canvas: Canvas):
         # If is processing and not aborting, request abort
         canvas.abort_flag = True
         canvas.after(0, lambda: canvas.process_button.configure(
-            text="Start Processing",
-            fg_color=button_blue_colour,
-            hover_color=button_blue_hover,
+            text="Aborting...Please Wait...",
+            fg_color=button_yellow_colour,
+            hover_color=button_yellow_hover,
         ))
         canvas.after(1, lambda: change_status_to_waiting(canvas, "● Aborting..."))
         return False
@@ -81,12 +81,14 @@ def toggle_processing_and_continue(canvas: Canvas):
 
 def abort_if_requested(canvas: Canvas):
     if getattr(canvas, 'abort_flag', False):
-        print("Processing aborted by user after binarisation.")
+        print("Processing aborted by user.")
         canvas.after(0, lambda: change_status_to_ready(canvas))
+        canvas.after(0, lambda: change_queue_status(canvas, status=""))
+        reset_to_start_processing(canvas)
         return True
     return False
 
-def reset_processing_on_error(canvas: Canvas):
+def reset_to_start_processing(canvas: Canvas):
     canvas.after(0, lambda: canvas.process_button.configure(
         text="Start Processing",
         fg_color=button_blue_colour,
@@ -105,7 +107,7 @@ def start_processing(canvas: Canvas):
             "No Image Loaded", 
             "Please load an image before processing."
         )
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
         return
 
     if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
@@ -113,7 +115,7 @@ def start_processing(canvas: Canvas):
             "Batch Processing Unavailable",
             "Batch processing is currently available for Retina images only."
         )
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
         return
 
     # Toggle process button to either process or abort
@@ -247,6 +249,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         print("Regional analysis completed.")
 
     # Switch back to READY (must be done on main thread)
+    reset_to_start_processing(canvas)
     canvas.after(0, lambda: change_status_to_ready(canvas))
 
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
@@ -257,7 +260,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             "ONH Batch Processing",
             "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
         ))
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -266,7 +269,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             "ONH Mask Missing",
             "Please open ONH Mask and confirm the ring mask before processing."
         ))
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -357,6 +360,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
                 canvas.hist_plotter.save_to_file(hist_path)
 
         canvas.after(0, refresh_histogram_ui)
+        reset_to_start_processing(canvas)
         canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
@@ -364,7 +368,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         err_msg = str(e)
         print(f"ONH processing failed: {err_msg}")
         canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
 
 
 def prepare_onh_prebinary_overall(canvas: Canvas):
@@ -398,7 +402,7 @@ def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
         "Skin Processing",
         "Skin processing pipeline is not implemented in the current project scope."
     ))
-    reset_processing_on_error(canvas)
+    reset_to_start_processing(canvas)
     canvas.after(0, lambda: change_status_to_ready(canvas))
 
 # batch processing
@@ -422,17 +426,13 @@ def start_batch_processing_threaded(canvas: Canvas):
             "No images found in the selected folder."
         )
         print("Processing aborted due to no images found.")
-        reset_processing_on_error(canvas)
+        reset_to_start_processing(canvas)
         return change_status_to_ready(canvas)
 
     # Process each image
     for (index, image_file) in enumerate(image_files, start=1):
         # Check for abort request before starting next image
-        if getattr(canvas, 'abort_flag', False):
-            print("Batch processing aborted by user.")
-            canvas.after(0, lambda: change_status_to_ready(canvas))
-            canvas.after(0, lambda: change_queue_status(canvas, status=""))
-            return
+        if abort_if_requested(canvas): break
 
         #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
@@ -509,6 +509,9 @@ def start_batch_processing_threaded(canvas: Canvas):
             return datetime.datetime.min
         
         # Sort spreadsheets by datetime and get the latest
+        if len(spreadsheets) == 0:
+            print(f"No spreadsheets found for {image_file} in {image_folder_path}. Skipping metrics aggregation for this image.")
+            continue
         spreadsheets.sort(key=get_file_datetime, reverse=True)
         print(f"Latest spreadsheet for {image_file}: {spreadsheets[0]}")
         
@@ -545,6 +548,7 @@ def start_batch_processing_threaded(canvas: Canvas):
     print("Batch image processing completed.")
 
     # Switch back to READY
+    reset_to_start_processing(canvas)
     change_status_to_ready(canvas)
     
     # Reset queue status
