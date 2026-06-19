@@ -84,7 +84,7 @@ def abort_if_requested(canvas: Canvas):
     if getattr(canvas, 'abort_flag', False):
         print("Processing aborted by user.")
         canvas.after(0, lambda: change_status_to_ready(canvas))
-        canvas.after(0, lambda: change_queue_status(canvas, status=""))
+        canvas.after(0, lambda: change_queue_status(canvas, status="Aborted by User", fill=theme_red))
         reset_to_start_processing(canvas)
         return True
     return False

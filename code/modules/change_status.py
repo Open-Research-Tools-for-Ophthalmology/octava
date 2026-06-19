@@ -5,7 +5,7 @@ def check_if_busy(canvas: Canvas):
     # Check if currently processing an image
     status_text = canvas.itemcget(canvas.status_id, "text") 
     queue_text = canvas.itemcget(canvas.queue_id, "text") 
-    if (status_text and status_text != "● Ready") or (queue_text and queue_text != ""):
+    if (status_text and status_text != "● Ready") or (queue_text and queue_text != "" and queue_text != "Processed"):
         return True
     return False
 
