@@ -1,5 +1,6 @@
 from tkinter import Canvas
 from tkinter import messagebox
+from modules.onh_utils import generate_onh_mask
 from modules.change_status import *
 from modules.binarise_image import *
 from modules.onh_binarise_image import *
@@ -110,13 +111,13 @@ def start_processing(canvas: Canvas):
         reset_to_start_processing(canvas)
         return
 
-    if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
-        messagebox.showinfo(
-            "Batch Processing Unavailable",
-            "Batch processing is currently available for Retina images only."
-        )
-        reset_to_start_processing(canvas)
-        return
+    # if is_batch_processing_enabled(canvas) and get_image_type(canvas) != "Retina":
+    #     messagebox.showinfo(
+    #         "Batch Processing Unavailable",
+    #         "Batch processing is currently available for Retina images only."
+    #     )
+    #     reset_to_start_processing(canvas)
+    #     return
 
     # Toggle process button to either process or abort
     continue_flag = toggle_processing_and_continue(canvas)
@@ -256,13 +257,16 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
 
     if batch:
-        canvas.after(0, lambda: messagebox.showinfo(
-            "ONH Batch Processing",
-            "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
-        ))
-        reset_to_start_processing(canvas)
-        canvas.after(0, lambda: change_status_to_ready(canvas))
-        return
+        generate_onh_mask(canvas)
+        print("Mask generation completed. Starting binarisation...")
+        if abort_if_requested(canvas): return
+        # canvas.after(0, lambda: messagebox.showinfo(
+        #     "ONH Batch Processing",
+        #     "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
+        # ))
+        # reset_to_start_processing(canvas)
+        # canvas.after(0, lambda: change_status_to_ready(canvas))
+        # return
 
     if not hasattr(canvas, "onh_mask_img") or not hasattr(canvas, "onh_mask_arr"):
         canvas.after(0, lambda: messagebox.showwarning(
