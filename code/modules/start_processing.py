@@ -80,12 +80,13 @@ def toggle_processing_and_continue(canvas: Canvas):
         # If is currently aborting, skip action
         return False
 
-def abort_if_requested(canvas: Canvas):
+def abort_if_requested(canvas: Canvas, batch: bool = False) -> bool:
     if getattr(canvas, 'abort_flag', False):
         print("Processing aborted by user.")
-        canvas.after(0, lambda: change_status_to_ready(canvas))
-        canvas.after(0, lambda: change_queue_status(canvas, status="Aborted by User", fill=theme_red))
-        reset_to_start_processing(canvas)
+        if not batch:
+            canvas.after(0, lambda: change_status_to_ready(canvas))
+            canvas.after(0, lambda: change_queue_status(canvas, status="Aborted by User", fill=theme_blue))
+            reset_to_start_processing(canvas)
         return True
     return False
 
@@ -123,6 +124,9 @@ def start_processing(canvas: Canvas):
     continue_flag = toggle_processing_and_continue(canvas)
     if not continue_flag:
         return
+
+    # Clear status and queue messages
+    clear_status_and_queue_status(canvas)
 
     # Clear previous results from the canvas
     clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
@@ -179,13 +183,13 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
         print("Binarisation completed. Starting skeletonisation...")
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
 
     # display = not batch  # only display skeleton in single image mode
     display = True
     skeletonise(canvas, canvas.original_img, canvas.binary_image, display=display)
     print("Skeletonisation completed.")
-    if abort_if_requested(canvas): return
+    if abort_if_requested(canvas, batch): return
 
     BiomarkerAnalyzer.process(canvas)
 
@@ -233,7 +237,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
     canvas.after(0, refresh_histogram_ui)
 
     print("Biomarker analyzer processing completed.")
-    if abort_if_requested(canvas): return
+    if abort_if_requested(canvas, batch): return
 
     # Additional processing if batch mode is on
     if batch:
@@ -242,16 +246,18 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
             display_faz_image(canvas)
             measure_faz(canvas, silent=True)
             print("FAZ generation and metrics measurement completed.")
-            if abort_if_requested(canvas): return
+            if abort_if_requested(canvas, batch): return
 
     if is_regional_analysis_enabled(canvas):
         print("Running regional analysis...")
         run_regional_analysis(canvas)
         print("Regional analysis completed.")
 
-    # Switch back to READY (must be done on main thread)
-    reset_to_start_processing(canvas)
-    canvas.after(0, lambda: change_status_to_ready(canvas))
+    # Switch back to READY if single processing, otherwise return to batch loop
+    if abort_if_requested(canvas, batch): return
+    if not batch:
+        reset_to_start_processing(canvas)
+        canvas.after(0, lambda: change_status_to_ready(canvas))
 
 def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     print("Starting ONH processing...")
@@ -259,14 +265,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     if batch:
         generate_onh_mask(canvas)
         print("Mask generation completed. Starting binarisation...")
-        if abort_if_requested(canvas): return
-        # canvas.after(0, lambda: messagebox.showinfo(
-        #     "ONH Batch Processing",
-        #     "ONH batch processing is not enabled yet because each image needs a confirmed ONH ring mask."
-        # ))
-        # reset_to_start_processing(canvas)
-        # canvas.after(0, lambda: change_status_to_ready(canvas))
-        # return
+        if abort_if_requested(canvas, batch): return
 
     if not hasattr(canvas, "onh_mask_img") or not hasattr(canvas, "onh_mask_arr"):
         canvas.after(0, lambda: messagebox.showwarning(
@@ -282,18 +281,18 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         if is_prebinary_enabled(canvas):
             print("ONH prebinary selected. Using loaded image as ONH overall binary mask.")
             prepare_onh_prebinary_overall(canvas)
-            if abort_if_requested(canvas): return
+            if abort_if_requested(canvas, batch): return
         else:
             print("Starting ONH-specific binarisation...")
             binarise_onh_image(canvas, display=False)
-            if abort_if_requested(canvas): return
+            if abort_if_requested(canvas, batch): return
             print("ONH-specific binarisation completed.")
 
         # 2. ONH large/small vessel separation
         print("Starting ONH large/small vessel separation...")
         separate_onh_vessels(canvas, canvas.onh_binary_overall, display=False)
         print("ONH large/small vessel separation completed.")
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
 
         # 3. ONH-specific skeletonisation for each vessel class
         print("Starting ONH skeletonisation for overall, large, and small vessels...")
@@ -304,7 +303,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="overall",
             set_active=True,
         )
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
         skeletonise_onh(
             canvas,
             canvas.onh_binary_large,
@@ -312,7 +311,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="large",
             set_active=False,
         )
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
         skeletonise_onh(
             canvas,
             canvas.onh_binary_small,
@@ -320,24 +319,24 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
             label="small",
             set_active=False,
         )
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
         print("ONH skeletonisation completed for all vessel classes.")
 
         # 4. ONH metrics for all vessel classes
         ONHBiomarkerAnalyzer.process(canvas)
-        if abort_if_requested(canvas): return
+        if abort_if_requested(canvas, batch): return
 
         if is_onh_quadrant_analysis_enabled(canvas):
             print("Running ONH quadrant analysis...")
             ONHBiomarkerAnalyzer.process_subregions(canvas, divider="quadrant")
             print("ONH quadrant analysis completed.")
-            if abort_if_requested(canvas): return
+            if abort_if_requested(canvas, batch): return
 
         if is_onh_octant_analysis_enabled(canvas):
             print("Running ONH octant analysis...")
             ONHBiomarkerAnalyzer.process_subregions(canvas, divider="octant")
             print("ONH octant analysis completed.")
-            if abort_if_requested(canvas): return
+            if abort_if_requested(canvas, batch): return
 
         selected_view = "Overall"
         if hasattr(canvas, "onh_segmentation_view_var"):
@@ -364,8 +363,12 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
                 canvas.hist_plotter.save_to_file(hist_path)
 
         canvas.after(0, refresh_histogram_ui)
-        reset_to_start_processing(canvas)
-        canvas.after(0, lambda: change_status_to_ready(canvas))
+        
+        # Switch back to READY if single processing, otherwise return to batch loop
+        if abort_if_requested(canvas, batch): return
+        if not batch:
+            reset_to_start_processing(canvas)
+            canvas.after(0, lambda: change_status_to_ready(canvas))
         return
 
     except Exception as e:
@@ -406,8 +409,13 @@ def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
         "Skin Processing",
         "Skin processing pipeline is not implemented in the current project scope."
     ))
-    reset_to_start_processing(canvas)
-    canvas.after(0, lambda: change_status_to_ready(canvas))
+  
+    # Switch back to READY if single processing, otherwise return to batch loop
+    if abort_if_requested(canvas, batch): return
+    if not batch:
+        reset_to_start_processing(canvas)
+        canvas.after(0, lambda: change_status_to_ready(canvas))
+    return
 
 # batch processing
 def start_batch_processing_threaded(canvas: Canvas):
@@ -436,7 +444,9 @@ def start_batch_processing_threaded(canvas: Canvas):
     # Process each image
     for (index, image_file) in enumerate(image_files, start=1):
         # Check for abort request before starting next image
-        if abort_if_requested(canvas): break
+        if abort_if_requested(canvas, batch=True):
+            print("Batch processing aborted. Breaking...")
+            break
 
         #todo: limit this to only images
         image_path = os.path.join(canvas.bp_selected_folder_path, image_file)
@@ -495,6 +505,10 @@ def start_batch_processing_threaded(canvas: Canvas):
     for (index, image_file) in enumerate(processed_images, start=1):
         image_folder_path = os.path.join(canvas.bp_selected_folder_path, os.path.splitext(image_file)[0])
         
+        if not os.path.isdir(image_folder_path):
+            print(f"Folder for image {image_file} not found at {image_folder_path}. Skipping this image.")
+            continue
+
         # 1. Read the latest generated spreadsheets from this folder
         spreadsheets = [
             f for f in os.listdir(image_folder_path)
@@ -552,9 +566,10 @@ def start_batch_processing_threaded(canvas: Canvas):
     print("Batch image processing completed.")
 
     # Switch back to READY
-    reset_to_start_processing(canvas)
-    change_status_to_ready(canvas)
+    if abort_if_requested(canvas, batch = False): return
     
     # Reset queue status
+    reset_to_start_processing(canvas)
+    canvas.after(0, lambda: change_status_to_ready(canvas))
     change_queue_status(canvas, status="Processed", fill=theme_blue)
 
