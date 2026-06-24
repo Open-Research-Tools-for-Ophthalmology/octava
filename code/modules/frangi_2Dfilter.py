@@ -149,7 +149,7 @@ def frangi_2Dfilter(X: np.ndarray, opts: dict) -> np.ndarray:
 # Only difference is we use self-contained hessian_filter functions
 def jerman(
     im,
-    sigmas=range(1, 10, 2),
+    sigmas: np.ndarray = np.arange(1, 6, 1), # by default 1:5
     tau=0.75,
     brightondark=True,
 ):
@@ -170,68 +170,56 @@ def jerman(
         # S.-F. Yang and C.-H. Cheng, “Fast computation of Hessian-based
         # enhancement filters for medical images,” Comput. Meth. Prog. Bio., vol.
         # 116, no. 3, pp. 215–225, 2014.
-        # B1 = Trace, B2 = Det(erminant)
+        # Trace = B1, Det(erminant) = B2 (line 84 / vesselness2D)
         trace = Dxx + Dyy
         det = Dxx * Dyy - Dxy ** 2
         degenerate = (trace == 0) & (det == 0)
-        # Just to keep consistency, images will be brightondark in our cases.
+        # Mask = indeces = find(T==1) = ~T
         if brightondark:
-            mask = (trace <= 0) & ~degenerate # -(var) < 0 in matlab equals to <= 0 in python
+            mask = (trace <= 0) & ~degenerate
         else:
             mask = (trace >= 0) & ~degenerate
 
+        # m_major, m_minor = Lambda1i,Lambda2i (line 114 / vesselness2D)
+        # TODO check if we need to Dxx = Dxx(mask) to match vesselness2D? (line 105 / vesselness2D) or is this just for efficiency?
         _, _, m_major, m_minor = eig2im(Dxx, Dxy, Dyy)
-
-        # Lambda1i,Lambda2i (line 114 / vesselness2D)
-        m_major = np.where(mask, m_major, 0.0)
-        m_minor = np.where(mask, m_minor, 0.0)
+        m_major = np.where(mask, m_major, 0)
+        m_minor = np.where(mask, m_minor, 0)
 
         # some noise removal (line 120 / vesselness2D)
-        m_major[np.abs(m_major) < 1e-4] = 0.0
-        m_minor[np.abs(m_minor) < 1e-4] = 0.0
+        m_major[np.abs(m_major) < 1e-4] = 0
+        m_minor[np.abs(m_minor) < 1e-4] = 0
 
-        # For bright-on-dark, Lambda2 (major eigenvalue) is large and negative
-        # at vessel centres; negate so vessel pixels become large positive.
-        # (Jerman vesselness2D: "if brightondark == true: Lambda2 = -Lambda2")
+        # Negate at brightondark to make lambda positive values, Line 43 / vesselness2D
         Lambda2 = -m_major if brightondark else m_major
 
-        # 2D adaptation: Lambda3 = Lambda2, only two eigenvalues exist in 2D; (line 47)
+        # 2D adaptation: Lambda3 = Lambda2, only two eigenvalues exist in 2D; (line 47 / vesselness2D)
         Lambda3 = Lambda2.copy()
 
         # Lambda_rho regularisation (line 50 / vesselness2D).
         Lambda_rho = Lambda3.copy()
-        l3_max = float(np.max(Lambda3))
-        if l3_max > 0:
-            low = (Lambda3 > 0) & (Lambda3 <= tau * l3_max)
-            Lambda_rho[low] = tau * l3_max
-        Lambda_rho[Lambda3 <= 0] = 0.0
+        Lambda3_max = float(np.max(Lambda3))
+        low_indeces = (Lambda3 > 0) & (Lambda3 <= tau * Lambda3_max)
+        Lambda_rho[low_indeces] = tau * Lambda3_max
+        Lambda_rho[Lambda3 <= 0] = 0
 
-        # Vesselness response (line 55 / vesselness2D).
-        denom = (Lambda2 + Lambda_rho) ** 3
-        response = np.zeros_like(Lambda2)
-        finite = denom != 0
-        response[finite] = (
-            Lambda2[finite] ** 2
-            * (Lambda_rho[finite] - Lambda2[finite])
-            * 27.0
-            / denom[finite]
-        )
+        # Vesselness response (line 53 / vesselness2D).
+        with np.errstate(invalid='ignore', divide='ignore'): # NaN case handled in normalisation step
+            response = (Lambda2 ** 2 * (Lambda_rho - Lambda2) * 27 / ((Lambda2 + Lambda_rho) ** 3))
 
-        # Clamp strong vessel pixels to 1; zero out background / invalid pixels.
-        response[(Lambda2 >= Lambda_rho / 2) & (Lambda_rho > 0)] = 1.0
-        response[(Lambda2 <= 0) | (Lambda_rho <= 0)] = 0.0
-        response[~np.isfinite(response)] = 0.0
+        # 0,1 Normlisation (line 55 / vesselness2D).
+        response[(Lambda2 >= Lambda_rho / 2) & (Lambda_rho > 0)] = 1
+        response[(Lambda2 <= 0) | (Lambda_rho <= 0)] = 0
+        response[~np.isfinite(response)] = 0
 
-        if i == 0:
+        # max response over multiple scales (line 59 / vesselness2D).
+        if sigma == 1:
             vesselness = response
         else:
             vesselness = np.maximum(vesselness, response)
 
-    max_vesselness = float(np.max(vesselness))
-    if max_vesselness > 0:
-        vesselness = vesselness / max_vesselness
-
-    # Final threshold (vesselness2D).
-    vesselness[vesselness < 1e-2] = 0.0
+    # should not be really needed as already normlised, but keep consistent as (line 69 / vesselness2D)... 
+    vesselness = vesselness / float(np.max(vesselness))
+    vesselness[vesselness < 1e-2] = 0
 
     return vesselness
