@@ -452,15 +452,15 @@ class BiomarkerAnalyzer:
 
         if Nx < 2:
             fractal_dim = {
-                'skeleton': {4: 0.0, 8: 0.0},
-                'binary': {4: 0.0, 8: 0.0}
+                'skeleton': {4: 0.0},
+                'binary': {4: 0.0}
             }
         else:
             import math
 
             fractal_dim = {
-                'skeleton': {4: 0.0, 8: 0.0},
-                'binary': {4: 0.0, 8: 0.0}
+                'skeleton': {4: 0.0},
+                'binary': {4: 0.0}
             }
 
             # exponent = math.ceil(math.log2(Nx))
@@ -484,40 +484,40 @@ class BiomarkerAnalyzer:
             Z_pad['binary'][:min(Nx, width), :min(Nx, width)] = Z_binary
 
             counts = {
-                'skeleton': {4: [], 8: []},
-                'binary': {4: [], 8: []}
+                'skeleton': {4: []},
+                'binary': {4: []}
             }
 
             r_values = {
-                'skeleton': {4: [], 8: []},
-                'binary': {4: [], 8: []}
+                'skeleton': {4: []},
+                'binary': {4: []}
             }
 
             counts['skeleton'][4].append(np.sum(Z_pad['skeleton']))
             counts['binary'][4].append(np.sum(Z_pad['binary']))
-            counts['skeleton'][8].append(np.sum(Z_pad['skeleton']))
-            counts['binary'][8].append(np.sum(Z_pad['binary']))
 
             r_values['skeleton'][4].append(4)
             r_values['binary'][4].append(4)
-            r_values['skeleton'][8].append(8)
-            r_values['binary'][8].append(8)
 
             for img_type, img in {
                 'skeleton': Z_pad['skeleton'],
                 'binary': Z_pad['binary']
             }.items():
                 # start 4 [4, 8, ..., 2^exponent] box sizes
-                # start 8 [8, 16, ..., 2^exponent] box sizes
-                for exponent_start in [2, 3]:
+                for exponent_start in [2]: # 2^2 = 4 for starting box_size
                     current_img = img
-                    for i in range(exponent_start, exponent_end + 1):
+                    for i in range(1, exponent_end + 1):
                         rows, cols = current_img.shape
                         if rows < 2 or cols < 2:
                             break
 
                         # Reshape to half of current size
                         shrunk_img = current_img.reshape(rows // 2, 2, cols // 2, 2).max(axis=(1, 3))
+
+                        # Shrink image with smaller box_size first but keep it excluded from regression calculation
+                        if i < exponent_start:
+                            current_img = shrunk_img
+                            continue
 
                         # Get number of boxes needed to cover the shape
                         n_box = np.sum(shrunk_img)
@@ -526,11 +526,10 @@ class BiomarkerAnalyzer:
                         counts[img_type][2 ** exponent_start].append(n_box)
                         r_values[img_type][2 ** exponent_start].append(2 ** i)
 
-                        print(f'Using {img_type} image, Starting Box size: {2 ** exponent_start}, Current Box size: {2 ** i}, # of Box {n_box}')
+                        print(f'Using {img_type} image, Starting Box size: {2 ** exponent_start}, Current Box size: {2 ** i}, # of valid boxes {n_box}')
                         current_img = shrunk_img
 
                     valid_indices = [i for i, c in enumerate(counts[img_type][2 ** exponent_start]) if c > 0]
-                    print(f'Valid indices for {img_type} with starting box size {2 ** exponent_start}: {valid_indices}')
 
                     if len(valid_indices) >= 2:
                         x = np.log([r_values[img_type][2 ** exponent_start][i] for i in valid_indices])
@@ -607,25 +606,13 @@ class BiomarkerAnalyzer:
             "skewDiams": round(float(skew_diameter_um), 2),
             "kurtDiams": round(float(kurt_diameter_um), 2),
             "Branchpoint density": float(branchpoint_density),
-            "Fractal dimension (Skeleton, box_size_from=4)": float(fractal_dim['skeleton'][4]),
-            "Fractal dimension (Skeleton, box_size_from=8)": float(fractal_dim['skeleton'][8]),
-            "Fractal dimension (Binary, box_size_from=4)": float(fractal_dim['binary'][4]),
-            "Fractal dimension (Binary, box_size_from=8)": float(fractal_dim['binary'][8]),
+            "Fractal dimension (Skeleton)": float(fractal_dim['skeleton'][4]),
+            "Fractal dimension (Binary)": float(fractal_dim['binary'][4]),
             "mTort": float(mean_tortuosity),
             "varTort": round(float(var_tortuosity), 3),
             "skewTort": round(float(skew_tortuosity), 2),
             "kurtTort": int(kurt_tortuosity),
         }
-
-        # Function parameters (Frangi, MedFilt, etc.)
-        param_stats = {
-            "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool else "N/A",
-            "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool else "N/A",
-            "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool else 0,
-            "Binarization": "Fuzzy means", # We don't have anything else besides FUZZY means yet
-            "TwigSize": int(canvas.twig_size.get()),
-        }
-        micro_stats.update(param_stats)
 
         # Tortuosity metrics (PWAOC, SOAM, etc.)
         canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
@@ -635,6 +622,18 @@ class BiomarkerAnalyzer:
             fullImSizePix=canvas.fullImSizePix,
         )
         micro_stats.update(canvas.new_tort_metrics)
+
+        # Function parameters (Frangi, MedFilt, etc.)
+        param_stats = {
+            "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool.get() else "N/A",
+            "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool.get() else "N/A",
+            "Jerman_sigmas": ",".join(s.strip() for s in canvas.jerman_sigmas.get().split(',')) if canvas.jerman_bool.get() else "N/A",
+            "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool.get() else "N/A",
+            "Binarization": "Fuzzy means", # We don't have anything else besides FUZZY means yet
+            "TwigSize": int(canvas.twig_size.get()),
+        }
+        micro_stats.update(param_stats)
+
         write_excel(micro_stats, canvas.lastMetricsPath, sheet_name="Microvascular metrics")
 
         # Update GUI display

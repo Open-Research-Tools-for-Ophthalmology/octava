@@ -34,6 +34,11 @@ def close(subwindow):
     subwindow.update()
 
 def subwindow3(canvas, open_window_fn=None):
+    is_onh_mode = (
+        hasattr(canvas, "img_type_var")
+        and canvas.img_type_var.get() == "ONH"
+    )
+      
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
     subwindow.geometry("350x450")
@@ -146,15 +151,16 @@ def subwindow3(canvas, open_window_fn=None):
     )
 
     # measure faz checkbox
-    measure_faz_checkbox = Checkbutton(
-        subwindow,
-        text="Segment FAZ",
-        variable=canvas.bp_segment_faz_var,
-        bg=subwindow_bg_colour,
-        fg=text_colour,
-        font=("Roboto", 14 * -1),
-    )
-    measure_faz_checkbox.place(x=40.0, y=286.0)
+    if not is_onh_mode:
+        measure_faz_checkbox = Checkbutton(
+            subwindow,
+            text="Segment FAZ",
+            variable=canvas.bp_segment_faz_var,
+            bg=subwindow_bg_colour,
+            fg=text_colour,
+            font=("Roboto", 14 * -1),
+        )
+        measure_faz_checkbox.place(x=40.0, y=286.0)
 
     # regional analysis checkbox
     regional_analysis_checkbox = Checkbutton(
@@ -166,7 +172,7 @@ def subwindow3(canvas, open_window_fn=None):
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
-    regional_analysis_checkbox.place(x=40.0, y=321.0)
+    regional_analysis_checkbox.place(x=40.0, y=286 if is_onh_mode else 321.0)
 
     # close
     button_close = ctk.CTkButton(

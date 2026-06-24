@@ -34,6 +34,8 @@ OPEN_WINDOWS = {}
 
 # If window exists, bring to front, otherwise create
 def open_window(key, callback, *args, **kwargs):
+    if disable_click_if_busy(canvas): return # Disable clicking if currently busy
+
     global OPEN_WINDOWS
     
     # Check if window already exists
@@ -316,8 +318,10 @@ def update_image_size_default_for_type(img_type):
     previous_img_type = getattr(canvas, "_previous_img_type", None)
     target_default = IMAGE_SIZE_DEFAULTS_MM.get(img_type)
 
+    # Assign previous values to default if not set
     if previous_img_type is None or target_default is None:
         canvas._previous_img_type = img_type
+        canvas._previous_image_size = IMAGE_SIZE_DEFAULTS_MM.get(img_type, 3.0)
         return
 
     previous_default = IMAGE_SIZE_DEFAULTS_MM.get(previous_img_type)
@@ -331,10 +335,17 @@ def update_image_size_default_for_type(img_type):
             canvas.image_size_var.set(target_default)
 
     canvas._previous_img_type = img_type
+    print(f"Updating _previous_img_type to  {img_type}")
+
 
 
 def update_optional_buttons_state(*args):
     img_type = canvas.img_type_var.get()
+
+    # Change back if current process is busy
+    if disable_click_if_busy(canvas):
+        return canvas.after(0, canvas.img_type_var.set(canvas._previous_img_type))
+    
     update_image_size_default_for_type(img_type)
 
     # ONH mode
@@ -360,6 +371,12 @@ def update_optional_buttons_state(*args):
                 canvas,
                 canvas.onh_segmentation_view_var.get()
             )
+        
+        # ONH shows diameter histogram
+        if canvas._hist_mode != "diameter":
+            toggle_hist_mode()
+        # Hide swap button
+        hist_toggle_btn.place_forget()
 
     else:
         canvas.coords(canvas.status_id, 950.0, 35.0)
@@ -383,6 +400,16 @@ def update_optional_buttons_state(*args):
         button_point_faz.configure(state="normal")
         button_auto_faz.configure(state="normal")
         button_measure_faz.configure(state="normal")
+
+    # Add swap button only for Retina
+    if img_type == "Retina":
+        hist_toggle_btn.place(x=1128, y=406.0)
+    else:
+        # Swap back to diameter
+        if canvas._hist_mode != "diameter":
+            toggle_hist_mode()
+        # Hide swap button
+        hist_toggle_btn.place_forget()
 
 
 def set_canvas_items_state(item_ids, state):
@@ -840,18 +867,12 @@ def on_prebinary_toggle():
 
 prebinary_checkbox.configure(command=on_prebinary_toggle)
 
-# Show swap to tortuosity histogram if in Retina analysis
-def on_img_type_toggle(event):
-    if img_type.get() == "Retina":
-        hist_toggle_btn.place(x=1128, y=406.0)
-    else:
-        # Swap back to diameter
-        if canvas._hist_mode != "diameter":
-            toggle_hist_mode()
-        # Hide swap button
-        hist_toggle_btn.place_forget()
+def on_prebinary_toggle():
+    if disable_click_if_busy(canvas):
+        prebinary_checkbox.deselect() # Revert toggle
+        return
 
-img_type.bind("<<ComboboxSelected>>", on_img_type_toggle)
+prebinary_checkbox.configure(command=on_prebinary_toggle)
 
 window.resizable(False, False)
 window.mainloop()

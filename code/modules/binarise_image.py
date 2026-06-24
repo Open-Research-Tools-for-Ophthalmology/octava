@@ -39,6 +39,11 @@ def binarise_image(canvas: Canvas, display:bool=True):
         }
         img = frangi_2Dfilter(img, opts)
 
+    if canvas.jerman_bool.get():
+        sigmas_str = canvas.jerman_sigmas.get()
+        sigmas_arr = [float(s.strip()) for s in sigmas_str.split(',')]
+        img = jerman(img, sigmas=np.array(sigmas_arr), tau=canvas.jerman_tau.get())
+
     # --- Always use Fuzzy Means ---
     nth = 2
     binary_image = fuzzy_thresholding(img, nth, 3)-1
@@ -87,7 +92,7 @@ def invert_binarised_image(canvas: Canvas):
       )
       return
 
-    change_status_to_waiting(canvas, status="● Wait...Inverting Binarised Image")
+    # change_status_to_waiting(canvas, status="● Wait...Inverting Binarised Image")
 
     print ("Inverting binarised image...")
 
@@ -99,4 +104,4 @@ def invert_binarised_image(canvas: Canvas):
 
     print ("Inverted binarised image.")
 
-    change_status_to_ready(canvas)
+    # change_status_to_ready(canvas)
