@@ -151,7 +151,7 @@ def subwindow3(canvas, open_window_fn=None):
     )
 
     # measure faz checkbox
-    if is_onh_mode:
+    if not is_onh_mode:
         measure_faz_checkbox = Checkbutton(
             subwindow,
             text="Segment FAZ",

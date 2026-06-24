@@ -627,7 +627,8 @@ class BiomarkerAnalyzer:
         param_stats = {
             "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool.get() else "N/A",
             "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool.get() else "N/A",
-            "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool.get() else 0,
+            "Jerman_sigmas": ",".join(s.strip() for s in canvas.jerman_sigmas.get().split(',')) if canvas.jerman_bool.get() else "N/A",
+            "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool.get() else "N/A",
             "Binarization": "Fuzzy means", # We don't have anything else besides FUZZY means yet
             "TwigSize": int(canvas.twig_size.get()),
         }
