@@ -39,6 +39,11 @@ def binarise_image(canvas: Canvas, display:bool=True):
         }
         img = frangi_2Dfilter(img, opts)
 
+    if canvas.jerman_bool.get():
+        sigmas_str = canvas.jerman_sigmas.get()
+        sigmas_arr = [float(s.strip()) for s in sigmas_str.split(',')]
+        img = jerman(img, sigmas=np.array(sigmas_arr), tau=canvas.jerman_tau.get())
+
     # --- Always use Fuzzy Means ---
     nth = 2
     binary_image = fuzzy_thresholding(img, nth, 3)-1

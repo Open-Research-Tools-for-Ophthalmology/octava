@@ -16,6 +16,7 @@ from tkinter import (
   Checkbutton,
   IntVar,
   DoubleVar,
+  StringVar,
   Spinbox,
   messagebox,
 )
@@ -29,6 +30,9 @@ def init_advanced_settings(canvas: Canvas):
   canvas.frangi_bool = IntVar(value=1)
   canvas.frangi_min = IntVar(value=1)
   canvas.frangi_max = IntVar(value=4)
+  canvas.jerman_bool = IntVar(value=0)
+  canvas.jerman_sigmas = StringVar(value="1, 2, 3, 4, 5")
+  canvas.jerman_tau = DoubleVar(value=1.00)
   canvas.onh_frangi_bool = IntVar(value=1)
   canvas.onh_frangi_min = IntVar(value=1)
   canvas.onh_frangi_max = IntVar(value=4)
@@ -51,7 +55,7 @@ def subwindow1(canvas):
       hasattr(canvas, "img_type_var")
       and canvas.img_type_var.get() == "ONH"
   )
-  window_height = 515
+  window_height = 480
 
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
@@ -65,6 +69,8 @@ def subwindow1(canvas):
   frangi_bool_var = canvas.frangi_bool
   frangi_min_var = canvas.frangi_min
   frangi_max_var = canvas.frangi_max
+  jerman_bool_var = canvas.jerman_bool
+  jerman_sigmas_var = canvas.jerman_sigmas
   if is_onh_mode:
       frangi_bool_var = getattr(canvas, "onh_frangi_bool", canvas.frangi_bool)
       frangi_min_var = getattr(canvas, "onh_frangi_min", canvas.frangi_min)
@@ -82,7 +88,7 @@ def subwindow1(canvas):
   )
   subcanvas1.place(x = 0, y = 0)
 
-  subcanvas1.create_rectangle( 30, 35, 330, 190, fill="#FBE3D6", outline=text_colour)
+  subcanvas1.create_rectangle( 30, 35, 330, 210 if is_onh_mode else 240, fill="#FBE3D6", outline=text_colour)
 
   # image_image_1 = PhotoImage(
   #     file=relative_to_assets("image_1.png"))
@@ -241,6 +247,70 @@ def subwindow1(canvas):
       y=155.0
   )
 
+  # Exclude ONH from Jerman filter
+  if not is_onh_mode:
+    jerman_filt_checkbox = Checkbutton(
+        subwindow,
+        text="Jerman filter",
+        variable=jerman_bool_var,
+        bg=subwindow_bg_colour,
+        fg="#10203F",
+        font=("Roboto", 14 * -1)
+    )
+    jerman_filt_checkbox.place(
+        x=40.0,
+        y=180.0
+    )
+
+    jerman_sigmas_label = subcanvas1.create_text(
+        155.0,
+        185.0,
+        anchor="nw",
+        text="Sigmas",
+        fill="#10203F",
+        font=("Roboto", 14 * -1)
+    )
+    jerman_sigmas_entry = Entry(
+        subwindow,
+        textvariable=jerman_sigmas_var,
+        bg=subwindow_bg_colour,
+        fg=text_colour,
+        font=("Roboto", 12 * -1),
+        bd=0.5,
+        highlightthickness=0,
+        width=10
+    )
+    jerman_sigmas_entry.place(
+        x=210.0,
+        y=185.0
+    )
+
+    jerman_tau_label = subcanvas1.create_text(
+        170.0,
+        210.0,
+        anchor="nw",
+        text="Tau",
+        fill="#10203F",
+        font=("Roboto", 14 * -1)
+    )
+    jerman_tau_spinbox = Spinbox(
+        subwindow,
+        from_=0.5,
+        to=1.0,
+        increment=0.05,
+        width=5,
+        textvariable=canvas.jerman_tau,
+        bg=subwindow_bg_colour,
+        fg=text_colour,
+        font=("Roboto", 12 * -1),
+        bd=0.5,
+        highlightthickness=0,
+    )
+    jerman_tau_spinbox.place(
+        x=210.0,
+        y=210.0
+    )
+
   button1 = ctk.CTkButton(subwindow, text="Image Subset",
                           command=lambda: subwindow_subset(canvas),
                           width=250,height=45,
@@ -250,14 +320,14 @@ def subwindow1(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=50, y=215)
+  button1.place(x=50, y=240 if is_onh_mode else 270)
 
-  close_y = 450
+  close_y = 410
 
   if is_onh_mode and hasattr(canvas, "onh_large_vessel_threshold_um"):
       subcanvas1.create_text(
           45.0,
-          284.0,
+          309.0,
           anchor="nw",
           text="ONH Settings",
           fill="#10203F",
@@ -266,7 +336,7 @@ def subwindow1(canvas):
 
       subcanvas1.create_text(
           45.0,
-          302.0,
+          327.0,
           anchor="nw",
           text="Large vessel threshold (um)",
           fill="#10203F",
@@ -288,45 +358,45 @@ def subwindow1(canvas):
       )
       onh_large_threshold_spinbox.place(
           x=250.0,
-          y=302.0
+          y=327.0
       )
-  else:
-      subcanvas1.create_text(
-          45.0,
-          274.0,
-          anchor="nw",
-          text="Additional Segmentation Settings",
-          fill="#10203F",
-          font=("Roboto", 14 * -1, "bold")
-      )
+  # else:
+      # subcanvas1.create_text(
+      #     45.0,
+      #     274.0,
+      #     anchor="nw",
+      #     text="Additional Segmentation Settings",
+      #     fill="#10203F",
+      #     font=("Roboto", 14 * -1, "bold")
+      # )
 
-      # large vessels checkbox
-      large_vessels_checkbox = Checkbutton(
-          subwindow,
-          text="Large vessels (Retina, ONH only)",
-          variable=large_vessels_var,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      large_vessels_checkbox.place(
-          x=40.0,
-          y=310.0
-      )
+      # # large vessels checkbox
+      # large_vessels_checkbox = Checkbutton(
+      #     subwindow,
+      #     text="Large vessels (Retina, ONH only)",
+      #     variable=large_vessels_var,
+      #     bg=subwindow_bg_colour,
+      #     fg=text_colour,
+      #     font=("Roboto", 14 * -1)
+      # )
+      # large_vessels_checkbox.place(
+      #     x=40.0,
+      #     y=310.0
+      # )
 
-      # small vessels checkbox
-      small_vessels_checkbox = Checkbutton(
-          subwindow,
-          text="Small vessels (Retina, ONH only)",
-          variable=small_vessels_var,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      small_vessels_checkbox.place(
-          x=40.0,
-          y=340.0
-      )
+      # # small vessels checkbox
+      # small_vessels_checkbox = Checkbutton(
+      #     subwindow,
+      #     text="Small vessels (Retina, ONH only)",
+      #     variable=small_vessels_var,
+      #     bg=subwindow_bg_colour,
+      #     fg=text_colour,
+      #     font=("Roboto", 14 * -1)
+      # )
+      # small_vessels_checkbox.place(
+      #     x=40.0,
+      #     y=340.0
+      # )
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
