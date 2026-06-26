@@ -503,7 +503,10 @@ def start_batch_processing_threaded(canvas: Canvas):
     all_metrics_df = {}
     
     for (index, image_file) in enumerate(processed_images, start=1):
-        image_folder_path = os.path.join(canvas.bp_selected_folder_path, os.path.splitext(image_file)[0])
+        save_folder_path = canvas.save_dir if getattr(canvas, "save_dir", None) else canvas.lastPath
+
+        print(f"index {index}, image_file: {image_file}, save_folder_path: {save_folder_path}")
+        image_folder_path = os.path.join(save_folder_path, os.path.splitext(image_file)[0])
         
         if not os.path.isdir(image_folder_path):
             print(f"Folder for image {image_file} not found at {image_folder_path}. Skipping this image.")
@@ -555,7 +558,7 @@ def start_batch_processing_threaded(canvas: Canvas):
                 all_metrics_df[sheet_name].append(sheet_df)
 
     # 2. Concat df for each sheet and save the overall metrics spreadsheet
-    results_file_path = os.path.join(canvas.bp_selected_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
+    results_file_path = os.path.join(save_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
     
     with pd.ExcelWriter(results_file_path, engine='openpyxl') as writer:
         for sheet_name, df_list in all_metrics_df.items():
