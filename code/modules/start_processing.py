@@ -560,12 +560,15 @@ def start_batch_processing_threaded(canvas: Canvas):
     # 2. Concat df for each sheet and save the overall metrics spreadsheet
     results_file_path = os.path.join(save_folder_path, f"OCTAVA Results {datetime.datetime.now().strftime('%d-%b-%Y %H%M%S')}.xlsx")
     
-    with pd.ExcelWriter(results_file_path, engine='openpyxl') as writer:
-        for sheet_name, df_list in all_metrics_df.items():
-            df_concat = pd.concat(df_list, ignore_index=True)
-            df_concat.to_excel(writer, sheet_name=sheet_name, index=False)
-    
-    print(f"Overall metrics saved to: {results_file_path}")
+    # Skip if no metrics were collected
+    if len(all_metrics_df) != 0:  
+        with pd.ExcelWriter(results_file_path, engine='openpyxl') as writer:
+            for sheet_name, df_list in all_metrics_df.items():
+                df_concat = pd.concat(df_list, ignore_index=True)
+                df_concat.to_excel(writer, sheet_name=sheet_name, index=False)
+        print(f"Overall metrics saved to: {results_file_path}")
+    else:
+        print("No metrics were collected from processed images. Skip summary table generation.")
     print("Batch image processing completed.")
 
     # Switch back to READY
