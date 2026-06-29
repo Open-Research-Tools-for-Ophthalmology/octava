@@ -171,12 +171,16 @@ def skel2graph3d(skel, thr=0):
     )
     labelimg_flat = labelimg.ravel()
 
-    epi_clusters = [
-        np.flatnonzero(labelimg_flat == (i + 1))
-        for i in range(n_end)
-    ]
+    order = np.argsort(labelimg_flat, kind='stable')
+    sorted_labels = labelimg_flat[order]
+    split_points = np.flatnonzero(np.diff(sorted_labels)) + 1
+    groups = np.split(order, split_points)
+    unique_labels = np.unique(sorted_labels)
 
-    for idxs in epi_clusters:
+    label_to_group = dict(zip(unique_labels, groups))
+
+    for i in range(n_end):
+        idxs = label_to_group.get(i + 1, np.array([], dtype=int))
         nc = node_cluster(idxs, 1)
         nc.find_center_mass(skel.shape)
         nc.assign_label(lm)
