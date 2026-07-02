@@ -47,12 +47,8 @@ class Link:
         self.diameter = None
 
 
-##############################################
-# Helper: unpadding
-##############################################
-
 def unpad_indices(indices, padded_shape):
-    """Map indices from a 1-pixel padded volume back to the original volume."""
+    """Helper function that maps indices from a 1-pixel padded volume back to the original volume."""
     px, py, pz = padded_shape
     ux, uy, uz = px - 2, py - 2, pz - 2
 
@@ -73,17 +69,10 @@ def unpad_indices(indices, padded_shape):
 
     return np.ravel_multi_index((x, y, z), (ux, uy, uz))
 
-
-##############################################
-# FAST, EXACT skel2graph3d
-##############################################
-
 def skel2graph3d(skel, thr=0):
     """Convert a padded 2D/3D skeleton mask into node and link graph structures."""
 
-    # -----------------------------
-    # 1. Guarantee 3D + pad
-    # -----------------------------
+    # Guarantee 3D + pad
     original_2d = (skel.ndim == 2)
     if original_2d:
         skel = skel[:, :, None]
@@ -116,9 +105,7 @@ def skel2graph3d(skel, thr=0):
     ep = list_canal[deg == 2]
     cans = list_canal[deg == 3]
 
-    # -----------------------------------------
     # Compute canal neighbors (same as original)
-    # -----------------------------------------
     if cans.size > 0:
         cnh = pk_get_nh(skel, cans)
         cnh_idx = pk_get_nh_idx(skel, cans)
@@ -134,9 +121,7 @@ def skel2graph3d(skel, thr=0):
     else:
         cans = np.empty((0, 3), dtype=int)
 
-    ##########################################################
     # Group node clusters (branch points) exactly as original
-    ##########################################################
     node_list = []
     skel2_tmp = np.zeros_like(skel2_flat, dtype=bool)
     skel2_tmp[nodes] = True
@@ -166,9 +151,7 @@ def skel2graph3d(skel, thr=0):
         skel2_flat[idxs] = i + 2   # mark node index in skel2
     
 
-    # -----------------------------------------
     # Endpoints as separate clusters
-    # -----------------------------------------
     skel2_tmp[:] = False
     skel2_tmp[ep] = True
     labelimg, n_end = label(
@@ -193,10 +176,8 @@ def skel2graph3d(skel, thr=0):
         node_list.append(nc)
         skel2_flat[idxs] = len(node_list) + 1
 
-    ##########################################################
-    # Build c2n and s2n lookup maps
-    ##########################################################
 
+    # build c2n and s2n lookup maps
     # map each canal voxel → its row index in cans
     c2n = np.zeros_like(skel2_flat, dtype=int)
     if cans.size > 0:
@@ -206,13 +187,11 @@ def skel2graph3d(skel, thr=0):
     s2n = np.zeros_like(skel2_flat, dtype=int)
     s2n[nhi[:, 13]] = np.arange(1, nhi.shape[0] + 1)
 
-    ##########################################################
-    # LINK BUILDING — FAST, EXACT, SAFE
-    ##########################################################
-
+    # link building
     link_list = []
     l_idx = 0
-    # --- O(1) membership masks ---
+
+    # O(1) membership masks
     is_canal_voxel = np.zeros_like(skel2_flat, dtype=bool)
     if cans.size > 0:
         is_canal_voxel[cans[:, 0]] = True
@@ -311,16 +290,12 @@ def skel2graph3d(skel, thr=0):
 
                         l_idx += 1
 
-    ##########################################################
     # Mark nodes with exactly 1 link as endpoints
-    ##########################################################
     for i, nd in enumerate(node_list):
         if len(nd.links) == 1:
             nd.ep = 1
 
-    ##########################################################
     # Unpad final node + link paths back to original 2D
-    ##########################################################
     padded_shape = skel.shape
 
     for nd in node_list:
@@ -328,8 +303,5 @@ def skel2graph3d(skel, thr=0):
 
     for lk in link_list:
         lk.path = unpad_indices(lk.path, padded_shape)
-
-    ##########################################################
-    # return results
-    ##########################################################
+        
     return node_list, link_list

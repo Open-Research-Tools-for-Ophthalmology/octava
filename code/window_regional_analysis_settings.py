@@ -166,7 +166,7 @@ def subwindow2(canvas):
           y=220.0
       )
 
-  #close
+  # close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow),
                           width=130,height=45,

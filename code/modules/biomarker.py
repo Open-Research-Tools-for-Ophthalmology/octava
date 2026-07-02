@@ -1,7 +1,3 @@
-# modules/biomarker.py
-
-from turtle import width
-
 import numpy as np
 import pandas as pd
 from tkinter import Canvas
@@ -88,7 +84,7 @@ class BiomarkerAnalyzer:
     @staticmethod
     def _compute_soam_from_evenly_spaced_xy(points):
         """Compute SOAM as summed turning angle per resampled arc length."""
-        points = BiomarkerAnalyzer._points_smoothing(points, s=10)
+        points = BiomarkerAnalyzer._points_smoothing(points, s=10)  # not sure what to set for s
         if points.shape[0] < 3:
             return 0.0
 
@@ -472,9 +468,6 @@ class BiomarkerAnalyzer:
                 'binary': {4: 0.0}
             }
 
-            # exponent = math.ceil(math.log2(Nx))
-            # width = 2 ** exponent
-
             # 0529 Find the largest box size
             # Take the floor so the largest box size is around half of the image.
             exponent_end = math.floor(math.log2(Nx))
@@ -710,7 +703,6 @@ class BiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
-            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
             metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
                 cols,
                 rows,
@@ -1054,13 +1046,10 @@ class BiomarkerAnalyzer:
                 VCI1 = np.nan
 
             with np.errstate(divide='ignore',invalid='ignore'):
-                # t = np.gradient(1/curvature)
                 curv_safe = curvature.copy()
                 curv_safe[np.abs(curv_safe) < 1e-6] = np.nan
                 inv_curv = 1.0 / curv_safe
                 t = np.gradient(inv_curv)
-                # t[~np.isfinite(t)] = np.nan
-                # VCI2 = np.nanmean(np.abs(t))
 
             t[~np.isfinite(t)] = np.nan
             VCI2 = np.nansum(t)/numPoints

@@ -11,7 +11,6 @@ import platform
 import subprocess
 from pathlib import Path
 
-# Command wrapper with error handling
 def run_command(cmd, description, cwd=None):
     """Run a command and handle errors."""
     print(f"\n{'='*60}")
