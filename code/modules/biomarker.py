@@ -186,42 +186,6 @@ class BiomarkerAnalyzer:
         AOC = np.nan if chordLength == 0 else arcLength / chordLength
         PWAOC = (AOC - 1.0) * nExtrema if np.isfinite(AOC) else np.nan  
 
-        # if SOAM is recomputed anyways, isn't this SOAM calculation redundant?
-
-        # if numPoints <= (margin*2):
-        #     SOAM = 0.0
-        # else:
-        #     totalWeightedAngle = 0.0
-        #     segment_arc_length = 0.0
-        #     angle_threshold = 0.02
-
-        #     for j in range(margin, numPoints - margin):
-        #         v1 = np.array([
-        #             vesselX[j] - vesselX[j - 1],
-        #             vesselY[j] - vesselY[j - 1],
-        #         ])
-        #         v2 = np.array([
-        #             vesselX[j + 1] - vesselX[j],
-        #             vesselY[j + 1] - vesselY[j],
-        #         ])
-
-        #         seg_len = np.linalg.norm(v1)
-        #         segment_arc_length += seg_len
-
-        #         cosTheta = np.clip(
-        #             np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
-        #             -1,
-        #             1,
-        #         )
-        #         angle_val = np.arccos(cosTheta)
-        #         if angle_val > angle_threshold:
-        #             totalWeightedAngle += angle_val
-
-        #     SOAM = totalWeightedAngle / segment_arc_length if segment_arc_length > 0 else 0.0 # radians/mm
-
-            # convert SOAM to radians/cm
-            # SOAM = SOAM * 10.0
-
         return {
             "PWAOC": PWAOC,
         }
