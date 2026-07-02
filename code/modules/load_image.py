@@ -24,8 +24,8 @@ def resize_from_spinbox(canvas):
         canvas._previous_image_size = canvas.image_size_var.get()
 
     """Resize the full-resolution image based on the current spinbox value and update preview."""
-    if not hasattr(canvas, "full_res_img"):
-        return
+    if not hasattr(canvas, "full_res_img") or not hasattr(canvas, "original_img_id"):
+        return # if no image is loaded or image was cleared, do nothing
 
     clear_onh_image_state(canvas)
 
@@ -94,6 +94,10 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
         original_img = Image.fromarray(imgArr.astype(np.uint8))
         path = Path(canvas.filePath) if hasattr(canvas, "filePath") else Path("unknown")
     
+    # Remove previous preview/text if present
+    clear_screen_mode = ClearMode.CLEAR_BEFORE_LOADING_SINGLE_IMG if not silent else ClearMode.CLEAR_BEFORE_LOADING_BATCH_IMG
+    clear_screen(canvas, clear_screen_mode)
+
     # Store full-resolution original
     canvas.full_res_img = original_img.copy()
 
@@ -119,9 +123,6 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     # Create a 200x200 resized version for display
     preview = resize_image(resized_img, (200, 200))
     img_tk = ImageTk.PhotoImage(preview)
-
-    # Remove previous preview/text if present
-    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_LOADING_NEW_IMG)
 
     # Draw the preview and filename on the canvas
     img_id = canvas.create_image(x, y, image=img_tk)
@@ -165,9 +166,9 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     if hasattr(canvas, "image_size_var"):
         canvas.image_size_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))
 
-
     if not silent:
         change_status_to_ready(canvas)
+        change_queue_status(canvas, "")
 
     return {
         "path": path,
