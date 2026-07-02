@@ -17,24 +17,19 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _movmean(arr, window):
-        """Compute a centered moving average with edge-aware truncation."""
+        """Compute a centered moving average with preservation of data trend at edge values."""
         arr = np.asarray(arr, dtype=float)
         n = arr.size
         if n == 0 or window <= 1:
             return arr.copy()
 
-        half_left = (window - 1) // 2
-        half_right = window // 2
-
-        csum = np.cumsum(np.insert(arr, 0, 0.0))
-        out = np.empty(n)
-
-        for i in range(n):
-            start = max(0, i - half_left)
-            end = min(n, i + half_right + 1)
-            out[i] = (csum[end] - csum[start]) / (end - start)
-
-        return out
+        pad_size = window // 2
+        padded_arr = np.pad(arr, (pad_size, pad_size), mode='reflect', reflect_type='odd')
+        
+        csum = np.cumsum(np.insert(padded_arr, 0, 0.0))
+        out = (csum[window:] - csum[:-window]) / window
+        
+        return out[:n]
 
     @staticmethod
     def _remove_duplicate_xy_points(points):
@@ -109,6 +104,8 @@ class BiomarkerAnalyzer:
         eps = np.finfo(float).eps
         window_size = 10
 
+        margin = window_size // 2
+
         ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
         arcLength = np.sum(ds)
 
@@ -161,6 +158,9 @@ class BiomarkerAnalyzer:
         signGradCurv = np.sign(gradCurv)
         extremaIdx = np.where(np.diff(signGradCurv) != 0)[0] + 1
 
+        # only keeps extrema that are not too close to the ends of the vessel
+        extremaIdx = extremaIdx[(extremaIdx > margin) & (extremaIdx < numPoints - margin)]
+
         testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
         testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
 
@@ -183,37 +183,46 @@ class BiomarkerAnalyzer:
             nExtrema = 1
 
         AOC = np.nan if chordLength == 0 else arcLength / chordLength
-        PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
+        PWAOC = (AOC - 1.0) * nExtrema if np.isfinite(AOC) else np.nan  
 
-        if numPoints < 3:
-            SOAM = 0.0
-        else:
-            totalWeightedAngle = 0.0
+        # if SOAM is recomputed anyways, isn't this SOAM calculation redundant?
 
-            for j in range(1, numPoints - 1):
-                v1 = np.array([
-                    vesselX[j] - vesselX[j - 1],
-                    vesselY[j] - vesselY[j - 1],
-                ])
-                v2 = np.array([
-                    vesselX[j + 1] - vesselX[j],
-                    vesselY[j + 1] - vesselY[j],
-                ])
+        # if numPoints <= (margin*2):
+        #     SOAM = 0.0
+        # else:
+        #     totalWeightedAngle = 0.0
+        #     segment_arc_length = 0.0
+        #     angle_threshold = 0.02
 
-                cosTheta = np.clip(
-                    np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
-                    -1,
-                    1,
-                )
-                totalWeightedAngle += np.arccos(cosTheta)
+        #     for j in range(margin, numPoints - margin):
+        #         v1 = np.array([
+        #             vesselX[j] - vesselX[j - 1],
+        #             vesselY[j] - vesselY[j - 1],
+        #         ])
+        #         v2 = np.array([
+        #             vesselX[j + 1] - vesselX[j],
+        #             vesselY[j + 1] - vesselY[j],
+        #         ])
 
-            SOAM = totalWeightedAngle / arcLength # radians/mm
+        #         seg_len = np.linalg.norm(v1)
+        #         segment_arc_length += seg_len
+
+        #         cosTheta = np.clip(
+        #             np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
+        #             -1,
+        #             1,
+        #         )
+        #         angle_val = np.arccos(cosTheta)
+        #         if angle_val > angle_threshold:
+        #             totalWeightedAngle += angle_val
+
+        #     SOAM = totalWeightedAngle / segment_arc_length if segment_arc_length > 0 else 0.0 # radians/mm
+
             # convert SOAM to radians/cm
             # SOAM = SOAM * 10.0
 
         return {
             "PWAOC": PWAOC,
-            "SOAM": SOAM,
         }
 
     @staticmethod
@@ -1072,3 +1081,4 @@ class BiomarkerAnalyzer:
         canvas.new_tort_metrics.update(meanMetrics)
 
  
+
