@@ -9,6 +9,12 @@ from scipy.ndimage import binary_dilation
 # Size (px) at which each thumbnail is rendered inside its box
 THUMB_DISPLAY_SIZE = 200
 
+ONH_VIEW_TO_KEY = {
+    "Overall": "overall",
+    "Large Vessels": "large",
+    "Small Vessels": "small",
+}
+
 def init_thumbnail_zoom_pan(canvas, thumbnail_cfg, thumb_boxes):
     """Wire up cursor, zoom, and pan behaviour for all thumbnail boxes."""
 
@@ -24,7 +30,33 @@ def init_thumbnail_zoom_pan(canvas, thumbnail_cfg, thumb_boxes):
     #  helper functions
     def get_base_pil(key):
         """Return the base PIL image for this thumbnail, or None if not loaded."""
-        cfg = thumbnail_cfg[key]
+        cfg = thumbnail_cfg[key].copy()
+
+        # Special Prebinary cases
+        img_type = canvas.img_type_var.get()
+        prebinary_var = canvas.prebinary_var.get()
+        if prebinary_var == 1 and key == "binarised":
+            cfg["base_attr"] = "original_img"
+
+        # Special ONH cases
+        # Original: display raw image if not being masked yet, and display ring mask if available
+        if img_type == "ONH" and key == "original" and hasattr(canvas, "onh_mask_img"):
+            cfg["base_attr"] = "onh_mask_img"
+        # Binarised: display either overall/large/small depending on selection
+        if img_type == "ONH" and key == "binarised":
+            segmentation_view = canvas.onh_segmentation_view_var.get()
+            print(f"ONH binarised thumbnail, checking segmentation view... {segmentation_view}")
+
+            if hasattr(canvas, f"onh_binary_{ONH_VIEW_TO_KEY[segmentation_view]}"): # If have segmentation view: image already processed, use seg view
+                cfg["base_attr"] = f"onh_binary_{ONH_VIEW_TO_KEY[segmentation_view]}"
+            elif prebinary_var == 1: # If no segmentation view, display onh_mask or original if prebinary is toggled on
+                cfg["base_attr"] = "onh_mask_img" if hasattr(canvas, "onh_mask_img") else "original_img"
+        # skeletonisation: display either overall/large/small depending on selection
+        if img_type == "ONH" and key == "skeletonised":
+            segmentation_view = canvas.onh_segmentation_view_var.get()
+            print(f"ONH skeletonised thumbnail, checking segmentation view... {segmentation_view}")
+            cfg["base_attr"] = f"onh_skeleton_{ONH_VIEW_TO_KEY[segmentation_view]}"
+
         raw = getattr(canvas, cfg["base_attr"], None)
         if raw is None:
             return None
@@ -48,6 +80,7 @@ def init_thumbnail_zoom_pan(canvas, thumbnail_cfg, thumb_boxes):
         st   = thumb_state[key]
         base = get_base_pil(key)
         if base is None:
+            print(f"No base image for thumbnail {key}, skipping redraw.")
             return
 
         bw, bh = base.size

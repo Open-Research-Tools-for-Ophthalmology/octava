@@ -162,19 +162,32 @@ def make_save_folder(canvas: Canvas):
 # Single image processing
 def start_processing_threaded(canvas: Canvas, batch: bool = False):
     """Dispatch processing to the pipeline selected for the current image type."""
-    img_type = get_image_type(canvas)
+    try:
+        img_type = get_image_type(canvas)
 
-    print(f"Image type selected: {img_type}")
+        print(f"Image type selected: {img_type}")
 
-    if img_type == "Retina":
-        start_retina_processing_threaded(canvas, batch)
-    elif img_type == "ONH":
-        start_onh_processing_threaded(canvas, batch)
-    elif img_type == "Skin":
-        start_skin_processing_threaded(canvas, batch)
-    else:
-        raise ValueError(f"Unsupported image type: {img_type}")
-
+        if img_type == "Retina":
+            start_retina_processing_threaded(canvas, batch)
+        elif img_type == "ONH":
+            start_onh_processing_threaded(canvas, batch)
+        elif img_type == "Skin":
+            start_skin_processing_threaded(canvas, batch)
+        else:
+            raise ValueError(f"Unsupported image type: {img_type}")
+    except Exception as e:
+        # If an error occues during single processing, reset the status and show error message
+        if not batch:
+            print(f"Failed to process image: {e}")
+            messagebox.showerror(
+                "Image Processing Error",
+                f"Failed to process image: {e}"
+            )
+            reset_to_start_processing(canvas)
+            return change_status_to_ready(canvas)
+        else:
+            # if an error occurs during batch processing, raise it so the BP handler can skip the image
+            raise e
 
 # @param {batch} bool = True for batch processing (will additionally process FAZ)
 def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
@@ -377,7 +390,6 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
         canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
         reset_to_start_processing(canvas)
 
-
 def prepare_onh_prebinary_overall(canvas: Canvas):
     if hasattr(canvas, "binary_image"):
         source = canvas.binary_image
@@ -485,10 +497,10 @@ def start_batch_processing_threaded(canvas: Canvas):
             start_processing_threaded(canvas, batch=True)
 
         except Exception as e:
-            print(f"Failed to load image {image_file}: {e}")
+            print(f"Failed to process image {image_file}: {e}")
             messagebox.showerror(
-                "Image Load Error",
-                f"Failed to load image {image_file}."
+                "Image Processing Error",
+                f"Failed to process image {image_file}: {e}"
             )
             skipped_images.append(image_file)
             continue  # Skip to next image

@@ -495,12 +495,6 @@ class BiomarkerAnalyzer:
                 'binary': {4: []}
             }
 
-            counts['skeleton'][4].append(np.sum(Z_pad['skeleton']))
-            counts['binary'][4].append(np.sum(Z_pad['binary']))
-
-            r_values['skeleton'][4].append(4)
-            r_values['binary'][4].append(4)
-
             for img_type, img in {
                 'skeleton': Z_pad['skeleton'],
                 'binary': Z_pad['binary']

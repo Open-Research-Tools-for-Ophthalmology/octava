@@ -4,6 +4,7 @@ from scipy.ndimage import median_filter
 from modules.resize_image import *
 from modules.fuzzy_thresholding import *
 from modules.frangi_2Dfilter import *
+from modules.jerman_2Dfilter import *
 from PIL import Image, ImageTk
 from modules.change_status import *
 import cv2
@@ -15,6 +16,7 @@ def binarise_image(canvas: Canvas, display:bool=True):
     - Ensures vessels are white (255) and background black (0).
     - Optionally applies median filter.
     - Optionally applies Frangi filter (stub).
+    - Optionally applies Jerman filter(stub).
     Stores result in canvas.binary_image.
     """
     change_status_to_waiting(canvas, status="● Wait...Binarising")
@@ -42,7 +44,7 @@ def binarise_image(canvas: Canvas, display:bool=True):
     if canvas.jerman_bool.get():
         sigmas_str = canvas.jerman_sigmas.get()
         sigmas_arr = [float(s.strip()) for s in sigmas_str.split(',')]
-        img = jerman(img, sigmas=np.array(sigmas_arr), tau=canvas.jerman_tau.get())
+        img = jerman_2Dfilter(img, sigmas=np.array(sigmas_arr), tau=canvas.jerman_tau.get())
 
     # --- Always use Fuzzy Means ---
     nth = 2
