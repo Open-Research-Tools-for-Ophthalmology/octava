@@ -461,7 +461,7 @@ def _update_onh_metric_labels(canvas: Canvas, metrics: dict) -> None:
     if hasattr(canvas, "length_density_value_id"):
         canvas.itemconfig(
             canvas.length_density_value_id,
-            text=f"{metrics.get('vessel_length_density_mm_per_mm2', 0.0):.2f}",
+            text=f"{metrics.get('vessel_length_density_mm_per_mm2', 0.0):.2f} %",
         )
 
     if hasattr(canvas, "mean_diameter_value_id"):
