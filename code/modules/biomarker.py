@@ -72,22 +72,23 @@ class BiomarkerAnalyzer:
         if points.shape[0] < 3:
             return 0.0
 
-        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
+        diffs = np.diff(points, axis=0)
+
+        segment_lengths = np.linalg.norm(diffs, axis=1)
         arc_length = np.sum(segment_lengths)
         if arc_length <= 0:
             return 0.0
 
         eps = np.finfo(float).eps
-        total_angle = 0.0
-        for j in range(1, points.shape[0] - 1):
-            v1 = points[j] - points[j - 1]
-            v2 = points[j + 1] - points[j]
-            denom = np.linalg.norm(v1) * np.linalg.norm(v2)
-            if denom <= eps:
-                continue
+        unit_vectors = diffs / (segment_lengths[:, np.newaxis] + eps)
 
-            cos_theta = np.clip(np.dot(v1, v2) / denom, -1, 1)
-            total_angle += np.arccos(cos_theta)
+        dots = np.sum(unit_vectors[:-1] * unit_vectors[1:], axis=1)
+        
+        dots = np.clip(dots, -1.0, 1.0)     
+        angles = np.arccos(dots)
+        angles[angles < 0.02] = 0.0
+        
+        total_angle = np.sum(angles)
 
         return total_angle / arc_length
 
