@@ -88,7 +88,7 @@ class BiomarkerAnalyzer:
     @staticmethod
     def _compute_soam_from_evenly_spaced_xy(points):
         """Compute SOAM as summed turning angle per resampled arc length."""
-        points = BiomarkerAnalyzer._points_smoothing(points, s=1e-6)
+        points = BiomarkerAnalyzer._points_smoothing(points, s=10)
         if points.shape[0] < 3:
             return 0.0
 
@@ -379,9 +379,17 @@ class BiomarkerAnalyzer:
             links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
             links_length_um = np.asarray(links_length_pix) * pix_size_mm * 1000
             links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
-            var_length = np.var(links_length_um_flatten, ddof=1)
-            skew_length = skew(links_length_um_flatten) # Matlab flag=1(default) -> don't correct for bias -> bias=True(default) Scipy
-            kurt_length = kurtosis(links_length_um_flatten, fisher=False) # Matlab pearson(default) -> fisher=False Scipy
+
+            # ensure we have enough data points
+            if len(links_length_um_flatten) > 1:
+                var_length = np.var(links_length_um_flatten, ddof=1)
+                var_length = 0.0 if np.isnan(var_length) else var_length
+                skew_length = skew(links_length_um_flatten)
+                kurt_length = kurtosis(links_length_um_flatten, fisher=False)
+            else:
+                var_length = 0.0
+                skew_length = 0.0
+                kurt_length = 0.0
         else:
             var_length = 0.0
             skew_length = 0.0
@@ -416,9 +424,16 @@ class BiomarkerAnalyzer:
             diameters_scaled_um = np.asarray(per_link_mean_diameters) * pix_size_mm * 1000.0
             mean_diameter_um = np.mean(diameters_scaled_um)
             diameters_scaled_um_flatten = diameters_scaled_um.flatten()
-            var_diameter_um = np.var(diameters_scaled_um_flatten, ddof=1)
-            skew_diameter_um = skew(diameters_scaled_um_flatten)
-            kurt_diameter_um = kurtosis(diameters_scaled_um_flatten, fisher=False)
+
+            if len(diameters_scaled_um_flatten) > 1:
+                var_diameter_um = np.var(diameters_scaled_um_flatten, ddof=1)
+                var_diameter_um = 0.0 if np.isnan(var_diameter_um) else var_diameter_um
+                skew_diameter_um = skew(diameters_scaled_um_flatten)
+                kurt_diameter_um = kurtosis(diameters_scaled_um_flatten, fisher=False)
+            else:
+                var_diameter_um = 0.0
+                skew_diameter_um = 0.0
+                kurt_diameter_um = 0.0
         else:
             mean_diameter_um = 0.0
             var_diameter_um = 0.0
@@ -557,13 +572,20 @@ class BiomarkerAnalyzer:
                 tortuosity = arc_length / chord_length
                 tortuosity_list.append(tortuosity)
 
-        if len(tortuosity_list) > 0:
+        if tortuosity_list:
             mean_tortuosity = np.mean(tortuosity_list)
             tortuosity_arr = np.asarray(tortuosity_list)
             tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
-            var_tortuosity = np.var(tortuosity_arr_flatten, ddof=1)
-            skew_tortuosity = skew(tortuosity_arr_flatten)
-            kurt_tortuosity = kurtosis(tortuosity_arr_flatten, fisher=False)
+
+            if len(tortuosity_arr_flatten) > 1:
+                var_tortuosity = np.var(tortuosity_arr_flatten, ddof=1)
+                var_tortuosity = 0.0 if np.isnan(var_tortuosity) else var_tortuosity
+                skew_tortuosity = skew(tortuosity_arr_flatten)
+                kurt_tortuosity = kurtosis(tortuosity_arr_flatten, fisher=False)
+            else:
+                var_tortuosity = 0.0
+                skew_tortuosity = 0.0
+                kurt_tortuosity = 0.0
         else:
             mean_tortuosity = 0.0
             var_tortuosity = 0.0
