@@ -729,7 +729,7 @@ class ONHBiomarkerAnalyzer:
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(
                 canvas.length_density_value_id,
-                text=f"{metrics['vessel_length_density_mm_per_mm2']:.2f}",
+                text=f"{metrics['vessel_length_density_mm_per_mm2']:.2f} %",
             )
 
         if hasattr(canvas, "mean_diameter_value_id"):

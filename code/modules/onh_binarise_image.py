@@ -8,6 +8,7 @@ from scipy.ndimage import median_filter
 from modules.resize_image import *
 from modules.change_status import *
 from modules.frangi_2Dfilter import *
+from modules.jerman_2Dfilter import *
 
 
 def binarise_onh_image(canvas, display: bool = True):
@@ -109,7 +110,7 @@ def binarise_onh_image(canvas, display: bool = True):
         canvas.onh_fine_vessel_candidate_mask_debug = binary_image.copy()
         canvas.onh_enhanced_debug = binary_image.copy()
         canvas.onh_corrected_debug = binary_image.copy()
-        canvas.onh_frangi_response_debug = binary_image.copy()
+        canvas.onh_vesselness_response_debug = binary_image.copy()
 
         if display:
             display_onh_binarised_image(canvas, binary_image)
@@ -221,72 +222,93 @@ def binarise_onh_image(canvas, display: bool = True):
     ).astype(np.uint8)
 
     # ------------------------------------------------------------
-    # 7. Fine vessel candidate mask using Frangi vesselness
+    # 7. Fine vessel candidate mask using Frangi/Jerman vesselness
     # ------------------------------------------------------------
     # Adaptive thresholding was too sensitive to OCTA speckle noise.
-    # Frangi is used here because it enhances line-like / vessel-like structures.
-
-    use_frangi = True
+    # Frangi/Jerman is used here because it enhances line-like / vessel-like structures.
     frangi_bool_var = getattr(
         canvas,
         "onh_frangi_bool",
         getattr(canvas, "frangi_bool", None),
     )
+    jerman_bool_var = getattr(
+        canvas,
+        "onh_jerman_bool",
+        getattr(canvas, "jerman_bool", None),
+    )
     if frangi_bool_var is not None:
         use_frangi = bool(frangi_bool_var.get())
+    if jerman_bool_var is not None:
+        use_jerman = bool(jerman_bool_var.get())
 
-    if use_frangi:
-        frangi_min_var = getattr(
-            canvas,
-            "onh_frangi_min",
-            getattr(canvas, "frangi_min", None),
-        )
-        frangi_max_var = getattr(
-            canvas,
-            "onh_frangi_max",
-            getattr(canvas, "frangi_max", None),
-        )
+    if use_frangi or use_jerman:
+        if use_frangi:
+            frangi_min_var = getattr(
+                canvas,
+                "onh_frangi_min",
+                getattr(canvas, "frangi_min", None),
+            )
+            frangi_max_var = getattr(
+                canvas,
+                "onh_frangi_max",
+                getattr(canvas, "frangi_max", None),
+            )
 
-        frangi_min = int(frangi_min_var.get()) if frangi_min_var is not None else 1
-        frangi_max = int(frangi_max_var.get()) if frangi_max_var is not None else 4
-        if frangi_max < frangi_min:
-            frangi_min, frangi_max = frangi_max, frangi_min
+            frangi_min = int(frangi_min_var.get()) if frangi_min_var is not None else 1
+            frangi_max = int(frangi_max_var.get()) if frangi_max_var is not None else 4
+            if frangi_max < frangi_min:
+                frangi_min, frangi_max = frangi_max, frangi_min
 
-        frangi_opts = {
-            "sigmarange": (frangi_min, frangi_max),
-            "sigmastepsize": 1,
-            "correctionconst1": 0.8,
-            "correctionconst2": 15,
-        }
+            frangi_opts = {
+                "sigmarange": (frangi_min, frangi_max),
+                "sigmastepsize": 1,
+                "correctionconst1": 0.8,
+                "correctionconst2": 15,
+            }
 
-        frangi_response = frangi_2Dfilter(
-            img_smooth.astype(np.float64),
-            frangi_opts
-        )
+            vesselness_response = frangi_2Dfilter(
+                img_smooth.astype(np.float64),
+                frangi_opts
+            )
+    
+        if use_jerman:
+            jerman_sigmas_var = getattr(
+                canvas,
+                "onh_jerman_sigmas",
+                getattr(canvas, "jerman_sigmas", None),
+            )
+            jerman_tau_var = getattr(
+                canvas,
+                "onh_jerman_tau",
+                getattr(canvas, "jerman_tau", None),
+            )
+            sigmas_str = jerman_sigmas_var.get()
+            sigmas_arr = [float(s.strip()) for s in sigmas_str.split(',')]
+            vesselness_response = jerman_2Dfilter(img_smooth.astype(np.float64), sigmas=np.array(sigmas_arr), tau=jerman_tau_var.get()) 
 
-        frangi_response = cv2.normalize(
-            frangi_response,
+        vesselness_response = cv2.normalize(
+            vesselness_response,
             None,
             0,
             255,
             cv2.NORM_MINMAX
         ).astype(np.uint8)
 
-        frangi_response = np.where(
+        vesselness_response = np.where(
             roi_mask,
-            frangi_response,
+            vesselness_response,
             0
         ).astype(np.uint8)
 
-        roi_frangi_pixels = frangi_response[roi_mask]
+        roi_vessel_pixels = vesselness_response[roi_mask]
 
         # Lower percentile = more fine vessels, more noise.
         # Higher percentile = cleaner, but fewer fine vessels.
-        fine_threshold = np.percentile(roi_frangi_pixels, 69)
+        fine_threshold = np.percentile(roi_vessel_pixels, 69)
 
-        fine_vessel_candidate_mask = np.zeros_like(frangi_response, dtype=np.uint8)
+        fine_vessel_candidate_mask = np.zeros_like(vesselness_response, dtype=np.uint8)
         fine_vessel_candidate_mask[
-            (frangi_response >= fine_threshold) & roi_mask
+            (vesselness_response >= fine_threshold) & roi_mask
         ] = 255
 
         # Mild intensity support reduces isolated Frangi speckle in low-signal
@@ -318,7 +340,7 @@ def binarise_onh_image(canvas, display: bool = True):
             0
         ).astype(np.uint8)
     else:
-        frangi_response = np.zeros_like(img_corrected, dtype=np.uint8)
+        vesselness_response = np.zeros_like(img_corrected, dtype=np.uint8)
         fine_vessel_candidate_mask = np.zeros_like(img_corrected, dtype=np.uint8)
         print("ONH Frangi filter disabled. Using bright-vessel seed only.")
 
@@ -389,7 +411,7 @@ def binarise_onh_image(canvas, display: bool = True):
     canvas.onh_fine_vessel_candidate_mask_debug = fine_vessel_candidate_mask
     canvas.onh_enhanced_debug = img_enhanced
     canvas.onh_corrected_debug = img_corrected
-    canvas.onh_frangi_response_debug = frangi_response
+    canvas.onh_vesselness_response_debug = vesselness_response
 
     # ------------------------------------------------------------
     # 12. Display result
@@ -454,7 +476,7 @@ def save_onh_binary_image(canvas, binary_image: np.ndarray):
     debug_items = {
         "ONH_Enhanced": getattr(canvas, "onh_enhanced_debug", None),
         "ONH_Corrected": getattr(canvas, "onh_corrected_debug", None),
-        "ONH_FrangiResponse": getattr(canvas, "onh_frangi_response_debug", None),
+        "ONH_VesselnessResponse": getattr(canvas, "onh_vesselness_response_debug", None),
         "ONH_BrightSeedMask": getattr(canvas, "onh_bright_vessel_seed_mask_debug", None),
         "ONH_FineCandidateMask": getattr(canvas, "onh_fine_vessel_candidate_mask_debug", None),
     }

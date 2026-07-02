@@ -6,8 +6,10 @@ dict_keys(['widgetName', 'master', 'tk', '_name', '_w', 'children', '_tclCommand
 '''
 class ClearMode(Enum):
   CLEAR_ENTIRE_SCREEN = 1
-  CLEAR_BEFORE_LOADING_NEW_IMG = 2
+  CLEAR_BEFORE_LOADING_SINGLE_IMG = 2
   CLEAR_BEFORE_PROCESSING = 3
+  CLEAR_BEFORE_LOADING_BATCH_IMG = 4
+
 
 ONH_IMAGE_STATE_ATTRIBUTES = {
   "onh_mask_arr",
@@ -42,7 +44,7 @@ ONH_IMAGE_STATE_ATTRIBUTES = {
   "onh_fine_vessel_candidate_mask_debug",
   "onh_enhanced_debug",
   "onh_corrected_debug",
-  "onh_frangi_response_debug",
+  "onh_vesselness_response_debug",
   "onh_skeleton_image",
   "onh_skeleton_nodes",
   "onh_skeleton_links",
@@ -82,9 +84,10 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
   # Remove specified items from the canvas
   for item_id in item_ids:
     id = getattr(canvas, item_id, None)
-    if id:
+    if id is not None:
       try:
-        canvas.delete(id)
+        canvas.delete(id) # remove graphical items
+        delattr(canvas, item_id) # remove object items
       except Exception:
         pass
 
@@ -92,19 +95,23 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
 def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_ENTIRE_SCREEN):
   """Clear canvas images, labels, and cached plot state for the requested workflow stage."""
   item_ids_to_remove = set()
-  processed_results_ids = {"binary_img_id","skeleton_img_id", "faz_img_id"}
+  processed_results_ids = {"binary_img_id", "binary_image", "skeleton_img_id", "skeleton_image", "faz_img_id", "faz_grayscale_img"}
 
   if clear_screen_mode == ClearMode.CLEAR_ENTIRE_SCREEN:
-    other_item_ids_to_remove = {"original_img_id","filename_text_id", "save_folder_text_id"}
+    other_item_ids_to_remove = {"original_img_id", "original_img", "filename_text_id", "bp_selected_folder_path", "save_folder_text_id"}
     clear_onh_image_state(canvas)
-  elif clear_screen_mode == ClearMode.CLEAR_BEFORE_LOADING_NEW_IMG:
-    other_item_ids_to_remove = {"original_img_id","filename_text_id"}
+  elif clear_screen_mode == ClearMode.CLEAR_BEFORE_LOADING_SINGLE_IMG:
+    other_item_ids_to_remove = {"original_img_id","original_img", "filename_text_id", "bp_selected_folder_path"}
+    clear_onh_image_state(canvas)
+  elif clear_screen_mode == ClearMode.CLEAR_BEFORE_LOADING_BATCH_IMG:
+    other_item_ids_to_remove = {"original_img_id","original_img", "filename_text_id"}
     clear_onh_image_state(canvas)
   elif clear_screen_mode == ClearMode.CLEAR_BEFORE_PROCESSING:
     other_item_ids_to_remove = {}
     # Skip clearing binary image if prebinary is toggled on
     if canvas.prebinary_var.get():
       processed_results_ids.remove("binary_img_id") 
+      processed_results_ids.remove("binary_image") 
   
   item_ids_to_remove.update(processed_results_ids)
   item_ids_to_remove.update(other_item_ids_to_remove)

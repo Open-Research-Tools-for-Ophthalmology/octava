@@ -337,6 +337,8 @@ def update_image_size_default_for_type(img_type):
     canvas._previous_img_type = img_type
     print(f"Updating _previous_img_type to  {img_type}")
 
+    # Clear entire screen after changing image type
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_ENTIRE_SCREEN)
 
 
 def update_optional_buttons_state(*args):
@@ -858,19 +860,22 @@ canvas.img_type_var.trace_add("write", update_optional_buttons_state)
 
 # Event handlers
 def on_prebinary_toggle():
-    if canvas.prebinary_var.get() and getattr(canvas, "bp_selected_folder_path", None) is None and getattr(canvas, "original_img", None) is not None:
-        canvas.binary_image = canvas.original_img
-        canvas.inverted_image = canvas.original_img.copy()
-        display_binarised_image(canvas, canvas.original_img)
-    else:
-        clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
-
-prebinary_checkbox.configure(command=on_prebinary_toggle)
-
-def on_prebinary_toggle():
     if disable_click_if_busy(canvas):
         prebinary_checkbox.deselect() # Revert toggle
         return
+
+    print("Prebinary checkbox toggled, display? ", canvas.prebinary_var.get() and getattr(canvas, "bp_selected_folder_path", None) is None and getattr(canvas, "original_img", None) is not None)
+    if canvas.prebinary_var.get() and getattr(canvas, "bp_selected_folder_path", None) is None and getattr(canvas, "original_img", None) is not None:
+        # ONH space case:
+        img_type = canvas.img_type_var.get()
+        prebinary_image = canvas.original_img
+        if img_type == "ONH" and hasattr(canvas, "onh_mask_img"):
+            prebinary_image = canvas.onh_mask_img
+        canvas.binary_image = prebinary_image
+        canvas.inverted_image = prebinary_image.copy()
+        display_binarised_image(canvas, prebinary_image)
+    else:
+        clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_BEFORE_PROCESSING)
 
 prebinary_checkbox.configure(command=on_prebinary_toggle)
 
