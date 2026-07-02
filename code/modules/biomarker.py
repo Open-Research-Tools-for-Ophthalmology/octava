@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
+from scipy.interpolate import make_splprep
 from modules.write_excel import *
 from scipy.stats import skew, kurtosis
 
@@ -66,9 +67,28 @@ class BiomarkerAnalyzer:
         return np.column_stack((resampled_x, resampled_y))
 
     @staticmethod
+    def _points_smoothing(points, s):
+        """Smooths a centerline using B-spline smoothing."""
+        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        
+        if len(points) < 4:
+            return points
+            
+        try:
+            result = make_splprep([points[:, 0], points[:, 1]], s=s)
+            bspline = result[0]
+            
+            u_new = np.linspace(0, 1, len(points))
+            smoothed_points = bspline(u_new)
+            return smoothed_points.T
+            
+        except ValueError:
+            return points
+
+    @staticmethod
     def _compute_soam_from_evenly_spaced_xy(points):
         """Compute SOAM as summed turning angle per resampled arc length."""
-        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        points = BiomarkerAnalyzer._points_smoothing(points, s=1e-6)
         if points.shape[0] < 3:
             return 0.0
 
