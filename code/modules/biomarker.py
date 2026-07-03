@@ -74,7 +74,10 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _points_smoothing(points, s):
-        """Smooths a centerline using B-spline smoothing."""
+        """
+        Smooths a centerline using B-spline smoothing.
+        Currently, all s values are len(points) to avoid over-smoothing.
+        """
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
         points = points.astype(float)
         
@@ -88,7 +91,7 @@ class BiomarkerAnalyzer:
             u_new = np.linspace(0, 1, len(points) // 2)  # evaluate at half the density 
             smoothed_points = bspline(u_new)
 
-            # code below used for viewing graph at different s values
+            # commented-out code below used for viewing graph at different s values
 
             # x_smooth, y_smooth = smoothed_points[0], smoothed_points[1]
 
@@ -105,9 +108,10 @@ class BiomarkerAnalyzer:
             return points
 
     @staticmethod
-    def _compute_soam_from_evenly_spaced_xy(points):
+    def _compute_soam(points):
         """
-        Compute SOAM as summed turning angle per resampled arc length.
+        Compute SOAM from evenly-spaced 'x' and 'y' points, 
+        as summed turning angle per resampled arc length.
         This is the current in-use function to compute SOAM.
         """
         s = len(points)  # change s depending on number of points
@@ -137,14 +141,19 @@ class BiomarkerAnalyzer:
         return total_angle / arc_length
 
     @staticmethod
-    def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
+    def _compute_pwaoc(vessel_x, vessel_y, pix2mm):
         """
         Compute PWAOC tortuosity metrics for one vessel centerline.
         This is the current function used to compute PWAOC metrics.
-        Previously contained SOAM calculation but was removed due to new requirements.
+        Previously contained SOAM calculation but was removed due redundancy.
         """
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
+        
+        # smooth points using B spline smoothing
+        points = np.column_stack((vesselX, vesselY))
+        points = BiomarkerAnalyzer._points_smoothing(points, s=len(points))
+        vesselX, vesselY = points[:, 0], points[:, 1]
 
         if vesselX.size < 3 or vesselY.size < 3:
             return None
@@ -234,7 +243,7 @@ class BiomarkerAnalyzer:
         }
 
     @staticmethod
-    def _compute_new_tortuosity_metrics_from_xy_paper_soam(
+    def _compute_new_tortuosity_metrics(
         vessel_x,
         vessel_y,
         pix2mm,
@@ -243,11 +252,14 @@ class BiomarkerAnalyzer:
     ):
         """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
 
-        PWAOC is intentionally delegated to the existing implementation. 
-        SOAM is recomputed after smoothing and physical arc-length resampling because the
-        paper requires evenly spaced points.
+        As per paper requirements, SOAM is computed in `_compute_soam()` after 
+        smoothing and physical arc-length resampling.
+
+        PWAOC is computed using `_compute_pwaoc()`. 
+        This function previously contained SOAM computation but was removed due to redundancy
+        caused by the new function.
         """
-        metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+        metrics = BiomarkerAnalyzer._compute_pwaoc(
             vessel_x,
             vessel_y,
             pix2mm,
@@ -273,7 +285,7 @@ class BiomarkerAnalyzer:
         )
 
         metrics = metrics.copy()
-        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam_from_evenly_spaced_xy(resampled)
+        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam(resampled)
         return metrics
 
     @staticmethod
@@ -324,8 +336,8 @@ class BiomarkerAnalyzer:
             if not hasattr(link, "x") or not hasattr(link, "y"):
                 continue
 
-            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
+            # metrics = BiomarkerAnalyzer._compute_pwaoc(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 link.x,
                 link.x,
                 link.y,
@@ -724,7 +736,7 @@ class BiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 cols,
                 rows,
                 pix2mm,
@@ -734,7 +746,6 @@ class BiomarkerAnalyzer:
 
         return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
- 
     @staticmethod
     def new_tortuosity_metrics_all(canvas: Canvas) -> None:
         """Compute the legacy full tortuosity metric set for every link on the canvas. Not in use but kept for reference."""
