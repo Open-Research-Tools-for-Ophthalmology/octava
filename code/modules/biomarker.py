@@ -106,35 +106,43 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _compute_soam_from_evenly_spaced_xy(points):
-        """Compute SOAM as summed turning angle per resampled arc length."""
-        s = len(points) * 1000  # change s depending on number of points
+        """
+        Compute SOAM as summed turning angle per resampled arc length.
+        This is the current in-use function to compute SOAM.
+        """
+        s = len(points)  # change s depending on number of points
         points = BiomarkerAnalyzer._points_smoothing(points, s)  # not sure what to set for s
+        
+        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
         if points.shape[0] < 3:
             return 0.0
 
-        diffs = np.diff(points, axis=0)
-
-        segment_lengths = np.linalg.norm(diffs, axis=1)
+        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
         arc_length = np.sum(segment_lengths)
         if arc_length <= 0:
             return 0.0
 
         eps = np.finfo(float).eps
-        unit_vectors = diffs / (segment_lengths[:, np.newaxis] + eps)
+        total_angle = 0.0
+        for j in range(1, points.shape[0] - 1):
+            v1 = points[j] - points[j - 1]
+            v2 = points[j + 1] - points[j]
+            denom = np.linalg.norm(v1) * np.linalg.norm(v2)
+            if denom <= eps:
+                continue
 
-        dots = np.sum(unit_vectors[:-1] * unit_vectors[1:], axis=1)
-        
-        dots = np.clip(dots, -1.0, 1.0)     
-        angles = np.arccos(dots)
-        angles[angles < 0.02] = 0.0
-        
-        total_angle = np.sum(angles)
+            cos_theta = np.clip(np.dot(v1, v2) / denom, -1, 1)
+            total_angle += np.arccos(cos_theta)
 
         return total_angle / arc_length
 
     @staticmethod
     def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
-        """Compute PWAOC and SOAM tortuosity metrics for one vessel centerline."""
+        """
+        Compute PWAOC tortuosity metrics for one vessel centerline.
+        This is the current function used to compute PWAOC metrics.
+        Previously contained SOAM calculation but was removed due to new requirements.
+        """
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
 
@@ -144,8 +152,6 @@ class BiomarkerAnalyzer:
         numPoints = len(vesselX)
         eps = np.finfo(float).eps
         window_size = 10
-
-        margin = window_size // 2
 
         ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
         arcLength = np.sum(ds)
@@ -199,9 +205,6 @@ class BiomarkerAnalyzer:
         signGradCurv = np.sign(gradCurv)
         extremaIdx = np.where(np.diff(signGradCurv) != 0)[0] + 1
 
-        # only keeps extrema that are not too close to the ends of the vessel
-        extremaIdx = extremaIdx[(extremaIdx > margin) & (extremaIdx < numPoints - margin)]
-
         testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
         testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx) > 1 else np.array([])
 
@@ -224,7 +227,7 @@ class BiomarkerAnalyzer:
             nExtrema = 1
 
         AOC = np.nan if chordLength == 0 else arcLength / chordLength
-        PWAOC = (AOC - 1.0) * nExtrema if np.isfinite(AOC) else np.nan  
+        PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
 
         return {
             "PWAOC": PWAOC,
@@ -240,8 +243,8 @@ class BiomarkerAnalyzer:
     ):
         """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
 
-        PWAOC is intentionally delegated to the existing implementation. SOAM is
-        recomputed after smoothing and physical arc-length resampling because the
+        PWAOC is intentionally delegated to the existing implementation. 
+        SOAM is recomputed after smoothing and physical arc-length resampling because the
         paper requires evenly spaced points.
         """
         metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
