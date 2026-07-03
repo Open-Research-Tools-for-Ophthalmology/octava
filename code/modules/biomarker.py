@@ -5,6 +5,13 @@ from scipy.ndimage import distance_transform_edt
 from scipy.interpolate import make_splprep
 from modules.write_excel import *
 from scipy.stats import skew, kurtosis
+# import matplotlib
+# matplotlib.use('TkAgg')
+# import matplotlib.pyplot as plt
+# print(matplotlib.get_backend())
+# import os
+# from datetime import datetime
+
 
 class BiomarkerAnalyzer:
     """
@@ -76,6 +83,14 @@ class BiomarkerAnalyzer:
             
             u_new = np.linspace(0, 1, len(points))
             smoothed_points = bspline(u_new)
+            # x_smooth, y_smooth = smoothed_points[0], smoothed_points[1]
+
+            # plt.figure(figsize=(8, 4))
+            # plt.plot(points[:, 0], points[:, 1], 'ro--', label='jagged')
+            # plt.plot(x_smooth, y_smooth, 'b-', linewidth=2, label='smoothed')
+            # plt.legend()
+            # session_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            # plt.savefig(f"vessel_{session_time}.png")
             return smoothed_points.T
             
         except ValueError:
