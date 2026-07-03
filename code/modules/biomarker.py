@@ -5,6 +5,9 @@ from scipy.ndimage import distance_transform_edt
 from scipy.interpolate import make_splprep
 from modules.write_excel import *
 from scipy.stats import skew, kurtosis
+
+# imports below used for viewing changes to graph at different smoothing s values
+
 # import matplotlib
 # matplotlib.use('TkAgg')
 # import matplotlib.pyplot as plt
@@ -73,6 +76,7 @@ class BiomarkerAnalyzer:
     def _points_smoothing(points, s):
         """Smooths a centerline using B-spline smoothing."""
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        points = points.astype(float)
         
         if len(points) < 4:
             return points
@@ -81,8 +85,11 @@ class BiomarkerAnalyzer:
             result = make_splprep([points[:, 0], points[:, 1]], s=s)
             bspline = result[0]
             
-            u_new = np.linspace(0, 1, len(points))
+            u_new = np.linspace(0, 1, len(points) // 2)  # evaluate at half the density 
             smoothed_points = bspline(u_new)
+
+            # code below used for viewing graph at different s values
+
             # x_smooth, y_smooth = smoothed_points[0], smoothed_points[1]
 
             # plt.figure(figsize=(8, 4))
@@ -91,6 +98,7 @@ class BiomarkerAnalyzer:
             # plt.legend()
             # session_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             # plt.savefig(f"vessel_{session_time}.png")
+
             return smoothed_points.T
             
         except ValueError:
@@ -99,7 +107,8 @@ class BiomarkerAnalyzer:
     @staticmethod
     def _compute_soam_from_evenly_spaced_xy(points):
         """Compute SOAM as summed turning angle per resampled arc length."""
-        points = BiomarkerAnalyzer._points_smoothing(points, s=10)  # not sure what to set for s
+        s = len(points) * 1000  # change s depending on number of points
+        points = BiomarkerAnalyzer._points_smoothing(points, s)  # not sure what to set for s
         if points.shape[0] < 3:
             return 0.0
 
