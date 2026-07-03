@@ -13,6 +13,7 @@ from window_subscribe import *
 from window_faz_viewer import *
 import customtkinter as ctk
 from theme import *
+from gui_config_manager import *
 from modules.load_image import *
 from modules.select_save_folder import *
 from modules.start_processing import *
@@ -29,6 +30,9 @@ from resource_path import ICONS_PATH
 
 # command for bundling on mac with pyinstaller: 
 # pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
+
+# initialises config manager for persistent settings
+manager = ConfigManager()
 
 # Global window registry
 OPEN_WINDOWS = {}
@@ -57,6 +61,12 @@ def open_window(key, callback, *args, **kwargs):
         OPEN_WINDOWS[key] = new_window    
     return new_window
 
+# save image config type on exit
+def on_closing():
+    manager.config.img_type = canvas.img_type_var.get()
+    manager.save()
+    window.destroy()
+
 window = Tk()
 window.title("OCTAVA")
 window.geometry("1210x750")
@@ -75,7 +85,7 @@ canvas = Canvas(
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox (diameter mode)
 canvas.tort_bin_size_var = DoubleVar(value=0.1)  # Variable for Bin Size Spinbox (tortuosity mode)
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
-canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
+canvas.img_type_var = StringVar(value=manager.config.img_type) # Variable for Image Type dropdown
 
 IMAGE_SIZE_DEFAULTS_MM = {
     "Retina": 3.0,
@@ -881,4 +891,5 @@ def on_prebinary_toggle():
 prebinary_checkbox.configure(command=on_prebinary_toggle)
 
 window.resizable(False, False)
+window.protocol("WM_DELETE_WINDOW", on_closing)
 window.mainloop()
