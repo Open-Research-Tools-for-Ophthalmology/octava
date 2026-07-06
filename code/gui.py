@@ -13,7 +13,7 @@ from window_subscribe import *
 from window_faz_viewer import *
 import customtkinter as ctk
 from theme import *
-from gui_config_manager import *
+from gui_config_manager import manager
 from modules.load_image import *
 from modules.select_save_folder import *
 from modules.start_processing import *
@@ -30,9 +30,6 @@ from resource_path import ICONS_PATH
 
 # command for bundling on mac with pyinstaller: 
 # pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
-
-# initialises config manager for persistent settings
-manager = ConfigManager()
 
 # Global window registry
 OPEN_WINDOWS = {}
@@ -61,8 +58,8 @@ def open_window(key, callback, *args, **kwargs):
         OPEN_WINDOWS[key] = new_window    
     return new_window
 
-# save image config type on exit
 def on_closing():
+    """Save img_type_var to cache when closing the window"""
     manager.config.img_type = canvas.img_type_var.get()
     manager.save()
     window.destroy()
