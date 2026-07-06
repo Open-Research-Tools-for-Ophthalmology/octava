@@ -52,3 +52,10 @@ pip install -r requirements.txt
 ### Post-Installation
 
 Run `python code/gui.py` to launch the application
+
+### Errors
+
+Your cache file may be corrupt/broken, try deleting `cache.json` to fix it.
+
+If you want to revert the software to default settings, you can also delete this cache file. 
+It will automatically generate a new one after use.
