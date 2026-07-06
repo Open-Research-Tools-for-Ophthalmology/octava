@@ -104,8 +104,39 @@ canvas.create_text(
     font=("Roboto", 26 * -1)
 )
 
+def default_settings():
+    manager.load_default()
+    if hasattr(canvas, "img_type_var"):
+        canvas.img_type_var.set(manager.config.img_type)
+        img_type.set(manager.config.img_type)
+    
+    is_onh_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "ONH"
+    )
+    
+    params = [
+        "frangi_bool", "frangi_min", "frangi_max", 
+        "jerman_bool", "jerman_sigmas", "jerman_tau",
+        "med_filt_bool", "twig_size", "kernel_size", "prebinary_var"
+    ]
+    
+    for p in params:
+        canvas_attr = f"onh_{p}" if (is_onh_mode and p in ["frangi_bool", "frangi_min", "frangi_max", "jerman_bool", "jerman_sigmas", "jerman_tau"]) else p        
+        var_object = getattr(canvas, canvas_attr, getattr(canvas, f"{canvas_attr}_var", None))
+        
+        if var_object and hasattr(var_object, "set"):
+            default_value = getattr(manager.config, canvas_attr, getattr(manager.config, p, None))
+            
+            if default_value is not None:
+                var_object.set(default_value)
+                
+                global_widget = globals().get(canvas_attr) or globals().get(f"{canvas_attr}_var") or globals().get(p)
+                if global_widget and hasattr(global_widget, "set"):
+                    global_widget.set(default_value)
+
 button01 = ctk.CTkButton(window, text="Clear",
-                        command=lambda: clear_screen(canvas),
+                        command=lambda: (clear_screen(canvas), default_settings()),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,

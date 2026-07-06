@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from dataclasses import dataclass, asdict
 
 @dataclass
@@ -34,7 +35,17 @@ class ConfigManager:
         self.filename = filename
         self.config = GUIConfig()  # starts with defaults
         self.load()
-    
+
+    def delete_cache(self):
+        """Deletes the cache JSON file if it exists."""
+        file_path = Path(self.filename)
+        file_path.unlink(missing_ok=True)
+        
+    def load_default(self):
+        """Resets the config to default values and saves to cache JSON file."""
+        self.config = GUIConfig()  # reset to defaults
+        self.delete_cache() 
+
     def load(self):
         """Loads the config data from cache JSON file if it exists, otherwise uses default values."""
         if os.path.exists(self.filename):
