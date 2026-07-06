@@ -224,8 +224,15 @@ image_size_spinbox.place(
 )
 
 
+def toggle_start_processing():
+    """Enable or disable the Start Processing button based on whether an image is loaded"""
+    if hasattr(canvas, "original_img"):
+        button_process.configure(state="normal")
+    else:
+        button_process.configure(state="disabled")
+
 button_loadimg = ctk.CTkButton(window, text="Load Image",
-                        command=lambda: load_image(canvas, 550, 255, 180, 170),
+                        command=lambda: (load_image(canvas, 550, 255, 180, 170), toggle_start_processing()),
                         width=120,height=40,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
@@ -521,6 +528,7 @@ button_batch_processing.place(x=30, y=500)
 
 button_process = ctk.CTkButton(window, text="Start Processing",
                         command=lambda: start_processing(canvas),
+                        state="disabled",
                         width=380,height=80,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
