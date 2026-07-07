@@ -64,6 +64,7 @@ def toggle_processing_and_continue(canvas: Canvas):
             hover_color=button_green_hover,
         ))
         return True
+    
     elif getattr(canvas, 'process_flag', False) and not getattr(canvas, 'abort_flag', False):
         print("If is processing and not aborting, request abort")
         # If is processing and not aborting, request abort
@@ -75,6 +76,7 @@ def toggle_processing_and_continue(canvas: Canvas):
         ))
         canvas.after(1, lambda: change_status_to_waiting(canvas, "● Aborting..."))
         return False
+    
     elif getattr(canvas, 'abort_flag', False):
         print("If is currently aborting, skip action")
         # If is currently aborting, skip action

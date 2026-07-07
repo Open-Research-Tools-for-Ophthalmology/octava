@@ -20,3 +20,5 @@ __pycache__/
 
 gui.spec
 .idea/*
+
+cache.json

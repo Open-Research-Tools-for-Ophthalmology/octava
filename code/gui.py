@@ -13,6 +13,7 @@ from window_subscribe import *
 from window_faz_viewer import *
 import customtkinter as ctk
 from theme import *
+from gui_config_manager import manager
 from modules.load_image import *
 from modules.select_save_folder import *
 from modules.start_processing import *
@@ -57,6 +58,12 @@ def open_window(key, callback, *args, **kwargs):
         OPEN_WINDOWS[key] = new_window    
     return new_window
 
+def on_closing():
+    """Save img_type_var to cache when closing the window"""
+    manager.config.img_type = canvas.img_type_var.get()
+    manager.save()
+    window.destroy()
+
 window = Tk()
 window.title("OCTAVA")
 window.geometry("1210x750")
@@ -75,7 +82,7 @@ canvas = Canvas(
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox (diameter mode)
 canvas.tort_bin_size_var = DoubleVar(value=0.1)  # Variable for Bin Size Spinbox (tortuosity mode)
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
-canvas.img_type_var = StringVar(value="Retina")  # Variable for Image Type dropdown
+canvas.img_type_var = StringVar(value=manager.config.img_type) # Variable for Image Type dropdown
 
 IMAGE_SIZE_DEFAULTS_MM = {
     "Retina": 3.0,
@@ -97,8 +104,40 @@ canvas.create_text(
     font=("Roboto", 26 * -1)
 )
 
+def default_settings():
+    manager.load_default()
+    if hasattr(canvas, "img_type_var"):
+        canvas.img_type_var.set(manager.config.img_type)
+        img_type.set(manager.config.img_type)
+    
+    is_onh_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "ONH"
+    )
+    
+    params = [
+        "frangi_bool", "frangi_min", "frangi_max", 
+        "jerman_bool", "jerman_sigmas", "jerman_tau",
+        "med_filt_bool", "twig_size", "kernel_size", "prebinary_var"
+    ]
+    
+    for p in params:
+        canvas_attr = f"onh_{p}" if (is_onh_mode and p in ["frangi_bool", "frangi_min", "frangi_max", "jerman_bool", "jerman_sigmas", "jerman_tau"]) else p        
+        var_object = getattr(canvas, canvas_attr, getattr(canvas, f"{canvas_attr}_var", None))
+        
+        if var_object and hasattr(var_object, "set"):
+            default_value = getattr(manager.config, canvas_attr, getattr(manager.config, p, None))
+            
+            if default_value is not None:
+                var_object.set(default_value)
+                
+                global_widget = globals().get(canvas_attr) or globals().get(f"{canvas_attr}_var") or globals().get(p)
+                if global_widget and hasattr(global_widget, "set"):
+                    global_widget.set(default_value)
+    
+
 button01 = ctk.CTkButton(window, text="Clear",
-                        command=lambda: clear_screen(canvas),
+                        command=lambda: (clear_screen(canvas), default_settings()),
                         width=65,height=25,
                         font=("Roboto", 12 * -1),
                         text_color=text_colour,
@@ -216,6 +255,21 @@ image_size_spinbox.place(
     y=108.0
 )
 
+def is_batch_processing_enabled(canvas: Canvas) -> bool:
+    """Return whether a batch input folder has been selected."""
+    return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
+
+def toggle_start_processing():
+    """Enable or disable the Start Processing button based on whether an image is loaded"""
+    has_image = hasattr(canvas, "original_img")
+    has_folder = is_batch_processing_enabled(canvas)
+
+    if has_image or has_folder:
+        button_process.configure(state="normal")
+    else:
+        button_process.configure(state="disabled")
+    
+    window.after(10, toggle_start_processing)  # keep checking whether image/folder has loaded
 
 button_loadimg = ctk.CTkButton(window, text="Load Image",
                         command=lambda: load_image(canvas, 550, 255, 180, 170),
@@ -514,6 +568,7 @@ button_batch_processing.place(x=30, y=500)
 
 button_process = ctk.CTkButton(window, text="Start Processing",
                         command=lambda: start_processing(canvas),
+                        state="disabled",
                         width=380,height=80,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
@@ -881,4 +936,6 @@ def on_prebinary_toggle():
 prebinary_checkbox.configure(command=on_prebinary_toggle)
 
 window.resizable(False, False)
+window.protocol("WM_DELETE_WINDOW", on_closing)
+window.after(10, toggle_start_processing)  # toggle the 'start processing' button initially
 window.mainloop()

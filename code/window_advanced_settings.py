@@ -22,30 +22,54 @@ from tkinter import (
 )
 from window_subset_editor import subwindow_subset
 from theme import *
+from gui_config_manager import manager
 import customtkinter as ctk
 
 
 def init_advanced_settings(canvas: Canvas):
-  """Initialize canvas variables used by the advanced settings UI and pipeline."""
-  canvas.frangi_bool = IntVar(value=1)
-  canvas.frangi_min = IntVar(value=1)
-  canvas.frangi_max = IntVar(value=4)
-  canvas.jerman_bool = IntVar(value=0)
-  canvas.jerman_sigmas = StringVar(value="1, 2, 3, 4, 5")
-  canvas.jerman_tau = DoubleVar(value=1.00)
-  canvas.onh_frangi_bool = IntVar(value=1)
-  canvas.onh_frangi_min = IntVar(value=1)
-  canvas.onh_frangi_max = IntVar(value=4)
-  canvas.onh_large_vessel_threshold_um = DoubleVar(value=60.0)
-  canvas.med_filt_bool = IntVar(value=0)
-  canvas.twig_size = IntVar(value=8)
-  canvas.kernel_size = IntVar(value=3)
-  canvas.prebinary_var = IntVar(value=0)
+    """Initialize canvas variables used by the advanced settings UI and pipeline."""
+    canvas.frangi_bool = IntVar(value=manager.config.frangi_bool)
+    canvas.frangi_min = IntVar(value=manager.config.frangi_min)
+    canvas.frangi_max = IntVar(value=manager.config.frangi_max)
+
+    canvas.jerman_bool = IntVar(value=manager.config.jerman_bool)
+    canvas.jerman_sigmas = StringVar(value=manager.config.jerman_sigmas)
+    canvas.jerman_tau = DoubleVar(value=manager.config.jerman_tau)
+
+    canvas.onh_frangi_bool = IntVar(value=manager.config.onh_frangi_bool)
+    canvas.onh_frangi_min = IntVar(value=manager.config.onh_frangi_min)
+    canvas.onh_frangi_max = IntVar(value=manager.config.onh_frangi_max)
+    canvas.onh_large_vessel_threshold_um = DoubleVar(value=manager.config.onh_large_vessel_threshold_um)
+
+    canvas.med_filt_bool = IntVar(value=manager.config.med_filt_bool)
+    canvas.twig_size = IntVar(value=manager.config.twig_size)
+    canvas.kernel_size = IntVar(value=manager.config.kernel_size)
+    canvas.prebinary_var = IntVar(value=manager.config.prebinary_var)
 
 
-def close(window):
-  window.destroy()
-  window.update()
+def close(window, canvas: Canvas):
+    """Save the advanced settings to the config manager and close the window."""
+    manager.config.frangi_bool = canvas.frangi_bool.get()
+    manager.config.frangi_min = canvas.frangi_min.get()
+    manager.config.frangi_max = canvas.frangi_max.get()
+
+    manager.config.jerman_bool = canvas.jerman_bool.get()
+    manager.config.jerman_sigmas = canvas.jerman_sigmas.get()
+    manager.config.jerman_tau = canvas.jerman_tau.get()
+
+    manager.config.onh_frangi_bool = canvas.onh_frangi_bool.get()
+    manager.config.onh_frangi_min = canvas.onh_frangi_min.get()
+    manager.config.onh_frangi_max = canvas.onh_frangi_max.get()
+    manager.config.onh_large_vessel_threshold_um = canvas.onh_large_vessel_threshold_um.get()
+
+    manager.config.med_filt_bool = canvas.med_filt_bool.get()
+    manager.config.twig_size = canvas.twig_size.get()
+    manager.config.kernel_size = canvas.kernel_size.get()
+    manager.config.prebinary_var = canvas.prebinary_var.get()
+    manager.save()
+
+    window.destroy()
+    window.update()
 
 def relative_to_assets(path: str) -> Path:
   return ADVANCED_SETTINGS_ASSETS_PATH / path
@@ -402,7 +426,7 @@ def subwindow1(canvas):
 
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
-                          command=lambda: close(subwindow),
+                          command=lambda: close(subwindow, canvas),
                           width=130,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
