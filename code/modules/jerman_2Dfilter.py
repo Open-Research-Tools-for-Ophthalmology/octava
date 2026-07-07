@@ -6,6 +6,7 @@ import numpy as np
 # https://github.com/mcgarrysd/vessel_metrics/blob/main/final_scripts/vessel_metrics.py
 # https://github.com/scikit-image/scikit-image/pull/8074/changes#diff-c4d9acd2360fa044a07e7b15990290c46ede15951b42a712e301bb0a53a20097
 # Only difference is we use self-contained hessian_filter functions
+
 def jerman_2Dfilter(
     im,
     sigmas: np.ndarray = np.arange(1, 6, 1), # by default 1:5
@@ -40,7 +41,6 @@ def jerman_2Dfilter(
             mask = (trace >= 0) & ~degenerate
 
         # m_major, m_minor = Lambda1i,Lambda2i (line 114 / vesselness2D)
-        # TODO check if we need to Dxx = Dxx(mask) to match vesselness2D? (line 105 / vesselness2D) or is this just for efficiency?
         _, _, m_major, m_minor = eig2im(Dxx, Dxy, Dyy)
         m_major = np.where(mask, m_major, 0)
         m_minor = np.where(mask, m_minor, 0)

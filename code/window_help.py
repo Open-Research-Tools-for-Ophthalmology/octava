@@ -58,8 +58,8 @@ def open_help_window(canvas):
       justify="left"
   )
 
-  # lead to github readme page
-  button_readme = ctk.CTkButton(subwindow, text="Github Issues",
+  # lead to github issues page to collect feedback
+  button_issues = ctk.CTkButton(subwindow, text="Github Issues",
                           command=lambda: webbrowser.open("https://github.com/milanaveed/octava/issues"),
                           width=400,height=45,
                           font=("Roboto", 14 * -1),
@@ -68,7 +68,7 @@ def open_help_window(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_readme.place(x=200, y=500)
+  button_issues.place(x=200, y=500)
 
   subwindow.resizable(False, False)
   return subwindow
