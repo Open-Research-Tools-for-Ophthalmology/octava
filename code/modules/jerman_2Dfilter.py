@@ -40,7 +40,6 @@ def jerman_2Dfilter(
             mask = (trace >= 0) & ~degenerate
 
         # m_major, m_minor = Lambda1i,Lambda2i (line 114 / vesselness2D)
-        # TODO check if we need to Dxx = Dxx(mask) to match vesselness2D? (line 105 / vesselness2D) or is this just for efficiency?
         _, _, m_major, m_minor = eig2im(Dxx, Dxy, Dyy)
         m_major = np.where(mask, m_major, 0)
         m_minor = np.where(mask, m_minor, 0)
