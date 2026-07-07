@@ -6,6 +6,7 @@ import numpy as np
 # https://github.com/mcgarrysd/vessel_metrics/blob/main/final_scripts/vessel_metrics.py
 # https://github.com/scikit-image/scikit-image/pull/8074/changes#diff-c4d9acd2360fa044a07e7b15990290c46ede15951b42a712e301bb0a53a20097
 # Only difference is we use self-contained hessian_filter functions
+
 def jerman_2Dfilter(
     im,
     sigmas: np.ndarray = np.arange(1, 6, 1), # by default 1:5
