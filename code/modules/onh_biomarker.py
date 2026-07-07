@@ -372,9 +372,6 @@ class ONHBiomarkerAnalyzer:
             "vessel_length_density_mm_per_mm2": float(vessel_length_density),
             "mean_diameter_um": float(mean_diameter_um),
             "mean_tortuosity": float(mean_tortuosity),
-            "tortuosity_min_link_length_px": float(ONH_TORTUOSITY_MIN_LINK_LENGTH_PX),
-            "raw_link_count": int(len(links)) if links is not None else 0,
-            "valid_tortuosity_link_count": int(valid_tortuosity_link_count),
         }
 
         if onh_center is not None:
@@ -674,9 +671,6 @@ class ONHBiomarkerAnalyzer:
             "Vessel area mm2": metrics["vessel_area_mm2"],
             "ONH ROI area mm2": metrics["onh_roi_area_mm2"],
             "Vessel length mm": metrics["vessel_length_mm"],
-            "Tortuosity min link length px": metrics["tortuosity_min_link_length_px"],
-            "Raw link count": metrics["raw_link_count"],
-            "Valid tortuosity link count": metrics["valid_tortuosity_link_count"],
         }
 
     @staticmethod
@@ -729,13 +723,13 @@ class ONHBiomarkerAnalyzer:
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(
                 canvas.length_density_value_id,
-                text=f"{metrics['vessel_length_density_mm_per_mm2']:.2f} %",
+                text=f"{metrics['vessel_length_density_mm_per_mm2']:.2f} (1/mm)",
             )
 
         if hasattr(canvas, "mean_diameter_value_id"):
             canvas.itemconfig(
                 canvas.mean_diameter_value_id,
-                text=f"{metrics['mean_diameter_um']:.2f} um",
+                text=f"{metrics['mean_diameter_um']:.2f} µm",
             )
 
         # Branchpoint density and fractal dimension are not displayed for the

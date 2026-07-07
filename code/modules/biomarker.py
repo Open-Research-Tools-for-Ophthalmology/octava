@@ -685,7 +685,7 @@ class BiomarkerAnalyzer:
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(
                 canvas.length_density_value_id,
-                text=f"{vessel_length_density:.2f} %",
+                text=f"{vessel_length_density:.2f} (1/mm)",
             )
 
         if hasattr(canvas, "mean_diameter_value_id"):
