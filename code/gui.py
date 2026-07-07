@@ -1,3 +1,5 @@
+# TODO: get the toggle_start_processing function to work when close the batch processing window
+
 from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
@@ -134,6 +136,7 @@ def default_settings():
                 global_widget = globals().get(canvas_attr) or globals().get(f"{canvas_attr}_var") or globals().get(p)
                 if global_widget and hasattr(global_widget, "set"):
                     global_widget.set(default_value)
+    
 
 button01 = ctk.CTkButton(window, text="Clear",
                         command=lambda: (clear_screen(canvas), default_settings()),
@@ -254,16 +257,24 @@ image_size_spinbox.place(
     y=108.0
 )
 
+def is_batch_processing_enabled(canvas: Canvas) -> bool:
+    """Return whether a batch input folder has been selected."""
+    return hasattr(canvas, "bp_selected_folder_path") and canvas.bp_selected_folder_path is not None
 
 def toggle_start_processing():
     """Enable or disable the Start Processing button based on whether an image is loaded"""
-    if hasattr(canvas, "original_img"):
+    has_image = hasattr(canvas, "original_img")
+    has_folder = is_batch_processing_enabled(canvas)
+
+    if has_image or has_folder:
         button_process.configure(state="normal")
     else:
         button_process.configure(state="disabled")
+    
+    window.after(10, toggle_start_processing)  # keep checking whether image/folder has loaded
 
 button_loadimg = ctk.CTkButton(window, text="Load Image",
-                        command=lambda: (load_image(canvas, 550, 255, 180, 170), toggle_start_processing()),
+                        command=lambda: load_image(canvas, 550, 255, 180, 170),
                         width=120,height=40,
                         font=("Roboto", 14 * -1),
                         text_color=text_colour,
@@ -928,4 +939,5 @@ prebinary_checkbox.configure(command=on_prebinary_toggle)
 
 window.resizable(False, False)
 window.protocol("WM_DELETE_WINDOW", on_closing)
+window.after(10, toggle_start_processing)  # toggle the 'start processing' button initially
 window.mainloop()
