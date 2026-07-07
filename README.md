@@ -31,6 +31,7 @@ First `git clone` or download zip from this repository.
 Install python [3.10.19](https://www.python.org/downloads/release/python-31019/) or compatible versions.
 
 ### One-Line Build
+In your terminal, run:
 
 ```
 python build_executable.py
