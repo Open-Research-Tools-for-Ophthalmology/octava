@@ -1,5 +1,3 @@
-# TODO: get the toggle_start_processing function to work when close the batch processing window
-
 from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
