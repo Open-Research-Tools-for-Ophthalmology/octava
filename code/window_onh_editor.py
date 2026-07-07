@@ -141,7 +141,7 @@ def window_onh_editor(canvas):
     # Store button references
     subwindow_onh.tool_buttons = {}
 
-  # Load tool icons
+    # Load tool icons
     icon_drag_pil = Image.open(ICONS_PATH / "drag.png")
     icon_pan_pil = Image.open(ICONS_PATH / "pan.png")
     icon_zoom_pil = Image.open(ICONS_PATH / "zoom.png")

@@ -102,7 +102,7 @@ def subwindow_subset(canvas):
                 btn.configure(fg_color=button_blue_colour)
 
         # Update cursor
-        #! See https://www.tcl-lang.org/man/tcl8.6/TkCmd/cursors.htm (stdlib\tkinter\__init__.pyi), some wont work cross platform
+        #! See https://www.tcl-lang.org/man/tcl8.6/TkCmd/cursors.htm (stdlib\tkinter\__init__.pyi), some won't work cross platform
         if tool_name == "draw":
             subcanvas_subset.config(cursor="crosshair")
         elif tool_name == "pan":

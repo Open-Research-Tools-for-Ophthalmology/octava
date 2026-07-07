@@ -6,7 +6,7 @@
 
 </div>
 
-This respoitory contains all the source code required to run the OCTAVA software. OCTAVA is available free for use under an MIT licence. If you use this software in your research, please cite the following papers:
+This repository contains all the source code required to run the OCTAVA software. OCTAVA is available free for use under an MIT licence. If you use this software in your research, please cite the following papers:
 
 xxx. https://doi.org/xxx/xxx
 

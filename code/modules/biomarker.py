@@ -1,13 +1,20 @@
-# modules/biomarker.py
-
-from turtle import width
-
 import numpy as np
 import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
+from scipy.interpolate import make_splprep
 from modules.write_excel import *
 from scipy.stats import skew, kurtosis
+
+# imports below used for viewing changes to graph at different smoothing s values
+
+# import matplotlib
+# matplotlib.use('TkAgg')
+# import matplotlib.pyplot as plt
+# print(matplotlib.get_backend())
+# import os
+# from datetime import datetime
+
 
 class BiomarkerAnalyzer:
     """
@@ -17,24 +24,19 @@ class BiomarkerAnalyzer:
 
     @staticmethod
     def _movmean(arr, window):
-        """Compute a centered moving average with edge-aware truncation."""
+        """Compute a centered moving average with preservation of data trend at edge values."""
         arr = np.asarray(arr, dtype=float)
         n = arr.size
         if n == 0 or window <= 1:
             return arr.copy()
 
-        half_left = (window - 1) // 2
-        half_right = window // 2
-
-        csum = np.cumsum(np.insert(arr, 0, 0.0))
-        out = np.empty(n)
-
-        for i in range(n):
-            start = max(0, i - half_left)
-            end = min(n, i + half_right + 1)
-            out[i] = (csum[end] - csum[start]) / (end - start)
-
-        return out
+        pad_size = window // 2
+        padded_arr = np.pad(arr, (pad_size, pad_size), mode='reflect', reflect_type='odd')
+        
+        csum = np.cumsum(np.insert(padded_arr, 0, 0.0))
+        out = (csum[window:] - csum[:-window]) / window
+        
+        return out[:n]
 
     @staticmethod
     def _remove_duplicate_xy_points(points):
@@ -71,8 +73,50 @@ class BiomarkerAnalyzer:
         return np.column_stack((resampled_x, resampled_y))
 
     @staticmethod
-    def _compute_soam_from_evenly_spaced_xy(points):
-        """Compute SOAM as summed turning angle per resampled arc length."""
+    def _points_smoothing(points, s):
+        """
+        Smooths a centerline using B-spline smoothing.
+        Currently, all s values are len(points) to avoid over-smoothing.
+        """
+        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+        points = points.astype(float)
+        
+        if len(points) < 4:
+            return points
+            
+        try:
+            result = make_splprep([points[:, 0], points[:, 1]], s=s)
+            bspline = result[0]
+            
+            u_new = np.linspace(0, 1, len(points) // 2)  # evaluate at half the density 
+            smoothed_points = bspline(u_new)
+
+            # commented-out code below used for viewing graph at different s values
+
+            # x_smooth, y_smooth = smoothed_points[0], smoothed_points[1]
+
+            # plt.figure(figsize=(8, 4))
+            # plt.plot(points[:, 0], points[:, 1], 'ro--', label='jagged')
+            # plt.plot(x_smooth, y_smooth, 'b-', linewidth=2, label='smoothed')
+            # plt.legend()
+            # session_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            # plt.savefig(f"vessel_{session_time}.png")
+
+            return smoothed_points.T
+            
+        except ValueError:
+            return points
+
+    @staticmethod
+    def _compute_soam(points):
+        """
+        Compute SOAM from evenly-spaced 'x' and 'y' points, 
+        as summed turning angle per resampled arc length.
+        This is the current in-use function to compute SOAM.
+        """
+        s = len(points)  # change s depending on number of points
+        points = BiomarkerAnalyzer._points_smoothing(points, s)  # not sure what to set for s
+        
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
         if points.shape[0] < 3:
             return 0.0
@@ -97,10 +141,19 @@ class BiomarkerAnalyzer:
         return total_angle / arc_length
 
     @staticmethod
-    def _compute_new_tortuosity_metrics_from_xy(vessel_x, vessel_y, pix2mm):
-        """Compute PWAOC and SOAM tortuosity metrics for one vessel centerline."""
+    def _compute_pwaoc(vessel_x, vessel_y, pix2mm):
+        """
+        Compute PWAOC tortuosity metrics for one vessel centerline.
+        This is the current function used to compute PWAOC metrics.
+        Previously contained SOAM calculation but was removed due redundancy.
+        """
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
+        
+        # smooth points using B spline smoothing
+        points = np.column_stack((vesselX, vesselY))
+        points = BiomarkerAnalyzer._points_smoothing(points, s=len(points))
+        vesselX, vesselY = points[:, 0], points[:, 1]
 
         if vesselX.size < 3 or vesselY.size < 3:
             return None
@@ -185,39 +238,12 @@ class BiomarkerAnalyzer:
         AOC = np.nan if chordLength == 0 else arcLength / chordLength
         PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
 
-        if numPoints < 3:
-            SOAM = 0.0
-        else:
-            totalWeightedAngle = 0.0
-
-            for j in range(1, numPoints - 1):
-                v1 = np.array([
-                    vesselX[j] - vesselX[j - 1],
-                    vesselY[j] - vesselY[j - 1],
-                ])
-                v2 = np.array([
-                    vesselX[j + 1] - vesselX[j],
-                    vesselY[j + 1] - vesselY[j],
-                ])
-
-                cosTheta = np.clip(
-                    np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + eps),
-                    -1,
-                    1,
-                )
-                totalWeightedAngle += np.arccos(cosTheta)
-
-            SOAM = totalWeightedAngle / arcLength # radians/mm
-            # convert SOAM to radians/cm
-            # SOAM = SOAM * 10.0
-
         return {
             "PWAOC": PWAOC,
-            "SOAM": SOAM,
         }
 
     @staticmethod
-    def _compute_new_tortuosity_metrics_from_xy_paper_soam(
+    def _compute_new_tortuosity_metrics(
         vessel_x,
         vessel_y,
         pix2mm,
@@ -226,11 +252,14 @@ class BiomarkerAnalyzer:
     ):
         """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
 
-        PWAOC is intentionally delegated to the existing implementation. SOAM is
-        recomputed after smoothing and physical arc-length resampling because the
-        paper requires evenly spaced points.
+        As per paper requirements, SOAM is computed in `_compute_soam()` after 
+        smoothing and physical arc-length resampling.
+
+        PWAOC is computed using `_compute_pwaoc()`. 
+        This function previously contained SOAM computation but was removed due to redundancy
+        caused by the new function.
         """
-        metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
+        metrics = BiomarkerAnalyzer._compute_pwaoc(
             vessel_x,
             vessel_y,
             pix2mm,
@@ -256,7 +285,7 @@ class BiomarkerAnalyzer:
         )
 
         metrics = metrics.copy()
-        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam_from_evenly_spaced_xy(resampled)
+        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam(resampled)
         return metrics
 
     @staticmethod
@@ -307,8 +336,8 @@ class BiomarkerAnalyzer:
             if not hasattr(link, "x") or not hasattr(link, "y"):
                 continue
 
-            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
+            # metrics = BiomarkerAnalyzer._compute_pwaoc(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 link.x,
                 link.x,
                 link.y,
@@ -385,9 +414,17 @@ class BiomarkerAnalyzer:
             links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
             links_length_um = np.asarray(links_length_pix) * pix_size_mm * 1000
             links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
-            var_length = np.var(links_length_um_flatten, ddof=1)
-            skew_length = skew(links_length_um_flatten) # Matlab flag=1(default) -> don't correct for bias -> bias=True(default) Scipy
-            kurt_length = kurtosis(links_length_um_flatten, fisher=False) # Matlab pearson(default) -> fisher=False Scipy
+
+            # ensure we have enough data points
+            if len(links_length_um_flatten) > 1:
+                var_length = np.var(links_length_um_flatten, ddof=1)
+                var_length = 0.0 if np.isnan(var_length) else var_length
+                skew_length = skew(links_length_um_flatten)
+                kurt_length = kurtosis(links_length_um_flatten, fisher=False)
+            else:
+                var_length = 0.0
+                skew_length = 0.0
+                kurt_length = 0.0
         else:
             var_length = 0.0
             skew_length = 0.0
@@ -422,9 +459,16 @@ class BiomarkerAnalyzer:
             diameters_scaled_um = np.asarray(per_link_mean_diameters) * pix_size_mm * 1000.0
             mean_diameter_um = np.mean(diameters_scaled_um)
             diameters_scaled_um_flatten = diameters_scaled_um.flatten()
-            var_diameter_um = np.var(diameters_scaled_um_flatten, ddof=1)
-            skew_diameter_um = skew(diameters_scaled_um_flatten)
-            kurt_diameter_um = kurtosis(diameters_scaled_um_flatten, fisher=False)
+
+            if len(diameters_scaled_um_flatten) > 1:
+                var_diameter_um = np.var(diameters_scaled_um_flatten, ddof=1)
+                var_diameter_um = 0.0 if np.isnan(var_diameter_um) else var_diameter_um
+                skew_diameter_um = skew(diameters_scaled_um_flatten)
+                kurt_diameter_um = kurtosis(diameters_scaled_um_flatten, fisher=False)
+            else:
+                var_diameter_um = 0.0
+                skew_diameter_um = 0.0
+                kurt_diameter_um = 0.0
         else:
             mean_diameter_um = 0.0
             var_diameter_um = 0.0
@@ -462,9 +506,6 @@ class BiomarkerAnalyzer:
                 'skeleton': {4: 0.0},
                 'binary': {4: 0.0}
             }
-
-            # exponent = math.ceil(math.log2(Nx))
-            # width = 2 ** exponent
 
             # 0529 Find the largest box size
             # Take the floor so the largest box size is around half of the image.
@@ -557,13 +598,20 @@ class BiomarkerAnalyzer:
                 tortuosity = arc_length / chord_length
                 tortuosity_list.append(tortuosity)
 
-        if len(tortuosity_list) > 0:
+        if tortuosity_list:
             mean_tortuosity = np.mean(tortuosity_list)
             tortuosity_arr = np.asarray(tortuosity_list)
             tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
-            var_tortuosity = np.var(tortuosity_arr_flatten, ddof=1)
-            skew_tortuosity = skew(tortuosity_arr_flatten)
-            kurt_tortuosity = kurtosis(tortuosity_arr_flatten, fisher=False)
+
+            if len(tortuosity_arr_flatten) > 1:
+                var_tortuosity = np.var(tortuosity_arr_flatten, ddof=1)
+                var_tortuosity = 0.0 if np.isnan(var_tortuosity) else var_tortuosity
+                skew_tortuosity = skew(tortuosity_arr_flatten)
+                kurt_tortuosity = kurtosis(tortuosity_arr_flatten, fisher=False)
+            else:
+                var_tortuosity = 0.0
+                skew_tortuosity = 0.0
+                kurt_tortuosity = 0.0
         else:
             mean_tortuosity = 0.0
             var_tortuosity = 0.0
@@ -688,8 +736,7 @@ class BiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
-            # metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy(
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics_from_xy_paper_soam(
+            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 cols,
                 rows,
                 pix2mm,
@@ -699,7 +746,6 @@ class BiomarkerAnalyzer:
 
         return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
- 
     @staticmethod
     def new_tortuosity_metrics_all(canvas: Canvas) -> None:
         """Compute the legacy full tortuosity metric set for every link on the canvas. Not in use but kept for reference."""
@@ -1032,13 +1078,10 @@ class BiomarkerAnalyzer:
                 VCI1 = np.nan
 
             with np.errstate(divide='ignore',invalid='ignore'):
-                # t = np.gradient(1/curvature)
                 curv_safe = curvature.copy()
                 curv_safe[np.abs(curv_safe) < 1e-6] = np.nan
                 inv_curv = 1.0 / curv_safe
                 t = np.gradient(inv_curv)
-                # t[~np.isfinite(t)] = np.nan
-                # VCI2 = np.nanmean(np.abs(t))
 
             t[~np.isfinite(t)] = np.nan
             VCI2 = np.nansum(t)/numPoints
@@ -1066,3 +1109,4 @@ class BiomarkerAnalyzer:
         canvas.new_tort_metrics.update(meanMetrics)
 
  
+

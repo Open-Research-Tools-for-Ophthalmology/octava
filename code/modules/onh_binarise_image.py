@@ -84,8 +84,8 @@ def binarise_onh_image(canvas, display: bool = True):
 
     # ------------------------------------------------------------
     # Optional median filtering, controlled by the shared Advanced
-    # Settings control. This is only read here for ONH; Retina code is
-    # not changed.
+    # Settings control. 
+    # This is only read here for ONH; Retina code is not changed.
     # ------------------------------------------------------------
     if hasattr(canvas, "med_filt_bool") and canvas.med_filt_bool.get():
         ksize = int(canvas.kernel_size.get()) if hasattr(canvas, "kernel_size") else 3

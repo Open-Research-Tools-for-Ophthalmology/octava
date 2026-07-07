@@ -471,8 +471,8 @@ def _update_onh_metric_labels(canvas: Canvas, metrics: dict) -> None:
         )
 
     # Branchpoint density and fractal dimension are not part of the final ONH
-    # metric display because their interpretation is weaker in annulus ROI
-    # analysis. The original labels are still used by the Retina workflow.
+    # metric display because their interpretation is weaker in annulus ROI analysis. 
+    # The original labels are still used by the Retina workflow.
 
     if hasattr(canvas, "tortuosity_value_id"):
         canvas.itemconfig(

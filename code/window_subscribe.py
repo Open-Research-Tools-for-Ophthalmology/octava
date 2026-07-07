@@ -6,7 +6,7 @@ import requests
 from dotenv import load_dotenv
 load_dotenv()
 
-#Google sheets link: https://docs.google.com/spreadsheets/d/1nJJvmxrmKOk7J1aLq_f1VeGRaxSBdu3BzHplbuoTaU0/edit?gid=0#gid=0
+# Google sheets link: https://docs.google.com/spreadsheets/d/1nJJvmxrmKOk7J1aLq_f1VeGRaxSBdu3BzHplbuoTaU0/edit?gid=0#gid=0
 
 GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzzJbH4EfyuwmLaxNJkZpT9ghsFlHTpPKH35uoS2E9Y6EZdPiTjwb-y0nI76z61OJw/exec"
 
@@ -43,7 +43,7 @@ def open_subscribe_window(canvas: Canvas):
 
   subcanvas.place(x = 0, y = 0)
 
-  #preferred name
+  # preferred name
   subcanvas.create_text(
       50.0,
       30.0,
@@ -68,7 +68,7 @@ def open_subscribe_window(canvas: Canvas):
   name_box.place(x=50, y=110)
 
 
-  #contact email address
+  # contact email address
   subcanvas.create_text(
       50.0,
       170.0,
@@ -112,7 +112,7 @@ def open_subscribe_window(canvas: Canvas):
         else:
             messagebox.showerror("Error", "Subscription failed.")
 
-  #close
+  # close
   button_close = ctk.CTkButton(subwindow, text="Cancel",
                           command=lambda: close(subwindow),
                           width=100,height=40,
@@ -125,7 +125,7 @@ def open_subscribe_window(canvas: Canvas):
   button_close.place(x=240, y=270)
 
 
-  #submit
+  # submit
   button_submit = ctk.CTkButton(
         subwindow, text="Submit",
         command=lambda: on_submit(),

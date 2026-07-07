@@ -11,7 +11,6 @@ import platform
 import subprocess
 from pathlib import Path
 
-# Command wrapper with error handling
 def run_command(cmd, description, cwd=None):
     """Run a command and handle errors."""
     print(f"\n{'='*60}")
@@ -56,8 +55,8 @@ def install_pyinstaller():
 
 def build_executable():
     """Build the executable using PyInstaller."""
-    script_path = Path(__file__).parent / "gui" / "build" / "gui.py"
-    assets_path = Path(__file__).parent / "gui" / "build" / "assets"
+    script_path = Path(__file__).parent / "code" / "gui.py"
+    assets_path = Path(__file__).parent / "assets"
 
     # PyInstaller command with the same flags as the workflow
     pyinstaller_cmd = (

@@ -27,7 +27,8 @@ from modules.preview_thumbnail import init_thumbnail_zoom_pan
 from test import *
 from resource_path import ICONS_PATH
 
-#command for bundling on mac with pyinstaller: pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
+# command for bundling on mac with pyinstaller: 
+# pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' ./code/gui.py
 
 # Global window registry
 OPEN_WINDOWS = {}

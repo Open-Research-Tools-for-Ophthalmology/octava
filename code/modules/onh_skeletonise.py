@@ -258,6 +258,7 @@ def skeletonise_onh(
     #
     # If graph is still too complex:
     #   onh_twig_size = max(10, int(retina_twig_size))
+    
     onh_twig_size = max(8, int(retina_twig_size))
     if key == "large":
         onh_twig_size = max(14, int(round(retina_twig_size * 1.75)))
