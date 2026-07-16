@@ -3,22 +3,14 @@ from tkinter import Canvas, Toplevel, messagebox
 from theme import *
 import customtkinter as ctk
 import requests
+import asyncio
 from dotenv import load_dotenv
 load_dotenv()
 
-# Google sheets link: https://docs.google.com/spreadsheets/d/1nJJvmxrmKOk7J1aLq_f1VeGRaxSBdu3BzHplbuoTaU0/edit?gid=0#gid=0
+SUBSCRIBE_URL = "https://australia-southeast1-orto-blog.cloudfunctions.net/subscribe"
 
-GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzzJbH4EfyuwmLaxNJkZpT9ghsFlHTpPKH35uoS2E9Y6EZdPiTjwb-y0nI76z61OJw/exec"
-
-def send_email_to_google_sheet(name: str, email: str):
-    try:
-        r = requests.post(GOOGLE_WEBAPP_URL, json={"name": name, "email": email})
-        # print("Response from Google Web App:", r.text)
-        return r.text == '{"status":"OK"}'
-    except Exception as e:
-        print("Error:", e)
-        return False
-
+async def subscribe_to_updates(name: str, email: str):
+    return requests.post(SUBSCRIBE_URL, json={"name": name, "email": email, "collectionId": "octava_subscription", "tag": "OCTAVA"})
 
 def close(window):
   window.destroy()
@@ -93,7 +85,7 @@ def open_subscribe_window(canvas: Canvas):
   address_box.place(x=50, y=200)
 
 
-  def on_submit():
+  async def on_submit():
         name = name_box.get("1.0", tk.END).strip()
         email = address_box.get("1.0", tk.END).strip()
 
@@ -105,12 +97,19 @@ def open_subscribe_window(canvas: Canvas):
             messagebox.showwarning("Empty email address", "Please enter an email address.")
             return
 
-        ok = send_email_to_google_sheet(name,email)
-        if ok:
-            messagebox.showinfo("Subscribed!", f"Thank you for subscribing via {email}.")
-            close(subwindow)
-        else:
-            messagebox.showerror("Error", "Subscription failed.")
+        try:
+            response = await subscribe_to_updates(name, email)
+
+            if response.ok:  # status_code less than 400
+                messagebox.showinfo("Subscribed!", f"Thank you for subscribing via {email}.")
+                close(subwindow)
+            else:
+                raise Exception(response.json().get("message", "Unknown error"))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to subscribe:\n{e}")
+
+
+
 
   # close
   button_close = ctk.CTkButton(subwindow, text="Cancel",
@@ -128,7 +127,7 @@ def open_subscribe_window(canvas: Canvas):
   # submit
   button_submit = ctk.CTkButton(
         subwindow, text="Submit",
-        command=lambda: on_submit(),
+        command=lambda: asyncio.run(on_submit()),
         width=100, height=40,
         font=("Roboto", 14 * -1),
         text_color=text_colour,

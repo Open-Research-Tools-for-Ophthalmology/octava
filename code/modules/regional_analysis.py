@@ -152,6 +152,10 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
+	# If image is smaller than 3, readjust outermost rad to occupy as much of the image as possible.
+	if image_size_mm < 3:
+		rad_3mm = (image_size_mm / 2) * H / image_size_mm
+
 	if getattr(canvas, "FAZ_ctr", None) is None:
 		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
@@ -303,6 +307,10 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
+	# If image is smaller than 3, readjust outermost rad to occupy as much of the image as possible.
+	if image_size_mm < 3:
+		rad_3mm = (image_size_mm / 2) * H / image_size_mm
+
 	if getattr(canvas, "FAZ_ctr", None) is None:
 		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
@@ -430,7 +438,6 @@ def apply_extended_etdrs_grid(canvas, binary,original,pix_to_mm,image_size_mm):
 		pix_to_mm=pix_to_mm,
 		grid_type=GridType.EXTENDED_ETDRS_GRID,   # change per function
 	) 
-
 
 def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 	"""Construct an ONH/peripapillary grid and analyze its regions.
@@ -561,8 +568,6 @@ def apply_onh(canvas, binary, original,pix_to_mm,image_size_mm):
 		grid_type=GridType.ONH,   # change per function
 	)
 
-
-
 def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	"""Construct a concentric foveal ring grid and analyze its regions.
 
@@ -581,6 +586,10 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	rad_2mm = 1.0 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
 
+	# If image is smaller than 3, readjust outermost rad to occupy as much of the image as possible.
+	if image_size_mm < 3:
+		rad_3mm = (image_size_mm / 2) * H / image_size_mm
+		
 	if getattr(canvas, "FAZ_ctr", None) is None:
 		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr

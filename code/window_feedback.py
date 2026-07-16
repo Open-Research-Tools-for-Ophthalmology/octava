@@ -1,44 +1,33 @@
 import tkinter as tk
 from tkinter import Canvas, Toplevel, messagebox
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from urllib import response
 from theme import *
 import customtkinter as ctk
 from dotenv import load_dotenv
 import os
+import requests
+import asyncio
+
 load_dotenv()
 
 def close(window):
   window.destroy()
   window.update()
 
-
-def send_email(feedback_text: str):
+async def send_email(name: str, address: str, feedback_text: str):
   """
-  Send the feedback text to Mila's email using Gmail SMTP.
-
-  IMPORTANT:
-  - Replace SENDER_EMAIL with your Gmail address.
-  - Replace APP_PASSWORD with your Gmail app password
-    (generate this in your Google Account > Security > App passwords).
+  Send the feedback text to orto email using cloud function endpoint
   """    
-  SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-  APP_PASSWORD = os.getenv("APP_PASSWORD")
-  RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL")
 
-  # Build the email
-  msg = MIMEMultipart()
-  msg["From"] = SENDER_EMAIL
-  msg["To"] = RECEIVER_EMAIL
-  msg["Subject"] = "OCTAVA Feedback"
-  msg.attach(MIMEText(feedback_text, "plain"))
-
-  # Send via Gmail SMTP
-  with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-      server.login(SENDER_EMAIL, APP_PASSWORD)
-      server.send_message(msg)
-
+  return requests.post('https://australia-southeast1-orto-blog.cloudfunctions.net/feedback',
+    json={
+      "name": name,
+      "email": address,
+      "message": feedback_text,
+      "collectionId": "octava_feedback",
+      "tag": "OCTAVA"
+    }
+  )
 
 def open_feedback_window(canvas: Canvas):
   subwindow = Toplevel()
@@ -132,7 +121,7 @@ def open_feedback_window(canvas: Canvas):
                                 corner_radius=10)
   feedback_box.place(x=50, y=260)
 
-  def on_submit():
+  async def on_submit():
       name_text = name_box.get("1.0", tk.END).strip()
       address_text = address_box.get("1.0", tk.END).strip()
       feedback_text = feedback_box.get("1.0", tk.END).strip()
@@ -152,18 +141,14 @@ def open_feedback_window(canvas: Canvas):
                                   "Please enter some feedback before sending.")
           return
 
-      # Combine both into one message
-      combined_message = (
-          f"Feedback from: {name_text}\n"
-          f"Contact email address: {address_text}\n\n"
-          f"Feedback content:\n{feedback_text}"
-      )
-
       try:
-          send_email(combined_message)
-          messagebox.showinfo("Thank you!", "Your feedback has been sent.")
-          feedback_box.delete("1.0", tk.END)
-          close(subwindow)
+        response = await send_email(name=name_text, address=address_text, feedback_text=feedback_text)
+        if response.ok: # status_code less than 400
+            messagebox.showinfo("Thank you!", "Your feedback has been sent.")
+            feedback_box.delete("1.0", tk.END)
+            close(subwindow)
+        else:
+            raise Exception(response.json().get("message", "Unknown error"))
       except Exception as e:
           messagebox.showerror("Error", f"Failed to send feedback:\n{e}")
 
@@ -182,7 +167,7 @@ def open_feedback_window(canvas: Canvas):
   #close
   button_submit = ctk.CTkButton(
         subwindow, text="Send Feedback",
-        command=on_submit,
+        command=lambda: asyncio.run(on_submit()),
         width=150, height=45,
         font=("Roboto", 14 * -1),
         text_color=text_colour,
