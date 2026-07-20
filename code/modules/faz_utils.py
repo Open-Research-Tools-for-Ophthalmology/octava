@@ -9,7 +9,7 @@ from scipy import ndimage
 import pandas as pd
 import datetime
 from modules.change_status import *
-from modules.write_excel import *
+from modules.general_utils import *
 
 def display_faz_image(canvas: Canvas):
     """Render the current FAZ mask preview onto the GUI canvas."""

@@ -17,7 +17,7 @@ from gui_config_manager import manager
 from modules.load_image import *
 from modules.select_save_folder import *
 from modules.start_processing import *
-from modules.round_rectangle import *
+from modules.general_utils import *
 from modules.change_status import *
 from modules.binarise_image import *
 from modules.clear import *

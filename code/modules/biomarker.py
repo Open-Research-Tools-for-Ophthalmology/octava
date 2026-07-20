@@ -3,7 +3,7 @@ import pandas as pd
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
 from scipy.interpolate import make_splprep
-from modules.write_excel import *
+from modules.general_utils import *
 from scipy.stats import skew, kurtosis
 
 # imports below used for viewing changes to graph at different smoothing s values

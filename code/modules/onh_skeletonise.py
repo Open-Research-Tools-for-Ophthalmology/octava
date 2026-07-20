@@ -11,7 +11,7 @@ from scipy.ndimage import binary_dilation, distance_transform_edt, convolve
 
 from modules.change_status import change_status_to_waiting
 from modules.resize_image import resize_image
-from modules.Skel2Graph3D import skel2graph3d
+from modules.skel_Skel2Graph3D import skel2graph3d
 
 
 def prune_short_spurs(
