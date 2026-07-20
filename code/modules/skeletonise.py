@@ -1,17 +1,14 @@
 import numpy as np
-from skimage.morphology import skeletonize, remove_small_objects
+from skimage.morphology import remove_small_objects
 from scipy.ndimage import distance_transform_edt
 from modules.change_status import change_status_to_waiting
-from modules.Skel2Graph3D import skel2graph3d
-from modules.Graph2Skel3D import graph2skel3d
+from modules.skel_Skel2Graph3D import skel2graph3d
+from modules.skel_Graph2Skel3D import graph2skel3d
 from modules.resize_image import *
-import scipy.io as sio
 import time
 from skimage.morphology import medial_axis
 from PIL import Image, ImageTk
 from tkinter import Canvas
-import io
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
 from scipy.ndimage import binary_dilation

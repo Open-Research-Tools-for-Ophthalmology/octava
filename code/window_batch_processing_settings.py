@@ -15,7 +15,7 @@ from tkinter import (
 from tkinter.ttk import Combobox
 import customtkinter as ctk
 from theme import *
-from modules.round_rectangle import *
+from modules.general_utils import *
 from modules.select_folder import *
 from window_regional_analysis_settings import *
 

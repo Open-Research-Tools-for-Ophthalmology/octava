@@ -5,7 +5,7 @@ from skimage.draw import disk, polygon
 import pandas as pd
 from modules.skeletonise import *
 from modules.change_status import *
-from modules.write_excel import *
+from modules.general_utils import *
 from modules.biomarker import BiomarkerAnalyzer
 from enum import Enum
 import math

@@ -5,7 +5,7 @@ import pandas as pd
 
 from tkinter import Canvas
 from scipy.ndimage import distance_transform_edt
-from modules.write_excel import write_excel
+from modules.general_utils import write_excel
 
 
 ONH_METRIC_TYPES = [
