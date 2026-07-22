@@ -16,7 +16,8 @@ def resize_from_spinbox(canvas):
     if previous_value == canvas.image_size_var.get():
         return  # No change, do nothing
     
-    if disable_click_if_busy(canvas):
+    # Prevent resizing while busy processing, allow BP's auto variable image size resize only
+    if not (hasattr(canvas, "bp_variable_image_size_bool_var") and canvas.bp_variable_image_size_bool_var.get() == 1) and disable_click_if_busy(canvas):
         # Revert to previous value
         print("Reverting image size change due to busy state. Previous value:", previous_value)
         canvas.image_size_var.set(previous_value)

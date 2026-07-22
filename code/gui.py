@@ -935,6 +935,15 @@ def on_prebinary_toggle():
 
 prebinary_checkbox.configure(command=on_prebinary_toggle)
 
+def update_image_size_spinbox_state(*args):
+    if hasattr(canvas, "bp_variable_image_size_bool_var") and canvas.bp_variable_image_size_bool_var.get() == 1:
+        image_size_spinbox.config(state="disabled")
+    else:
+        image_size_spinbox.config(state="normal")
+
+canvas.bp_variable_image_size_bool_var.trace_add("write", update_image_size_spinbox_state)
+
+
 window.resizable(False, False)
 window.protocol("WM_DELETE_WINDOW", on_closing)
 window.after(10, toggle_start_processing)  # toggle the 'start processing' button initially

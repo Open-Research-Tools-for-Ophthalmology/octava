@@ -5,6 +5,7 @@ from .util_image import *
 from .faz import process_image
 from .context import Context
 from .config import config
+from scipy.interpolate import make_splprep
 
 def load_config():
     """
@@ -109,8 +110,21 @@ def auto_faz(image=None):
     # return raw binary array
     binary_mask = process_image(img, ctx)
 
-    # save mask
+    # Scrub edges and return the simplified mask
     if binary_mask is not None:
-        # cv2.imwrite("mask.png", processed_img)
-        # print("Saved mask to mask.png")
-        return binary_mask
+        try:
+            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+            # Contours to single contour
+            contour = max(contours, key=cv2.contourArea).reshape(-1, 2)
+
+            # Reduced to every i-th points
+            contour_reduced_20 = np.ascontiguousarray(contour[::20]) # Reduce to keep only every 20th contour points
+
+            # 2-d array to polygon
+            inner_mask = np.zeros_like(binary_mask)
+            mask_reduced_20 = cv2.fillPoly(inner_mask.copy(), [contour_reduced_20], 255)
+            return mask_reduced_20
+
+        except Exception as e:
+            return binary_mask
