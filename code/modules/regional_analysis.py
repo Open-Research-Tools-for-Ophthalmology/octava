@@ -24,6 +24,7 @@ class GridType(Enum):
 	EXTENDED_ETDRS_GRID = "Extended"
 	ONH = "ONH"
 	FOVEAL_RING = "Foveal rings"
+	WIDE_FIELD_RING = "Wide Field rings"
 
 def run_regional_analysis(canvas):
 	"""Run all enabled regional analysis modes for the current canvas state.
@@ -61,6 +62,8 @@ def run_regional_analysis(canvas):
 	if canvas.optic_nerve_head_bool.get():
 		apply_onh(canvas,binary, original, pix_to_mm, image_size_mm)
 
+	if canvas.wide_field_ring_bool.get() and canvas.wide_field_ring_width_var.get() > 0:
+		apply_wide_field_ring(canvas,binary, original, pix_to_mm, image_size_mm)
 
 def apply_square_grid(canvas, binary, original, pix_to_mm):
 	"""Split the image into a 3x3 square grid and analyze each region.
@@ -652,6 +655,88 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 		grid_type=GridType.FOVEAL_RING,
 	)
 
+def apply_wide_field_ring(canvas, binary, original, pix_to_mm, image_size_mm):
+	"""Construct a wide-field ring grid and analyze its regions.
+	Rather than having fixed radii and truncate the outermost ring if neccessary as in foveal ring,
+	the wide-field ring extends with same increment until it can no long fit another ring
+
+	Args:
+		canvas: Tk canvas-like object that stores shared app state.
+		binary: Binary vessel mask for the full image.
+		original: Grayscale source image for the full image.
+		pix_to_mm: Physical scale conversion from pixels to millimeters.
+		image_size_mm: Real image width in millimeters.
+	
+	Returns:
+		None. Regional results are delegated to ``run_analysis_on_regions``.
+	"""
+
+	#! FIXME the current implementation is from foveal ring, adapt wide field wing analysis
+	D = canvas.wide_field_ring_width_var.get() # This number is in diameter
+	R = D / 2 # Get the radii
+	H, W = canvas.fullImSizePix
+	rad_per_ring = R * H / image_size_mm
+		
+	if getattr(canvas, "FAZ_ctr", None) is None:
+		canvas.FAZ_ctr = np.array([H // 2, W // 2])
+	cy, cx = canvas.FAZ_ctr
+
+	# Check if the disk is truncated => can no longer extend
+	def is_disk_truncated(cx, cy, radius, H, W):
+		top_truncated = cy - radius < 0
+		bottom_truncated = cy + radius > H
+		left_truncated = cx - radius < 0
+		right_truncated = cx + radius > W
+		return top_truncated or bottom_truncated or left_truncated or right_truncated
+
+	extended_radii = 1
+	while not is_disk_truncated(cx, cy, extended_radii * rad_per_ring, H, W):
+		extended_radii += 1
+	extended_radii -= 1  # The last increment made the disk truncated, so step back
+
+	print(f"[Wide-field Ring] Center: ({cx}, {cy}). Image Res: ({H}, {W}). Can extend {extended_radii} rings, each ring radius: {rad_per_ring}, diameter: {rad_per_ring * 2} px")
+
+	ring_masks = []
+	disk_masks = []
+	# Create wide-field ring masks
+	for i in range(1, extended_radii + 1):
+		disk_mask = np.zeros((H, W), dtype=bool)
+		rr, cc = disk((cy, cx), i * rad_per_ring, shape=(H, W))
+		disk_mask[rr, cc] = True
+		# Exclude the one-step inwards ring
+		ring_mask = disk_mask & (~disk_masks[-1]) if i > 1 else disk_mask
+		disk_masks.append(disk_mask)
+		ring_masks.append(ring_mask)
+
+	# Binary regions
+	binaryReg = [None] * extended_radii
+	# Image regions
+	imgReg = [None] * extended_radii
+
+	#Crops each region to a tight square around the FAZ to reduce image size and speed later analysis 
+	y1 = int(round(max(cy - extended_radii * rad_per_ring, 0)))
+	y2 = int(round(min(cy + extended_radii * rad_per_ring, H)))
+	x1 = int(round(max(cx - extended_radii * rad_per_ring, 0))) 
+	x2 = int(round(min(cx + extended_radii * rad_per_ring, W)))
+	
+	for i in range(0, extended_radii):
+		binaryReg[i] = (binary * ring_masks[i])[y1:y2, x1:x2]
+		imgReg[i] = (original * ring_masks[i])[y1:y2, x1:x2]
+
+	# Region labels
+	canvas.RAlabels = [f"Wide-field ring {i+1}" for i in range(extended_radii)]
+
+	# Area (pixel counts)
+	imgArea_pix_vec = [np.sum(mask) for mask in ring_masks]
+
+	run_analysis_on_regions(
+		canvas,
+		binaryReg=binaryReg,
+		imgReg=imgReg,
+		imgArea_pix_vec=imgArea_pix_vec,
+		pix_to_mm=pix_to_mm,
+		grid_type=GridType.WIDE_FIELD_RING,
+	)
 
 def run_analysis_on_regions(
 		canvas,
