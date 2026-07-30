@@ -151,10 +151,14 @@ def apply_etdrs_grid(canvas, binary, original, pix_to_mm, image_size_mm):
 	H, W = canvas.fullImSizePix
 	rad_1mm = 0.5 * H / image_size_mm
 	rad_3mm = 1.5 * H / image_size_mm
-
+	
 	# If image is smaller than 3, readjust outermost rad to occupy as much of the image as possible.
 	if image_size_mm < 3:
 		rad_3mm = (image_size_mm / 2) * H / image_size_mm
+
+	#! Reduce parafoveal ring from 1mm to 0.8mm when image size is set to 3
+	if image_size_mm == 3:
+		rad_3mm = 1.3 * H / image_size_mm
 
 	if getattr(canvas, "FAZ_ctr", None) is None:
 		canvas.FAZ_ctr = np.array([H // 2, W // 2])
@@ -589,7 +593,12 @@ def apply_foveal_ring(canvas, binary, original,pix_to_mm, image_size_mm):
 	# If image is smaller than 3, readjust outermost rad to occupy as much of the image as possible.
 	if image_size_mm < 3:
 		rad_3mm = (image_size_mm / 2) * H / image_size_mm
-		
+
+	#! If image size is set to 3, reduce outer rings from 0.5mm to 0.4mm
+	if image_size_mm == 3:
+		rad_2mm = 0.9 * H / image_size_mm
+		rad_3mm = 1.3 * H / image_size_mm
+
 	if getattr(canvas, "FAZ_ctr", None) is None:
 		canvas.FAZ_ctr = np.array([H // 2, W // 2])
 	cy, cx = canvas.FAZ_ctr
