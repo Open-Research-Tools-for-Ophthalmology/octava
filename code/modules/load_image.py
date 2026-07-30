@@ -11,19 +11,19 @@ from modules.binarise_image import *
 from modules.select_folder import *
 
 def resize_from_spinbox(canvas):
-    # Revert resizing if currently busy processing
-    previous_value = canvas._previous_image_size if hasattr(canvas, "_previous_image_size") else 3.0
-    if previous_value == canvas.image_size_var.get():
-        return  # No change, do nothing
+    # # Revert resizing if currently busy processing
+    # previous_value = canvas._previous_image_size if hasattr(canvas, "_previous_image_size") else 3.0
+    # if previous_value == canvas.image_size_var.get():
+    #     return  # No change, do nothing
     
-    # Prevent resizing while busy processing, allow BP's auto variable image size resize only
-    if not (hasattr(canvas, "bp_variable_image_size_bool_var") and canvas.bp_variable_image_size_bool_var.get() == 1) and disable_click_if_busy(canvas):
-        # Revert to previous value
-        print("Reverting image size change due to busy state. Previous value:", previous_value)
-        canvas.image_size_var.set(previous_value)
-        return
-    else:
-        canvas._previous_image_size = canvas.image_size_var.get()
+    # # Prevent resizing while busy processing, allow BP's auto variable image size resize only
+    # if not (hasattr(canvas, "bp_variable_image_size_bool_var") and canvas.bp_variable_image_size_bool_var.get() == 1) and disable_click_if_busy(canvas):
+    #     # Revert to previous value
+    #     print("Reverting image size change due to busy state. Previous value:", previous_value)
+    #     canvas.image_size_var.set(previous_value)
+    #     return
+    # else:
+    #     canvas._previous_image_size = canvas.image_size_var.get()
 
     """Resize the full-resolution image based on the current spinbox value and update preview."""
     if not hasattr(canvas, "full_res_img") or not hasattr(canvas, "original_img_id"):
@@ -31,8 +31,9 @@ def resize_from_spinbox(canvas):
 
     clear_onh_image_state(canvas)
 
-    mm_value = canvas.image_size_var.get()
-    target_pixels = size_to_pixels(mm_value)
+    # mm_value = canvas.image_size_var.get()
+    # target_pixels = size_to_pixels(mm_value)
+    target_pixels = canvas.image_res_var.get() 
 
     # Resize from the original full-resolution image
     resized_img = resize_image(canvas.full_res_img.copy(), (target_pixels, target_pixels))
@@ -48,7 +49,7 @@ def resize_from_spinbox(canvas):
     canvas.itemconfigure(canvas.original_img_id, image=img_tk)
     canvas._image_refs["original_img"] = img_tk
 
-    print(f"[Spinbox Resize] mm={mm_value}, pixels={target_pixels}, resized shape={resized_img.size}")
+    print(f"[Spinbox Resize], pixels={target_pixels}, resized shape={resized_img.size}")
 
 # Load an image for processing
 # @param {Boolean} silent = True for automated batch processing/image subset
@@ -106,14 +107,13 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     # resize image according to spinbox value
     mm_value = canvas.image_size_var.get() # current spinbox value
     print("---- Resize debug info ----")
-    print("Spinbox value (mm):", mm_value)
+    # print("Spinbox value (mm):", mm_value)
 
-    target_pixels = size_to_pixels(mm_value) # convert from mm to pixels
+    target_pixels = canvas.image_res_var.get()
     print("Target pixel size:", target_pixels)
 
     resized_img = resize_image(original_img, (target_pixels, target_pixels))
     print("Resized image size (W, H):", resized_img.size)
-
     canvas.original_img = np.array(resized_img).astype(np.float64)
 
     # Update metadata
@@ -164,9 +164,9 @@ def load_image(canvas, x, y, text_x, text_y, silent=False, filePath=None, imgArr
     if hasattr(canvas, 'thumbnail_state') and 'original' in canvas.thumbnail_state:
         canvas.thumbnail_state['original'].update({"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0})
 
-    # Attach spinbox trace to dynamically resize
-    if hasattr(canvas, "image_size_var"):
-        canvas.image_size_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))
+    # FIXME use resolution value to resize instead Attach spinbox trace to dynamically resize
+    if hasattr(canvas, "image_res_var"):
+        canvas.image_res_var.trace_add("write", lambda *args: resize_from_spinbox(canvas))
 
     if not silent:
         change_status_to_ready(canvas)

@@ -82,6 +82,7 @@ canvas = Canvas(
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox (diameter mode)
 canvas.tort_bin_size_var = DoubleVar(value=0.1)  # Variable for Bin Size Spinbox (tortuosity mode)
 canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
+canvas.image_res_var = IntVar(value=1000)  # TODO manually change image resolution for now
 canvas.img_type_var = StringVar(value=manager.config.img_type) # Variable for Image Type dropdown
 
 IMAGE_SIZE_DEFAULTS_MM = {
@@ -253,6 +254,27 @@ image_size_spinbox = Spinbox(
 image_size_spinbox.place(
     x=365.0,
     y=108.0
+)
+img_res_label = canvas.create_text(
+    250.0,
+    75.0,
+    anchor="nw",
+    text="Image Size (px)",
+    fill=text_colour,
+    font=("Roboto", 14 * -1)
+)
+img_res_entry = Entry(
+    textvariable=canvas.image_res_var,
+    width=6,
+    bg=bg_colour,
+    fg=text_colour,
+    font=("Roboto", 14 * -1),
+    bd=0.5,                  # removes the border thickness
+    highlightthickness=0,  # removes the focus highlight border
+)
+img_res_entry.place(
+    x=365.0,
+    y=75.0
 )
 
 def is_batch_processing_enabled(canvas: Canvas) -> bool:
