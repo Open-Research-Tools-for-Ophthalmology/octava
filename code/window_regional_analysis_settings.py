@@ -1,5 +1,5 @@
 from pathlib import Path
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar, Spinbox
 from theme import *
 from tkinter.ttk import Combobox
 import customtkinter as ctk
@@ -14,6 +14,8 @@ def init_regional_analysis_settings(canvas: Canvas):
   canvas.extended_etdrs_bool = IntVar(value=0)
   canvas.foveal_ring_bool = IntVar(value=0)
   canvas.optic_nerve_head_bool = IntVar(value=0)
+  canvas.wide_field_ring_bool = IntVar(value=0)
+  canvas.wide_field_ring_width_var = IntVar(value=1)
   canvas.onh_quadrant_analysis_bool = IntVar(value=0)
   canvas.onh_octant_analysis_bool = IntVar(value=0)
   canvas.apply_regional_analysis_bool = IntVar(value=0)
@@ -27,13 +29,13 @@ def close(subwindow):
 def subwindow2(canvas):
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
-  subwindow.geometry("300x350")
+  subwindow.geometry("300x380")
   subwindow.configure(bg = "#FBE3D6")
 
   subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 350,
+      height = 380,
       width = 300,
       bd = 0,
       highlightthickness = 0,
@@ -166,6 +168,37 @@ def subwindow2(canvas):
           y=220.0
       )
 
+      # Wide-field retina settings with customized spinbox for ring width
+      wide_field_checkbox = Checkbutton(
+        subwindow,
+        text="Wide Field rings",
+        variable=canvas.wide_field_ring_bool,
+        bg=subwindow_bg_colour,
+        fg=text_colour,
+        font=("Roboto", 14 * -1)
+      )
+      wide_field_checkbox.place(
+        x=40.0,
+        y=250.0
+      )
+      wide_field_ring_width_spinbox = Spinbox(
+        subwindow,
+        from_=1,
+        to=10.00,
+        increment=1,
+        width=4,
+        textvariable=canvas.wide_field_ring_width_var,
+        bg=bg_colour,
+        fg=text_colour,
+        font=("Roboto", 14 * -1),
+        bd=0.5,                  # removes the border thickness
+        highlightthickness=0,  # removes the focus highlight border
+      )
+      wide_field_ring_width_spinbox.place(
+        x=180.0,
+        y=252.0
+      )
+
   # close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow),
@@ -176,7 +209,7 @@ def subwindow2(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=80, y=270)
+  button_close.place(x=80, y=300)
 
 
   subwindow.resizable(False, False)
