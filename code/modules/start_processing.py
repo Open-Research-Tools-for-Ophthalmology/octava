@@ -19,6 +19,7 @@ import os
 import datetime
 from natsort import natsorted
 from theme import *
+import traceback
 
 skipped_images = []  # List to track images that failed to load during batch processing
 
@@ -181,6 +182,7 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
         # If an error occues during single processing, reset the status and show error message
         if not batch:
             print(f"Failed to process image: {e}")
+            traceback.print_exc()
             messagebox.showerror(
                 "Image Processing Error",
                 f"Failed to process image: {e}"
@@ -389,6 +391,7 @@ def start_onh_processing_threaded(canvas: Canvas, batch: bool = False):
     except Exception as e:
         err_msg = str(e)
         print(f"ONH processing failed: {err_msg}")
+        traceback.print_exc()
         canvas.after(0, lambda msg=err_msg: messagebox.showerror("ONH Processing Error", msg))
         reset_to_start_processing(canvas)
 
@@ -500,6 +503,7 @@ def start_batch_processing_threaded(canvas: Canvas):
 
         except Exception as e:
             print(f"Failed to process image {image_file}: {e}")
+            traceback.print_exc()
             messagebox.showerror(
                 "Image Processing Error",
                 f"Failed to process image {image_file}: {e}"

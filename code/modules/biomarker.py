@@ -242,6 +242,69 @@ class BiomarkerAnalyzer:
             "PWAOC": PWAOC,
         }
 
+    def _compute_density(vesselX, vesselY, smoothedX, smoothedY, smooth_window):
+        # Preparations
+        ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
+        arcLength = np.sum(ds)
+
+        dx = np.gradient(smoothedX)
+        dy = np.gradient(smoothedY)
+        dx = BiomarkerAnalyzer._movmean(dx, smooth_window)
+        dy = BiomarkerAnalyzer._movmean(dy, smooth_window)
+
+        ddx = np.gradient(dx)
+        ddy = np.gradient(dy)
+        ddx = BiomarkerAnalyzer._movmean(ddx, smooth_window)
+        ddy = BiomarkerAnalyzer._movmean(ddy, smooth_window)
+
+        eps = np.finfo(float).eps
+        curvature = (dx * ddy - ddx * dy) / ((dx**2 + dy**2)**(3/2) + eps)
+        curvature = BiomarkerAnalyzer._movmean(curvature, smooth_window)
+
+        signCurv = np.sign(curvature)
+        inflecIdx = np.where(np.diff(signCurv) != 0)[0] + 1
+        nSeg = len(inflecIdx) + 1
+
+        # Tortuosity density
+        segAOCs = []
+        segArcs = []
+        segStart = 0
+
+        for k in range(nSeg):
+            if k < len(inflecIdx):
+                segEnd = inflecIdx[k]
+            else:
+                segEnd = len(vesselX)-1
+
+            segArc = np.sum(
+                np.sqrt(
+                    np.diff(vesselX[segStart:segEnd+1])**2 +
+                    np.diff(vesselY[segStart:segEnd+1])**2
+                )
+            )
+
+            segChord = np.sqrt(
+                (vesselX[segEnd] - vesselX[segStart])**2 +
+                (vesselY[segEnd] - vesselY[segStart])**2
+            )
+
+            segAOC_val = np.nan if segChord==0 else segArc / segChord
+
+            segAOCs.append(segAOC_val)
+            segArcs.append(segArc)
+
+            segStart = segEnd
+
+        segAOCs = np.asarray(segAOCs)
+        segArcs = np.asarray(segArcs)
+
+        if nSeg>1 and arcLength>0:
+            tortDensity = ((nSeg-1) / nSeg) * (np.sum(segAOCs-1) / arcLength)
+        else:
+            tortDensity = segAOCs[0] if segAOCs.size > 0 else np.nan
+
+        return tortDensity
+
     @staticmethod
     def _compute_new_tortuosity_metrics(
         vessel_x,
@@ -250,7 +313,7 @@ class BiomarkerAnalyzer:
         soam_sample_spacing_mm=0.03,
         soam_smoothing_window=10,
     ):
-        """Compute PWAOC and a paper-aligned SOAM from one vessel centerline.
+        """Compute PWAOC, a paper-aligned SOAM and Density from one vessel centerline.
 
         As per paper requirements, SOAM is computed in `_compute_soam()` after 
         smoothing and physical arc-length resampling.
@@ -258,7 +321,11 @@ class BiomarkerAnalyzer:
         PWAOC is computed using `_compute_pwaoc()`. 
         This function previously contained SOAM computation but was removed due to redundancy
         caused by the new function.
+
+        Density is computed using `_compute_density()` where the preparations steps are the same as Matlab rather than modified in pwaoc
         """
+
+        # PWAOC
         metrics = BiomarkerAnalyzer._compute_pwaoc(
             vessel_x,
             vessel_y,
@@ -267,6 +334,7 @@ class BiomarkerAnalyzer:
         if metrics is None:
             return None
 
+        # SOAM
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
         if vesselX.size < 3 or vesselY.size < 3:
@@ -286,6 +354,16 @@ class BiomarkerAnalyzer:
 
         metrics = metrics.copy()
         metrics["SOAM"] = BiomarkerAnalyzer._compute_soam(resampled)
+
+        # Density
+        metrics["tortDensity"] = BiomarkerAnalyzer._compute_density(
+            vesselX,
+            vesselY,
+            smoothedX,
+            smoothedY,
+            smooth_window
+        )
+
         return metrics
 
     @staticmethod
@@ -294,11 +372,14 @@ class BiomarkerAnalyzer:
         if per_link_metrics:
             pwaoc_vals = np.array([m["PWAOC"] for m in per_link_metrics], dtype=float)
             soam_vals = np.array([m["SOAM"] for m in per_link_metrics], dtype=float)
+            density_vals = np.array([m["tortDensity"] for m in per_link_metrics], dtype=float)
             return {
                 "PWAOC_mean": np.nanmean(pwaoc_vals),
                 "PWAOC_std": np.nanstd(pwaoc_vals),
                 "SOAM_mean": np.nanmean(soam_vals),
                 "SOAM_std": np.nanstd(soam_vals),
+                "tortDensity_mean": np.nanmean(density_vals),
+                "tortDensity_std": np.nanstd(density_vals),
             }
 
         return {
@@ -306,6 +387,8 @@ class BiomarkerAnalyzer:
             "PWAOC_std": np.nan,
             "SOAM_mean": np.nan,
             "SOAM_std": np.nan,
+            "tortDensity_mean": np.nan,
+            "tortDensity_std": np.nan,
         }
 
     @staticmethod
@@ -710,6 +793,7 @@ class BiomarkerAnalyzer:
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
 
     @staticmethod
+    #! This is the one being used by BiomarkerAnalyzer.process() and in regional analysis
     def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix):
         """Compute summarized tortuosity metrics directly from graph links."""
         binary = binary_image
@@ -719,6 +803,8 @@ class BiomarkerAnalyzer:
                 "PWAOC_std": np.nan,
                 "SOAM_mean": np.nan,
                 "SOAM_std": np.nan,
+                "tortDensity_mean": np.nan,
+                "tortDensity_std": np.nan,
             }
 
         # Image scale
@@ -736,6 +822,7 @@ class BiomarkerAnalyzer:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
+            #! Use Janelle's smoothing
             metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 cols,
                 rows,
