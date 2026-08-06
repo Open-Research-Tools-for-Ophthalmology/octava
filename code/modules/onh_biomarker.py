@@ -662,38 +662,36 @@ class ONHBiomarkerAnalyzer:
     @staticmethod
     def _excel_row(metrics: dict) -> dict:
         return {
-            "name": metrics["name"],
-            "Vessel type": metrics["vessel_type"],
-            "Vessel area density": metrics["vessel_area_density_pct"],
-            "Vessel length density": metrics["vessel_length_density_mm_per_mm2"],
-            "Mean diameter": metrics["mean_diameter_um"],
-            "Mean tortuosity": metrics["mean_tortuosity"],
-            "Vessel area mm2": metrics["vessel_area_mm2"],
-            "ONH ROI area mm2": metrics["onh_roi_area_mm2"],
-            "Vessel length mm": metrics["vessel_length_mm"],
+            "Name": metrics["name"],
+            "Vessel_type": metrics["vessel_type"],
+            "VAD": metrics["vessel_area_density_pct"],
+            "VLD": metrics["vessel_length_density_mm_per_mm2"],
+            "MeanDiam": metrics["mean_diameter_um"],
+            "MeanTort": metrics["mean_tortuosity"],
+            "Vessel_area": metrics["vessel_area_mm2"],
+            "ROI_area": metrics["onh_roi_area_mm2"],
+            "VesselLength": metrics["vessel_length_mm"],
         }
 
     @staticmethod
     def _summary_row(metrics: dict) -> dict:
         row = ONHBiomarkerAnalyzer._excel_row(metrics)
-        row.pop("Vessel type", None)
-        row["vessel_type"] = metrics["vessel_type"]
+        # row.pop("Vessel_type", None)
+        row["Vessel_type"] = metrics["vessel_type"]
         return row
 
     @staticmethod
     def _regional_excel_row(metrics: dict) -> dict:
         row = {
-            "name": metrics["name"],
-            "Eye": metrics.get("eye"),
-            "Eye code": metrics.get("eye_code"),
-            "ONH center x [pos]": metrics.get("onh_center_x_pos"),
-            "ONH center y [pos]": metrics.get("onh_center_y_pos"),
-            "region_name": metrics.get("region_name"),
-            "vessel_type": metrics["vessel_type"],
+            "Name": metrics["name"],
+            "Region": metrics.get("region_name"),
+            "Vessel_type": metrics["vessel_type"],
+            "Centroid_1": metrics.get("onh_center_x_pos"),
+            "Centroid_2": metrics.get("onh_center_y_pos"),
         }
         metric_row = ONHBiomarkerAnalyzer._excel_row(metrics)
-        metric_row.pop("name", None)
-        metric_row.pop("Vessel type", None)
+        metric_row.pop("Name", None)
+        metric_row.pop("Vessel_type", None)
         row.update(metric_row)
         return row
 

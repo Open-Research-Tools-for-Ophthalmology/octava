@@ -804,6 +804,9 @@ def run_analysis_on_regions(
 						skelRegion=(canvas.skeleton_image.astype(np.uint8) * 255),
 				)
 
+				# Image name
+				canvas.regional_metrics[i]["Name"] = canvas.FileLabelName
+
 				# Image area
 				if grid_type != GridType.SQUARE_GRID:
 						imgArea_pix = imgArea_pix_vec[i]
@@ -830,7 +833,6 @@ def run_analysis_on_regions(
 
 						# Vessel length density
 						total_length_mm = compute_length(links, binaryReg[i], pix_to_mm)
-						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 
 						# VLD %
 						canvas.regional_metrics[i]["VLD_pct"] = round(
@@ -842,7 +844,8 @@ def run_analysis_on_regions(
 								total_length_mm / imgArea_mm, 4
 						)
 
-						# Mean / Median length (µm)
+						# Total / Mean / Median length (µm)
+						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
 						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
 						links_length_um = np.asarray(links_length_pix) * pix_to_mm * 1000
 						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_um))
@@ -874,7 +877,7 @@ def run_analysis_on_regions(
 						# mean tortuosity
 						tortuosity_list = compute_tortuosity_list(links, binaryReg[i])
 						tortuosity_arr = np.asarray(tortuosity_list)
-						canvas.regional_metrics[i]["mTort"] = round(np.mean(tortuosity_arr), 4)
+						canvas.regional_metrics[i]["MeanTort"] = round(np.mean(tortuosity_arr), 4)
 						tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
 						canvas.regional_metrics[i]["varTort"] = round(np.var(tortuosity_arr_flatten, ddof=1), 3)
 						canvas.regional_metrics[i]["skewTort"] = round(skew(tortuosity_arr_flatten), 2)
@@ -900,7 +903,7 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["BD"] = 0
 						# slope = compute_fractal_dimension(canvas)
 						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
-						canvas.regional_metrics[i]["mTort"] = 0
+						canvas.regional_metrics[i]["MeanTort"] = 0
 						canvas.regional_metrics[i]["varTort"] = 0
 						canvas.regional_metrics[i]["skewTort"] = 0
 						canvas.regional_metrics[i]["kurtTort"] = 0

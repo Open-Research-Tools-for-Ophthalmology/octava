@@ -485,7 +485,8 @@ class BiomarkerAnalyzer:
 
         total_length_mm = total_length_pix * pix_size_mm
         length_area_mm2 = image_size_mm ** 2
-        vessel_length_density = total_length_mm / length_area_mm2
+        vessel_length_density_mminv = total_length_mm / length_area_mm2
+        vessel_length_density_pct = vessel_length_density_mminv * pix_size_mm * 100.0 # mm/mm^2 * mm/px = 1/px * 100 = %/px
 
         if Nx > 0:
             pix_size_mm = image_size_mm / Nx
@@ -541,6 +542,7 @@ class BiomarkerAnalyzer:
         if per_link_mean_diameters:
             diameters_scaled_um = np.asarray(per_link_mean_diameters) * pix_size_mm * 1000.0
             mean_diameter_um = np.mean(diameters_scaled_um)
+            median_diameter_um = np.median(diameters_scaled_um)
             diameters_scaled_um_flatten = diameters_scaled_um.flatten()
 
             if len(diameters_scaled_um_flatten) > 1:
@@ -554,6 +556,7 @@ class BiomarkerAnalyzer:
                 kurt_diameter_um = 0.0
         else:
             mean_diameter_um = 0.0
+            median_diameter_um = 0.0
             var_diameter_um = 0.0
             skew_diameter_um = 0.0
             kurt_diameter_um = 0.0
@@ -712,7 +715,7 @@ class BiomarkerAnalyzer:
             "vessel_area_density_pct": float(vad_pct),
             "vessel_area_mm2": float(vessel_area_mm2),
             "image_area_mm2": float(img_area_mm2),
-            "vessel_length_density_mm_per_mm2": float(vessel_length_density),
+            "vessel_length_density_mm_per_mm2": float(vessel_length_density_mminv),
             "mean_diameter_um": float(mean_diameter_um),
             "branchpoint_count": int(branchpoint_count),
             "branchpoint_density_per_mm2": float(branchpoint_density),
@@ -720,20 +723,22 @@ class BiomarkerAnalyzer:
             "mean_tortuosity": float(mean_tortuosity),
         })
         micro_stats = {
-            "name": canvas.FileLabelName,
-            "Vessel area density": float(vad_pct),
-            "Vessel length density": float(vessel_length_density),
+            "Name": canvas.FileLabelName,
+            "VAD": float(vad_pct),
+            "VLD_pct": float(vessel_length_density_pct),
+            "VLD_mminv": float(vessel_length_density_mminv),
             "varLengths": int(var_length),
             "skewLengths": round(float(skew_length), 2),
             "kurtLengths": round(float(kurt_length), 2),
             "MeanDiam": float(mean_diameter_um),
+            "MedianDiam": float(median_diameter_um),
             "varDiams": int(var_diameter_um),
             "skewDiams": round(float(skew_diameter_um), 2),
             "kurtDiams": round(float(kurt_diameter_um), 2),
-            "Branchpoint density": float(branchpoint_density),
-            "Fractal dimension (Skeleton)": float(fractal_dim['skeleton'][4]),
-            "Fractal dimension (Binary)": float(fractal_dim['binary'][4]),
-            "mTort": float(mean_tortuosity),
+            "BD": float(branchpoint_density),
+            "Fractal_dimension (Skeleton)": float(fractal_dim['skeleton'][4]),
+            "Fractal_dimension (Binary)": float(fractal_dim['binary'][4]),
+            "MeanTort": float(mean_tortuosity),
             "varTort": round(float(var_tortuosity), 3),
             "skewTort": round(float(skew_tortuosity), 2),
             "kurtTort": int(kurt_tortuosity),
@@ -750,10 +755,10 @@ class BiomarkerAnalyzer:
 
         # Function parameters (Frangi, MedFilt, etc.)
         param_stats = {
-            "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool.get() else "N/A",
-            "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool.get() else "N/A",
-            "Jerman_sigmas": ",".join(s.strip() for s in canvas.jerman_sigmas.get().split(',')) if canvas.jerman_bool.get() else "N/A",
             "MedFilt_Kernel": int(canvas.kernel_size.get()) if canvas.med_filt_bool.get() else "N/A",
+            "Frangi_sigma_min": int(canvas.frangi_min.get()) if canvas.frangi_bool.get() else "N/A",
+            "Frangi_sigma_max": int(canvas.frangi_max.get()) if canvas.frangi_bool.get() else "N/A",
+            "Jerman_sigmas": ",".join(s.strip() for s in canvas.jerman_sigmas.get().split(',')) if canvas.jerman_bool.get() else "N/A",
             "Binarization": "Fuzzy means", # We don't have anything else besides FUZZY means yet
             "TwigSize": int(canvas.twig_size.get()),
         }
@@ -768,7 +773,7 @@ class BiomarkerAnalyzer:
         if hasattr(canvas, "length_density_value_id"):
             canvas.itemconfig(
                 canvas.length_density_value_id,
-                text=f"{vessel_length_density:.2f} (1/mm)",
+                text=f"{vessel_length_density_mminv:.2f} (1/mm)",
             )
 
         if hasattr(canvas, "mean_diameter_value_id"):
