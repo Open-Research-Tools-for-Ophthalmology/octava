@@ -56,8 +56,9 @@ class BiomarkerAnalyzer:
         if points.shape[0] < 2 or spacing <= 0:
             return points
 
-        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
-        arc_positions = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+        # TODO this is the arc_length before resampled   PXi2GFwFzSmbHJTqPXi2GFwFzSmbHJTq
+        segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1) # Euclidean distance betwwen pts
+        arc_positions = np.concatenate(([0.0], np.cumsum(segment_lengths))) # Cumulative sum starting the first point as 0
         arc_length = arc_positions[-1]
         if arc_length <= 0:
             return points[:0]
@@ -70,7 +71,14 @@ class BiomarkerAnalyzer:
 
         resampled_x = np.interp(sample_positions, arc_positions, points[:, 0])
         resampled_y = np.interp(sample_positions, arc_positions, points[:, 1])
-        return np.column_stack((resampled_x, resampled_y))
+
+        # TODO this is arc_length after resampled
+        res_points = np.column_stack((resampled_x, resampled_y))
+        res_segment_lengths = np.linalg.norm(np.diff(res_points, axis=0), axis=1)
+        res_arc_positions = np.concatenate(([0.0], np.cumsum(res_segment_lengths)))
+        res_arc_length = res_arc_positions[-1]
+
+        return np.column_stack((resampled_x, resampled_y)), arc_length, res_arc_length
 
     @staticmethod
     def _points_smoothing(points, s):
@@ -119,12 +127,12 @@ class BiomarkerAnalyzer:
         
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
         if points.shape[0] < 3:
-            return 0.0
+            return points, 0.0, 0.0, 0.0
 
         segment_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
         arc_length = np.sum(segment_lengths)
         if arc_length <= 0:
-            return 0.0
+            return points, 0.0, 0.0, 0.0
 
         eps = np.finfo(float).eps
         total_angle = 0.0
@@ -138,7 +146,7 @@ class BiomarkerAnalyzer:
             cos_theta = np.clip(np.dot(v1, v2) / denom, -1, 1)
             total_angle += np.arccos(cos_theta)
 
-        return total_angle / arc_length
+        return points, total_angle / arc_length, arc_length, total_angle
 
     @staticmethod
     def _compute_pwaoc(vessel_x, vessel_y, pix2mm):
@@ -325,20 +333,22 @@ class BiomarkerAnalyzer:
         Density is computed using `_compute_density()` where the preparations steps are the same as Matlab rather than modified in pwaoc
         """
 
+        #! FIXME Print out the coords of all links for debugging
         # PWAOC
         metrics = BiomarkerAnalyzer._compute_pwaoc(
             vessel_x,
             vessel_y,
             pix2mm,
         )
+        empty = np.array([])
         if metrics is None:
-            return None
+            return None, empty, empty, empty, empty, empty, empty, np.nan, np.nan, np.nan, np.nan, np.nan
 
         # SOAM
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
         if vesselX.size < 3 or vesselY.size < 3:
-            return metrics
+            return metrics, vesselX, vesselY, empty, empty, empty, empty, np.nan, np.nan, np.nan, np.nan, np.nan
 
         smooth_window = max(int(soam_smoothing_window), 1)
         smoothedX = BiomarkerAnalyzer._movmean(vesselX, smooth_window)
@@ -347,13 +357,13 @@ class BiomarkerAnalyzer:
         smoothedY[0], smoothedY[-1] = vesselY[0], vesselY[-1]
 
         points = np.column_stack((smoothedX, smoothedY))
-        resampled = BiomarkerAnalyzer._resample_xy_by_arclength(
+        resampled, arc_length, res_arc_length = BiomarkerAnalyzer._resample_xy_by_arclength(
             points,
             soam_sample_spacing_mm,
         )
 
         metrics = metrics.copy()
-        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam(resampled)
+        bsplined_pts, metrics["SOAM"], bspline_arc_length, total_angle = BiomarkerAnalyzer._compute_soam(resampled)
 
         # Density
         metrics["tortDensity"] = BiomarkerAnalyzer._compute_density(
@@ -364,7 +374,8 @@ class BiomarkerAnalyzer:
             smooth_window
         )
 
-        return metrics
+        #! FIXME
+        return metrics, smoothedX, smoothedY, resampled[:, 0], resampled[:, 1], bsplined_pts[:, 0], bsplined_pts[:, 1], arc_length, res_arc_length, bspline_arc_length, metrics["SOAM"], total_angle
 
     @staticmethod
     def _summarize_new_tort_metrics(per_link_metrics):
@@ -420,7 +431,7 @@ class BiomarkerAnalyzer:
                 continue
 
             # metrics = BiomarkerAnalyzer._compute_pwaoc(
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
+            metrics, *_ = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 link.x,
                 link.x,
                 link.y,
@@ -816,20 +827,51 @@ class BiomarkerAnalyzer:
 
         per_link_metrics = []
 
-        for link in links:
+        #! FIXME print all linkes
+        per_link_debug_info = []
+
+        for index, link in enumerate(links):
             indices = np.asarray(link.path, dtype=int)
             if indices.size < 3:
                 continue
 
             rows, cols = np.unravel_index(indices, image_shape)
+            # Columns below have differing lengths (raw vs. smoothed vs. resampled vs.
+            # bsplined points), so they're kept as Series and concatenated with padding
+            # rather than built directly into a DataFrame.
+            debug_info = {
+                "link_x": pd.Series(rows.tolist()),
+                "link_y": pd.Series(cols.tolist()),
+            }
             #! Use Janelle's smoothing
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
+            metrics, movMean_smoothedX, movMean_smoothedY, resampledX, resampledY, bsplinedX, bsplinedY, movMean_arc_length, resampled_arc_length, bspline_arc_length, soam, total_angle = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 cols,
                 rows,
                 pix2mm,
             )
+            debug_info["movMeanX"] = pd.Series((movMean_smoothedY / pix2mm).tolist())
+            debug_info["movMeanY"] = pd.Series((movMean_smoothedX / pix2mm).tolist())
+            debug_info["resampledX"] = pd.Series((resampledY / pix2mm).tolist())
+            debug_info["resampledY"] = pd.Series((resampledX / pix2mm).tolist())
+            debug_info["bsplinedX"] = pd.Series((bsplinedY / pix2mm).tolist())
+            debug_info["bsplinedY"] = pd.Series((bsplinedX / pix2mm).tolist())
+            debug_info["arc_length_after"] = pd.Series([
+                "movMean (px)", "resampled (px)", "bsplined (px)", "bsplined (mm)", "total_angle", "SOAM (total_angle / arc_length)"
+            ])
+            debug_info["arc_length_value"] = pd.Series([
+                movMean_arc_length / pix2mm, resampled_arc_length / pix2mm, bspline_arc_length / pix2mm, bspline_arc_length, total_angle, soam
+            ])
+            per_link_debug_info.append(debug_info)
             if metrics is not None:
                 per_link_metrics.append(metrics)
+
+        print(f"Printing debug info of {len(per_link_debug_info)} links")
+        if per_link_debug_info:
+            with pd.ExcelWriter('Links.xlsx', engine='openpyxl') as writer:
+                for index, debug_info in enumerate(per_link_debug_info):
+                    df = pd.concat(debug_info, axis=1)
+                    df = df.fillna("")
+                    df.to_excel(writer, sheet_name=f'Link {index + 1}', index=False)
 
         return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
