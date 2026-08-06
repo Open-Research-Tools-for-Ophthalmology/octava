@@ -661,13 +661,14 @@ class ONHBiomarkerAnalyzer:
 
     @staticmethod
     def _excel_row(metrics: dict) -> dict:
+        # To report
         return {
             "Name": metrics["name"],
             "Vessel_type": metrics["vessel_type"],
-            "VAD": metrics["vessel_area_density_pct"],
-            "VLD": metrics["vessel_length_density_mm_per_mm2"],
-            "MeanDiam": metrics["mean_diameter_um"],
-            "MeanTort": metrics["mean_tortuosity"],
+            "VAD": round(metrics["vessel_area_density_pct"], 1),
+            "VLD": round(metrics["vessel_length_density_mm_per_mm2"], 1),
+            "MeanDiam": round(metrics["mean_diameter_um"], 1),
+            "MeanTort": round(metrics["mean_tortuosity"], 2),
             "Vessel_area": metrics["vessel_area_mm2"],
             "ROI_area": metrics["onh_roi_area_mm2"],
             "VesselLength": metrics["vessel_length_mm"],
@@ -682,6 +683,7 @@ class ONHBiomarkerAnalyzer:
 
     @staticmethod
     def _regional_excel_row(metrics: dict) -> dict:
+        # To report
         row = {
             "Name": metrics["name"],
             "Region": metrics.get("region_name"),
@@ -700,6 +702,7 @@ class ONHBiomarkerAnalyzer:
         if not hasattr(canvas, "metrics"):
             canvas.metrics = {}
 
+        # To display
         canvas.metrics.update({
             "vessel_type": metrics["vessel_type"],
             "vessel_area_density_pct": metrics["vessel_area_density_pct"],
