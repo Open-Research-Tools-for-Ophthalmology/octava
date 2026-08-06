@@ -452,7 +452,7 @@ class BiomarkerAnalyzer:
         # Vessel Area Density (VAD %)
         vessel_sum = float(np.sum(binary))
         vessel_pixels = vessel_sum / 255.0
-        vad_pct = round(vessel_pixels / img_area_pix * 100.0, 2)
+        vad_pct = vessel_pixels / img_area_pix * 100.0
 
         # Pixel size and physical areas (mm²)
         if Nx > 0:
@@ -711,6 +711,7 @@ class BiomarkerAnalyzer:
         if not hasattr(canvas, "metrics"):
             canvas.metrics = {}
 
+        # To display
         canvas.metrics.update({
             "vessel_area_density_pct": float(vad_pct),
             "vessel_area_mm2": float(vessel_area_mm2),
@@ -722,26 +723,28 @@ class BiomarkerAnalyzer:
             "fractal_dimension": float(fractal_dim['skeleton'][4]),  # Displaying the box_size=4 skeleton FD by default
             "mean_tortuosity": float(mean_tortuosity),
         })
+
+        # To report
         micro_stats = {
             "Name": canvas.FileLabelName,
-            "VAD": float(vad_pct),
-            "VLD_pct": float(vessel_length_density_pct),
-            "VLD_mminv": float(vessel_length_density_mminv),
+            "VAD": round(float(vad_pct), 1),
+            "VLD_pct": round(float(vessel_length_density_pct), 1),
+            "VLD_mminv": round(float(vessel_length_density_mminv), 1),
             "varLengths": int(var_length),
             "skewLengths": round(float(skew_length), 2),
             "kurtLengths": round(float(kurt_length), 2),
-            "MeanDiam": float(mean_diameter_um),
-            "MedianDiam": float(median_diameter_um),
+            "MeanDiam": round(float(mean_diameter_um), 1),
+            "MedianDiam": round(float(median_diameter_um), 1),
             "varDiams": int(var_diameter_um),
             "skewDiams": round(float(skew_diameter_um), 2),
             "kurtDiams": round(float(kurt_diameter_um), 2),
-            "BD": float(branchpoint_density),
-            "Fractal_dimension (Skeleton)": float(fractal_dim['skeleton'][4]),
-            "Fractal_dimension (Binary)": float(fractal_dim['binary'][4]),
-            "MeanTort": float(mean_tortuosity),
-            "varTort": round(float(var_tortuosity), 3),
+            "BD": round(float(branchpoint_density), 2),
+            "Fractal_dimension (Skeleton)": round(float(fractal_dim['skeleton'][4]), 2),
+            "Fractal_dimension (Binary)": round(float(fractal_dim['binary'][4]), 2),
+            "MeanTort": round(float(mean_tortuosity), 2),
+            "varTort": round(float(var_tortuosity), 2),
             "skewTort": round(float(skew_tortuosity), 2),
-            "kurtTort": int(kurt_tortuosity),
+            "kurtTort": round(float(kurt_tortuosity), 2),
         }
 
         # Tortuosity metrics (PWAOC, SOAM, etc.)
@@ -751,6 +754,7 @@ class BiomarkerAnalyzer:
             image_size_var=canvas.image_size_var,
             fullImSizePix=canvas.fullImSizePix,
         )
+        canvas.new_tort_metrics = {key: round(float(value), 2) for key, value in canvas.new_tort_metrics.items()}
         micro_stats.update(canvas.new_tort_metrics)
 
         # Function parameters (Frangi, MedFilt, etc.)

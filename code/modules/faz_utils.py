@@ -251,7 +251,7 @@ def measure_faz(canvas: Canvas, silent: bool = False):
         'MinorAxisLength': round(minor_axis_mm, 3),
         'Eccentricity': round(eccentricity, 2),
         'Circularity': round(circularity, 2),
-        'Perimeter': round(perimeter_mm, 3),
+        'Perimeter': round(perimeter_mm, 2),
         'Acircularity_index': round(acircularity_index, 2),
         'Axis_ratio': round(axis_ratio, 2),
         'FD_300': round(FD_300, 1) if image_size_mm >= 1 else 'N/A',
