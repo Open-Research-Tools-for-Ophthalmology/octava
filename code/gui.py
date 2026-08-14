@@ -58,9 +58,22 @@ def open_window(key, callback, *args, **kwargs):
         OPEN_WINDOWS[key] = new_window    
     return new_window
 
+# Close all registered sub-windows if exists
+def close_windows():
+    global OPEN_WINDOWS
+    for key in list(OPEN_WINDOWS.keys()):
+        try:
+            window = OPEN_WINDOWS.pop(key, None)
+            if window is not None and window.winfo_exists():
+                window.destroy()
+        except:
+            pass
+        print(f"Closed window: {key}")
+
 def on_closing():
     """Save img_type_var to cache when closing the window"""
     manager.config.img_type = canvas.img_type_var.get()
+    manager.config.image_size = canvas.image_size_var.get()
     manager.save()
     window.destroy()
 
@@ -81,13 +94,23 @@ canvas = Canvas(
 
 canvas.bin_size_var = IntVar(value=10)  # Variable for Bin Size Spinbox (diameter mode)
 canvas.tort_bin_size_var = DoubleVar(value=0.1)  # Variable for Bin Size Spinbox (tortuosity mode)
-canvas.image_size_var = DoubleVar(value=3.00)  # Variable for Image Size Spinbox
+canvas.image_size_var = DoubleVar(value=manager.config.image_size)  # Variable for Image Size Spinbox
 canvas.img_type_var = StringVar(value=manager.config.img_type) # Variable for Image Type dropdown
 
 IMAGE_SIZE_DEFAULTS_MM = {
     "Retina": 3.0,
     "ONH": 4.5,
     "Skin": 3.0,
+}
+FRANGI_MIN_DEFAULTS_MM = {
+    "Retina": 1,
+    "ONH": 1,
+    "Skin": 1,
+}
+FRANGI_MAX_DEFAULTS_MM = {
+    "Retina": 4,
+    "ONH": 4,
+    "Skin": 8,
 }
 
 init_advanced_settings(canvas)
@@ -352,24 +375,10 @@ button_onh_mask = ctk.CTkButton(window, text="ONH Mask",
                         hover_color=button_green_hover,
     border_color=button_border_colour  )
 
-# def update_optional_buttons_state(*args):
-#     # ONH mask editor
-#     if canvas.img_type_var.get()=="ONH":
-#         return button_onh_mask.place(x=30, y=355)
-#     else:
-#         button_onh_mask.place_forget()
-
-#     # FAZ button disabling
-#     if canvas.img_type_var.get()=="Skin":
-#         button_point_faz.configure(state="disabled")
-#         button_auto_faz.configure(state="disabled")
-#         button_measure_faz.configure(state="disabled")
-#     else:
-#         button_point_faz.configure(state="normal")
-#         button_auto_faz.configure(state="normal")
-#         button_measure_faz.configure(state="normal")
-
-def update_image_size_default_for_type(img_type):
+# Swap back to default settings for the selected image type
+# Image size: Retina/Skin = 3, ONH = 4.5
+# Frangi Min-Max: Retina/ONH = 1-4, Skin = 1-8
+def update_default_settings_for_type(img_type):
     previous_img_type = getattr(canvas, "_previous_img_type", None)
     target_default = IMAGE_SIZE_DEFAULTS_MM.get(img_type)
 
@@ -379,22 +388,18 @@ def update_image_size_default_for_type(img_type):
         canvas._previous_image_size = IMAGE_SIZE_DEFAULTS_MM.get(img_type, 3.0)
         return
 
-    previous_default = IMAGE_SIZE_DEFAULTS_MM.get(previous_img_type)
-    try:
-        current_size = float(canvas.image_size_var.get())
-    except (TypeError, ValueError):
-        current_size = None
+    image_size_default = IMAGE_SIZE_DEFAULTS_MM.get(img_type)
+    frangi_min_default = FRANGI_MIN_DEFAULTS_MM.get(img_type)
+    frangi_max_default = FRANGI_MAX_DEFAULTS_MM.get(img_type)
 
-    if previous_default is not None and current_size is not None:
-        if abs(current_size - previous_default) < 1e-6:
-            canvas.image_size_var.set(target_default)
+    # Resetting mode-specific defaults
+    canvas.image_size_var.set(image_size_default)
+    canvas.frangi_min.set(frangi_min_default) if img_type != "ONH" else canvas.onh_frangi_min.set(frangi_min_default)
+    canvas.frangi_max.set(frangi_max_default) if img_type != "ONH" else canvas.onh_frangi_max.set(frangi_max_default)
 
     canvas._previous_img_type = img_type
-    print(f"Updating _previous_img_type to  {img_type}")
-
-    # Clear entire screen after changing image type
-    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_ENTIRE_SCREEN)
-
+    canvas._previous_image_size = image_size_default
+    print(f"Updating _previous_img_type to {img_type}, resetting image_size={image_size_default}, frangi_min={frangi_min_default}, frangi_max={frangi_max_default}")
 
 def update_optional_buttons_state(*args):
     img_type = canvas.img_type_var.get()
@@ -402,8 +407,11 @@ def update_optional_buttons_state(*args):
     # Change back if current process is busy
     if disable_click_if_busy(canvas):
         return canvas.after(0, canvas.img_type_var.set(canvas._previous_img_type))
-    
-    update_image_size_default_for_type(img_type)
+
+    # Update mode-specific settings
+    update_default_settings_for_type(img_type)
+    # Clear entire screen after changing image type
+    clear_screen(canvas, clear_screen_mode=ClearMode.CLEAR_ENTIRE_SCREEN)
 
     # ONH mode
     if img_type == "ONH":
@@ -435,6 +443,7 @@ def update_optional_buttons_state(*args):
         # Hide swap button
         hist_toggle_btn.place_forget()
 
+    # Retina/Skin mode
     else:
         canvas.coords(canvas.status_id, 950.0, 35.0)
         button_onh_mask.place_forget()
@@ -458,8 +467,8 @@ def update_optional_buttons_state(*args):
         button_auto_faz.configure(state="normal")
         button_measure_faz.configure(state="normal")
 
-    # Add swap button only for Retina
-    if img_type == "Retina":
+    # Add swap button only for Retina/Skin
+    if img_type == "Retina" or img_type == "Skin":
         hist_toggle_btn.place(x=1128, y=406.0)
     else:
         # Swap back to diameter
@@ -567,7 +576,7 @@ button_batch_processing.place(x=30, y=500)
 
 
 button_process = ctk.CTkButton(window, text="Start Processing",
-                        command=lambda: start_processing(canvas),
+                        command=lambda: (start_processing(canvas), close_windows()),
                         state="disabled",
                         width=380,height=80,
                         font=("Roboto", 14 * -1),
@@ -912,7 +921,7 @@ canvas.tortuosity_value_id = canvas.create_text(
 )
 
 update_optional_buttons_state()
-canvas.img_type_var.trace_add("write", update_optional_buttons_state)
+canvas.img_type_var.trace_add("write", lambda *args: (update_optional_buttons_state(), close_windows()))
 
 # Event handlers
 def on_prebinary_toggle():

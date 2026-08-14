@@ -8,9 +8,9 @@ class GUIConfig:
     """
     These are the default values for each user selectable.
     These values will be changed and saved to cache.json when the user changes them in the GUI.
-    This does not include image_size mm as there are default values for each image type.
     """
-    img_type: str = "Retina"  
+    img_type: str = "Retina"
+    image_size: float = 3.0
     
     frangi_bool: int = 1
     frangi_min: int = 1
