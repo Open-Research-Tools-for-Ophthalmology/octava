@@ -561,12 +561,10 @@ def start_batch_processing_threaded(canvas: Canvas):
         for sheet_name, sheet_df in excel_data.items():
             if "Regional analysis_" in sheet_name:
                 # Special case: split each regional row within the ROI into its own sheet.  
-                image_name = os.path.splitext(image_file)[0]
                 for row_idx, row in sheet_df.iterrows():
                     row_df = row.to_frame().transpose().copy()
                     region_name = str(row_df.iloc[0].get("Region", f"Region{row_idx + 1}"))
                     row_df.drop(columns=["Region"], inplace=True)
-                    row_df["name"] = image_name
                     if region_name not in all_metrics_df:
                         all_metrics_df[region_name] = []
                     all_metrics_df[region_name].append(row_df)
