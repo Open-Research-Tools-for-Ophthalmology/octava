@@ -34,9 +34,9 @@ def close(subwindow):
     subwindow.update()
 
 def subwindow3(canvas, open_window_fn=None):
-    is_onh_mode = (
+    is_retina_mode = (
         hasattr(canvas, "img_type_var")
-        and canvas.img_type_var.get() == "ONH"
+        and canvas.img_type_var.get() == "Retina"
     )
       
     subwindow = Toplevel()
@@ -151,7 +151,7 @@ def subwindow3(canvas, open_window_fn=None):
     )
 
     # measure faz checkbox
-    if not is_onh_mode:
+    if is_retina_mode:
         measure_faz_checkbox = Checkbutton(
             subwindow,
             text="Segment FAZ",
@@ -172,7 +172,7 @@ def subwindow3(canvas, open_window_fn=None):
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
-    regional_analysis_checkbox.place(x=40.0, y=286 if is_onh_mode else 321.0)
+    regional_analysis_checkbox.place(x=40.0, y=286 if not is_retina_mode else 321.0)
 
     # close
     button_close = ctk.CTkButton(
