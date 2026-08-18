@@ -64,8 +64,9 @@ def binarise_image(canvas: Canvas, display:bool=True):
     display_binarised_image(canvas, binary_image)
 
     # --- Save binary image to local ---
-    curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if 'Binarymask' in f])
-    img_path = os.path.join(canvas.current_save_folder, "images", f"{canvas.FileLabelName}_Binarymask_{curr_idx}.png")
+    image_identifier = canvas.FileLabelName + '_' + canvas.img_type_var.get()
+    curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if f'{image_identifier}_Binarymask' in f])
+    img_path = os.path.join(canvas.current_save_folder, "images", f"{image_identifier}_Binarymask_{curr_idx}.png")
     cv2.imwrite(img_path, binary_image)
 
 def display_binarised_image(canvas: Canvas, image: np.ndarray):

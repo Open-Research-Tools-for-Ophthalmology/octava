@@ -836,6 +836,7 @@ class BiomarkerAnalyzer:
                 cols,
                 rows,
                 pix2mm,
+                soam_sample_spacing_mm=0.003 # 0.003 mm = 1 px for 3mm/1000px images
             )
             if metrics is not None:
                 per_link_metrics.append(metrics)

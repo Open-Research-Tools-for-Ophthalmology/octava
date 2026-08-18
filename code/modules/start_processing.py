@@ -170,12 +170,10 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
 
         print(f"Image type selected: {img_type}")
 
-        if img_type == "Retina":
-            start_retina_processing_threaded(canvas, batch)
+        if img_type == "Retina" or img_type =="Skin":
+            start_standard_processing_threaded(canvas, batch, img_type)
         elif img_type == "ONH":
             start_onh_processing_threaded(canvas, batch)
-        elif img_type == "Skin":
-            start_skin_processing_threaded(canvas, batch)
         else:
             raise ValueError(f"Unsupported image type: {img_type}")
     except Exception as e:
@@ -193,9 +191,10 @@ def start_processing_threaded(canvas: Canvas, batch: bool = False):
             # if an error occurs during batch processing, raise it so the BP handler can skip the image
             raise e
 
-# @param {batch} bool = True for batch processing (will additionally process FAZ)
-def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
-    print("Starting Retina processing...")
+# @param {batch} bool = True for batch processing
+# @param {img_type} str = "Retina", or "Skin", will process FAZ if batch=True and img_type="Retina"
+def start_standard_processing_threaded(canvas: Canvas, batch: bool = False, img_type = "Retina"):
+    print(f"Starting {img_type} processing...")
     if not is_prebinary_enabled(canvas):
         print("Starting Retina binarising...")
         binarise_image(canvas)  # long-running
@@ -215,6 +214,7 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
         """Refresh and persist the vessel-diameter histogram from the latest measurements."""
         if hasattr(canvas, "hist_plotter"):
             # Always update both datasets; display whichever mode is active
+            image_type = str(canvas.img_type_var.get())
             diameters   = getattr(canvas, "vessel_diameters_um", [])
             tortuosity  = getattr(canvas, "vessel_tortuosity", [])
             hist_mode   = getattr(canvas, "_hist_mode", "diameter")
@@ -234,13 +234,13 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
             # Save diameter histogram
             canvas.hist_plotter.set_data(diameters)
             canvas.hist_plotter.update_plot(diam_bin)
-            hist_path = os.path.join(images_dir, f"{canvas.FileLabelName}_VDD_Bin{diam_bin}.png")
+            hist_path = os.path.join(images_dir, f"{canvas.FileLabelName}_{image_type}_VDD_Bin{diam_bin}.png")
             canvas.hist_plotter.save_to_file(hist_path)
 
             # Save tortuosity histogram
             canvas.hist_plotter.set_data(tortuosity)
             canvas.hist_plotter.update_plot(tort_bin)
-            tort_path = os.path.join(images_dir, f"{canvas.FileLabelName}_Tortuosity_Hist.png")
+            tort_path = os.path.join(images_dir, f"{canvas.FileLabelName}_{image_type}_Tortuosity_Hist.png")
             canvas.hist_plotter.save_to_file(tort_path)
 
             # Restore to active mode
@@ -257,13 +257,12 @@ def start_retina_processing_threaded(canvas: Canvas, batch: bool = False):
     if abort_if_requested(canvas, batch): return
 
     # Additional processing if batch mode is on
-    if batch:
-        if canvas.bp_segment_faz_var.get() == 1:
-            generate_faz_mask(canvas, batch=True)
-            display_faz_image(canvas)
-            measure_faz(canvas, silent=True)
-            print("FAZ generation and metrics measurement completed.")
-            if abort_if_requested(canvas, batch): return
+    if batch and img_type == "Retina" and canvas.bp_segment_faz_var.get() == 1:
+        generate_faz_mask(canvas, batch=True)
+        display_faz_image(canvas)
+        measure_faz(canvas, silent=True)
+        print("FAZ generation and metrics measurement completed.")
+        if abort_if_requested(canvas, batch): return
 
     if is_regional_analysis_enabled(canvas):
         print("Running regional analysis...")
@@ -416,23 +415,6 @@ def prepare_onh_prebinary_overall(canvas: Canvas):
     canvas.inverted_image = binary.copy()
 
     save_onh_binary_image(canvas, binary)
-
-# Skin pipeline not implemented yet
-def start_skin_processing_threaded(canvas: Canvas, batch: bool = False):
-    print("Starting Skin processing...")
-    print("Skin processing pipeline is not implemented in the current project scope.")
-
-    canvas.after(0, lambda: messagebox.showinfo(
-        "Skin Processing",
-        "Skin processing pipeline is not implemented in the current project scope."
-    ))
-  
-    # Switch back to READY if single processing, otherwise return to batch loop
-    if abort_if_requested(canvas, batch): return
-    if not batch:
-        reset_to_start_processing(canvas)
-        canvas.after(0, lambda: change_status_to_ready(canvas))
-    return
 
 # batch processing
 def start_batch_processing_threaded(canvas: Canvas):

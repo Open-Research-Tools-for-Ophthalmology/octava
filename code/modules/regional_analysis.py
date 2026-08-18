@@ -779,8 +779,9 @@ def run_analysis_on_regions(
 				
 				change_status_to_waiting(canvas, status="● Regional analysis...")
 
+				image_type = str(canvas.img_type_var.get())
 				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
-				file_prefix = f"{canvas.FileLabelName}_{grid_type.value}_R{i+1:02d}_{region_name}"
+				file_prefix = f"{canvas.FileLabelName}_{image_type}_{grid_type.value}_R{i+1:02d}_{region_name}"
 
 				cv2.imwrite(
 					os.path.join(validation_folder, f"{file_prefix}_img.png"),
