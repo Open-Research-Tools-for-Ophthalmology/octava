@@ -34,7 +34,7 @@ def select_save_folder(canvas: tk.Canvas, text_x: int, text_y: int, text_width: 
     if disable_click_if_busy(canvas): return # Disable clicking if currently busy
     change_status_to_waiting(canvas)
 
-    dir_path = filedialog.askdirectory(title="Select a folder", mustexist=True)
+    dir_path = filedialog.askdirectory(title="Select a folder", mustexist=False)
     if not dir_path:
         change_status_to_ready(canvas)
         return None  # user cancelled

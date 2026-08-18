@@ -11,18 +11,19 @@ from modules.binarise_image import *
 from modules.select_folder import *
 
 def resize_from_spinbox(canvas):
-    # Revert resizing if currently busy processing
     previous_value = canvas._previous_image_size if hasattr(canvas, "_previous_image_size") else 3.0
+
+    # No change, do nothing
     if previous_value == canvas.image_size_var.get():
-        return  # No change, do nothing
+        return  
     
-    # Prevent resizing while busy processing, allow BP's auto variable image size resize only
     if not (hasattr(canvas, "bp_variable_image_size_bool_var") and canvas.bp_variable_image_size_bool_var.get() == 1) and disable_click_if_busy(canvas):
-        # Revert to previous value
+        # Revert resizing if currently busy processing
         print("Reverting image size change due to busy state. Previous value:", previous_value)
         canvas.image_size_var.set(previous_value)
         return
     else:
+        # Allow BP's auto variable image size resize even if busy
         canvas._previous_image_size = canvas.image_size_var.get()
 
     """Resize the full-resolution image based on the current spinbox value and update preview."""
