@@ -13,7 +13,6 @@ def init_regional_analysis_settings(canvas: Canvas):
   canvas.etdrs_grid_bool = IntVar(value=0)
   canvas.extended_etdrs_bool = IntVar(value=0)
   canvas.foveal_ring_bool = IntVar(value=0)
-  canvas.optic_nerve_head_bool = IntVar(value=0)
   canvas.wide_field_ring_bool = IntVar(value=0)
   canvas.wide_field_ring_width_var = IntVar(value=1)
   canvas.onh_quadrant_analysis_bool = IntVar(value=0)
@@ -152,20 +151,6 @@ def subwindow2(canvas):
       foveal_rings_checkbox.place(
           x=40.0,
           y=190.0
-      )
-
-      # optic nerve head checkbox
-      optic_nerve_head_checkbox = Checkbutton(
-          subwindow,
-          text="Optic nerve head",
-          variable=canvas.optic_nerve_head_bool,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      optic_nerve_head_checkbox.place(
-          x=40.0,
-          y=220.0
       )
 
       # Wide-field retina settings with customized spinbox for ring width

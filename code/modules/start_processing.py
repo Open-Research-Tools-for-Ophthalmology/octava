@@ -31,7 +31,7 @@ def is_regional_analysis_enabled(canvas:Canvas) ->bool:
     """Return whether any regional-analysis mode is enabled for the current run."""
     if is_batch_processing_enabled(canvas):
         return hasattr(canvas, "bp_regional_analysis_var") and canvas.bp_regional_analysis_var.get() == 1
-    return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()|canvas.wide_field_ring_bool.get()
+    return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.wide_field_ring_bool.get()
 
 def is_onh_quadrant_analysis_enabled(canvas: Canvas) -> bool:
     return (
