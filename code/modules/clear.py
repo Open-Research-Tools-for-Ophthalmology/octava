@@ -68,6 +68,31 @@ ONH_IMAGE_STATE_PREFIXES = (
   "onh_spur_prune_length_",
 )
 
+BATCH_PROCESSING_STATE_ATTRIBUTES = {
+  "bp_selected_folder_path": None,
+  "bp_file_type_var": "tif",
+  "bp_batch_resize_bool_var": 0,
+  "bp_batch_resize_value_var": 1000,
+  "bp_variable_image_size_bool_var": 0,
+  "bp_variable_image_size_df": None,
+  "bp_segment_faz_var": 0,
+  "bp_regional_analysis_var": 0,
+}
+
+REGIONAL_ANALYSIS_STATE_ATTRIBUTES = {
+  "eye_var": "Right Eye",
+  "load_faz_bool": 0,
+  "square_grid_bool": 0,
+  "etdrs_grid_bool": 0,
+  "extended_etdrs_bool": 0,
+  "foveal_ring_bool": 0,
+  "wide_field_ring_bool": 0,
+  "wide_field_ring_width_var": 1,
+  "onh_quadrant_analysis_bool": 0,
+  "onh_octant_analysis_bool": 0,
+  "apply_regional_analysis_bool": 0,
+  "RAlabels": [],
+}
 
 def clear_onh_image_state(canvas: Canvas):
   """Discard ONH masks and results that belong to the current image geometry."""
@@ -91,6 +116,16 @@ def remove_items_from_canvas(canvas: Canvas, item_ids: list):
       except Exception:
         pass
 
+def reset_items_from_canvas(canvas: Canvas, item_dict: dict):
+  """Reset the specified canvas items to their default values if they exist."""
+  for item_id in item_dict.keys():
+    var = getattr(canvas, item_id, None)
+    if var is not None:
+      try:
+        var.set(item_dict[item_id])  # reset to default value
+      except Exception as e:
+        print(f"Failed to reset item {item_id} on canvas. {e}")
+        pass
 
 def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_ENTIRE_SCREEN):
   """Clear canvas images, labels, and cached plot state for the requested workflow stage."""
@@ -99,6 +134,7 @@ def clear_screen(canvas: Canvas, clear_screen_mode: ClearMode=ClearMode.CLEAR_EN
 
   if clear_screen_mode == ClearMode.CLEAR_ENTIRE_SCREEN:
     other_item_ids_to_remove = {"original_img_id", "original_img", "filename_text_id", "bp_selected_folder_path", "save_folder_text_id"}
+    reset_items_from_canvas(canvas, {**BATCH_PROCESSING_STATE_ATTRIBUTES, **REGIONAL_ANALYSIS_STATE_ATTRIBUTES})
     clear_onh_image_state(canvas)
   elif clear_screen_mode == ClearMode.CLEAR_BEFORE_LOADING_SINGLE_IMG:
     other_item_ids_to_remove = {"original_img_id","original_img", "filename_text_id", "bp_selected_folder_path"}

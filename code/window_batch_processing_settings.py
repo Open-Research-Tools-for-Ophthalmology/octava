@@ -41,7 +41,7 @@ def subwindow3(canvas, open_window_fn=None):
       
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
-    subwindow.geometry("350x450")
+    subwindow.geometry("350x415")
     subwindow.configure(bg="#FBE3D6")
     
     # Trace checkbox to enable/disable batch resize entry
@@ -50,7 +50,7 @@ def subwindow3(canvas, open_window_fn=None):
     subcanvas3 = Canvas(
         subwindow,
         bg="#FBE3D6",
-        height=450,
+        height=415,
         width=350,
         bd=0,
         highlightthickness=0,
@@ -78,22 +78,6 @@ def subwindow3(canvas, open_window_fn=None):
         subcanvas3, 45, 80, 260, 40, radius=8, fill=bg_colour, outline=bg_colour
     )
 
-    subcanvas3.create_text(
-        45.0,
-        135.0,
-        anchor="nw",
-        text="File type",
-        fill="#0F1F3F",
-        font=("Roboto SemiBold", 14 * -1),
-    )
-
-    # file type dropdown
-    file_type_list = ["tif", "png", "jpg", "bmp", "mat"]
-    file_type = Combobox(
-        subwindow, textvariable=canvas.bp_file_type_var, values=file_type_list, state="readonly"
-    )
-    file_type.place(x=110.0, y=130.0, width=165.0, height=30.0)
-
     # batch resize checkbox
     batch_resize_checkbox = Checkbutton(
         subwindow,
@@ -103,7 +87,7 @@ def subwindow3(canvas, open_window_fn=None):
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
-    batch_resize_checkbox.place(x=40.0, y=185.0)
+    batch_resize_checkbox.place(x=40.0, y=150.0)
 
     batch_resize_text = Entry(
         subwindow,
@@ -127,7 +111,7 @@ def subwindow3(canvas, open_window_fn=None):
 
     trace_id = canvas.bp_batch_resize_bool_var.trace("w", update_batch_resize_state)
 
-    batch_resize_text.place(x=160.0, y=188.0)
+    batch_resize_text.place(x=160.0, y=153.0)
 
     # variable image size checkbox
     variable_image_size_checkbox = Checkbutton(
@@ -139,11 +123,11 @@ def subwindow3(canvas, open_window_fn=None):
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
-    variable_image_size_checkbox.place(x=40.0, y=223.0)
+    variable_image_size_checkbox.place(x=40.0, y=188.0)
 
     subcanvas3.create_text(
         66.0,
-        250.0,
+        215.0,
         anchor="nw",
         text="No - Process from folder\nYes - Process from list",
         fill="#0F1F3F",
@@ -160,7 +144,7 @@ def subwindow3(canvas, open_window_fn=None):
             fg=text_colour,
             font=("Roboto", 14 * -1),
         )
-        measure_faz_checkbox.place(x=40.0, y=286.0)
+        measure_faz_checkbox.place(x=40.0, y=251.0)
 
     # regional analysis checkbox
     regional_analysis_checkbox = Checkbutton(
@@ -172,7 +156,7 @@ def subwindow3(canvas, open_window_fn=None):
         fg=text_colour,
         font=("Roboto", 14 * -1),
     )
-    regional_analysis_checkbox.place(x=40.0, y=286 if not is_retina_mode else 321.0)
+    regional_analysis_checkbox.place(x=40.0, y=251 if not is_retina_mode else 286.0)
 
     # close
     button_close = ctk.CTkButton(
@@ -192,7 +176,7 @@ def subwindow3(canvas, open_window_fn=None):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=110, y=370)
+    button_close.place(x=110, y=335)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)

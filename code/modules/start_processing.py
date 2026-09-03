@@ -31,7 +31,7 @@ def is_regional_analysis_enabled(canvas:Canvas) ->bool:
     """Return whether any regional-analysis mode is enabled for the current run."""
     if is_batch_processing_enabled(canvas):
         return hasattr(canvas, "bp_regional_analysis_var") and canvas.bp_regional_analysis_var.get() == 1
-    return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.optic_nerve_head_bool.get()|canvas.wide_field_ring_bool.get()
+    return canvas.square_grid_bool.get()|canvas.etdrs_grid_bool.get()|canvas.extended_etdrs_bool.get()|canvas.foveal_ring_bool.get()|canvas.wide_field_ring_bool.get()
 
 def is_onh_quadrant_analysis_enabled(canvas: Canvas) -> bool:
     return (
@@ -421,10 +421,11 @@ def start_batch_processing_threaded(canvas: Canvas):
     """Iterate through the selected batch folder and process each supported image."""
     print("Starting batch image processing...")
     
-    # Get images of selected file type from directory
+    # Get images of allowed file types from directory
+    file_type_list = ["tif", "tiff", "png", "jpg", "jpeg", "bmp"]
     image_files = [
         f for f in os.listdir(canvas.bp_selected_folder_path)
-        if f.lower().endswith(f".{canvas.bp_file_type_var.get().lower()}")
+        if any(f.lower().endswith(f".{ext}") for ext in file_type_list)
     ]
 
     # Natural sort the image files for sequential processing

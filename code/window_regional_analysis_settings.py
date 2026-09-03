@@ -13,7 +13,6 @@ def init_regional_analysis_settings(canvas: Canvas):
   canvas.etdrs_grid_bool = IntVar(value=0)
   canvas.extended_etdrs_bool = IntVar(value=0)
   canvas.foveal_ring_bool = IntVar(value=0)
-  canvas.optic_nerve_head_bool = IntVar(value=0)
   canvas.wide_field_ring_bool = IntVar(value=0)
   canvas.wide_field_ring_width_var = IntVar(value=1)
   canvas.onh_quadrant_analysis_bool = IntVar(value=0)
@@ -27,15 +26,28 @@ def close(subwindow):
   subwindow.update()
 
 def subwindow2(canvas):
+  is_onh_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "ONH"
+  )
+  is_retina_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "Retina"
+  )
+  is_skin_mode = (
+      hasattr(canvas, "img_type_var")
+      and canvas.img_type_var.get() == "Skin"
+  )
+  
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
-  subwindow.geometry("300x380")
   subwindow.configure(bg = "#FBE3D6")
-
+  view_height = 350 if is_retina_mode else 300 if is_onh_mode else 250
+  subwindow.geometry(f"300x{view_height}")
   subcanvas2 = Canvas(
       subwindow,
       bg = subwindow_bg_colour,
-      height = 380,
+      height = view_height,
       width = 300,
       bd = 0,
       highlightthickness = 0,
@@ -43,35 +55,77 @@ def subwindow2(canvas):
   )
   subcanvas2.place(x = 0, y = 0)
 
-  # eye type dropdown
-  subcanvas2.create_text(
-      45.0,
-      50.0,
-      anchor="nw",
-      text="Eye",
-      fill=text_colour,
-      font=("Roboto", 14 * -1)
-  )
-  eye_list = ["Left Eye", "Right Eye"]
-  eye_combobox = Combobox(
+  if (not is_skin_mode):
+    # eye type dropdown
+    subcanvas2.create_text(
+        45.0,
+        50.0,
+        anchor="nw",
+        text="Eye",
+        fill=text_colour,
+        font=("Roboto", 14 * -1)
+    )
+    eye_list = ["Left Eye", "Right Eye"]
+    eye_combobox = Combobox(
+        subwindow,
+        textvariable=canvas.eye_var,
+        values=eye_list,
+        state="readonly"
+    )
+    eye_combobox.place(
+        x=80.0,
+        y=45.0,
+        width=150.0,
+        height=30.0
+    )
+
+  # Display masks for different image types
+  if is_skin_mode: # [Square, Wide-field]
+    # square grid checkbox
+    square_grid_checkbox = Checkbutton(
+        subwindow,
+        text="Square grid",
+        variable=canvas.square_grid_bool,
+        bg=subwindow_bg_colour,
+        fg=text_colour,
+        font=("Roboto", 14 * -1)
+    )
+    square_grid_checkbox.place(
+        x=40.0,
+        y=60.0
+    )
+
+    # Wide-field retina settings with customized spinbox for ring width
+    wide_field_checkbox = Checkbutton(
       subwindow,
-      textvariable=canvas.eye_var,
-      values=eye_list,
-      state="readonly"
-  )
-  eye_combobox.place(
-      x=80.0,
-      y=45.0,
-      width=150.0,
-      height=30.0
-  )
-
-  is_onh_mode = (
-      hasattr(canvas, "img_type_var")
-      and canvas.img_type_var.get() == "ONH"
-  )
-
-  if is_onh_mode:
+      text="Wide Field rings",
+      variable=canvas.wide_field_ring_bool,
+      bg=subwindow_bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1)
+    )
+    wide_field_checkbox.place(
+      x=40.0,
+      y=90.0
+    )
+    wide_field_ring_width_spinbox = Spinbox(
+      subwindow,
+      from_=1,
+      to=10.00,
+      increment=1,
+      width=4,
+      textvariable=canvas.wide_field_ring_width_var,
+      bg=bg_colour,
+      fg=text_colour,
+      font=("Roboto", 14 * -1),
+      bd=0.5,                  # removes the border thickness
+      highlightthickness=0,  # removes the focus highlight border
+    )
+    wide_field_ring_width_spinbox.place(
+      x=180.0,
+      y=92.0
+    )
+  elif is_onh_mode:  # [ONH quadrant, ONH octant]
       onh_quadrant_checkbox = Checkbutton(
           subwindow,
           text="ONH quadrant analysis",
@@ -97,7 +151,7 @@ def subwindow2(canvas):
           x=40.0,
           y=140.0
       )
-  else:
+  else: # [square, etdrs, extended etdrs, foveal rings, wide-field]
       # square grid checkbox
       square_grid_checkbox = Checkbutton(
           subwindow,
@@ -154,20 +208,6 @@ def subwindow2(canvas):
           y=190.0
       )
 
-      # optic nerve head checkbox
-      optic_nerve_head_checkbox = Checkbutton(
-          subwindow,
-          text="Optic nerve head",
-          variable=canvas.optic_nerve_head_bool,
-          bg=subwindow_bg_colour,
-          fg=text_colour,
-          font=("Roboto", 14 * -1)
-      )
-      optic_nerve_head_checkbox.place(
-          x=40.0,
-          y=220.0
-      )
-
       # Wide-field retina settings with customized spinbox for ring width
       wide_field_checkbox = Checkbutton(
         subwindow,
@@ -179,7 +219,7 @@ def subwindow2(canvas):
       )
       wide_field_checkbox.place(
         x=40.0,
-        y=250.0
+        y=220.0
       )
       wide_field_ring_width_spinbox = Spinbox(
         subwindow,
@@ -196,21 +236,21 @@ def subwindow2(canvas):
       )
       wide_field_ring_width_spinbox.place(
         x=180.0,
-        y=252.0
+        y=222.0
       )
 
   # close
   button_close = ctk.CTkButton(subwindow, text="Close",
-                          command=lambda: close(subwindow),
-                          width=130,height=45,
-                          font=("Roboto", 14 * -1),
-                          text_color=text_colour,
-                          fg_color=button_blue_colour,
-                          corner_radius=8,border_width=1,
-                          hover_color=button_blue_hover,
-      border_color=button_border_colour  )
-  button_close.place(x=80, y=300)
-
+    command=lambda: close(subwindow),
+    width=130,height=45,
+    font=("Roboto", 14 * -1),
+    text_color=text_colour,
+    fg_color=button_blue_colour,
+    corner_radius=8,border_width=1,
+    hover_color=button_blue_hover,
+    border_color=button_border_colour
+  )
+  button_close.place(x=80, y=view_height - 80)
 
   subwindow.resizable(False, False)
   return subwindow

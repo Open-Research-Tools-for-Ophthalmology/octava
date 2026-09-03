@@ -263,7 +263,7 @@ canvas.create_text(
 # image size Spinbox
 image_size_spinbox = Spinbox(
     from_=0.50,
-    to=10.00,
+    to=30.00,
     increment=0.50,
     width=4,
     textvariable=canvas.image_size_var,
