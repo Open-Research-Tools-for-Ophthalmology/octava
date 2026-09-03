@@ -421,10 +421,11 @@ def start_batch_processing_threaded(canvas: Canvas):
     """Iterate through the selected batch folder and process each supported image."""
     print("Starting batch image processing...")
     
-    # Get images of selected file type from directory
+    # Get images of allowed file types from directory
+    file_type_list = ["tif", "tiff", "png", "jpg", "jpeg", "bmp"]
     image_files = [
         f for f in os.listdir(canvas.bp_selected_folder_path)
-        if f.lower().endswith(f".{canvas.bp_file_type_var.get().lower()}")
+        if any(f.lower().endswith(f".{ext}") for ext in file_type_list)
     ]
 
     # Natural sort the image files for sequential processing
