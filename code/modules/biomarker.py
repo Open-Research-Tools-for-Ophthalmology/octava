@@ -1,3 +1,5 @@
+import os
+import cv2
 import numpy as np
 import pandas as pd
 from tkinter import Canvas
@@ -77,15 +79,21 @@ class BiomarkerAnalyzer:
         """
         Smooths a centerline using B-spline smoothing.
         Currently, all s values are len(points) to avoid over-smoothing.
+        Endpoints are re-anchored to the original first/last points since a
+        smoothing spline (s>0) is only bounded by total residual and can
+        otherwise drift away from the true vessel ends.
         """
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
         points = points.astype(float)
         
         if len(points) < 4:
             return points
-            
+         
         try:
-            result = make_splprep([points[:, 0], points[:, 1]], s=s)
+            # If the weights represent the inverse of the standard deviation of x
+            weights = 1.0 / np.std(points, axis=0)
+            # a good s value should be found in the range (m - sqrt(2*m), m + sqrt(2*m)), where m in # of points
+            result = make_splprep([points[:, 0], points[:, 1]], s=s, w=weights) 
             bspline = result[0]
             
             u_new = np.linspace(0, 1, len(points) // 2)  # evaluate at half the density 
@@ -102,22 +110,37 @@ class BiomarkerAnalyzer:
             # session_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             # plt.savefig(f"vessel_{session_time}.png")
 
-            return smoothed_points.T
+            smoothed_points = smoothed_points.T
+
+            # FIXME, compute the residual error at each end and blend it back into the curve linearly across arc length
+            # Linearly blend the endpoint residuals back in: a linear correction adds
+            # no curvature, so interior smoothing is preserved while the ends land
+            # exactly on points[0] / points[-1].
+            start_error = points[0] - smoothed_points[0]
+            end_error = points[-1] - smoothed_points[-1]
+            blend = np.linspace(0.0, 1.0, len(smoothed_points))[:, None]
+            smoothed_points = smoothed_points + (1 - blend) * start_error + blend * end_error
+
+            return smoothed_points
             
         except ValueError:
             return points
 
     @staticmethod
-    def _compute_soam(points):
+    def _compute_soam(points, debug_segments=None):
         """
         Compute SOAM from evenly-spaced 'x' and 'y' points, 
         as summed turning angle per resampled arc length.
         This is the current in-use function to compute SOAM.
         """
         s = len(points)  # change s depending on number of points
+
         points = BiomarkerAnalyzer._points_smoothing(points, s)  # not sure what to set for s
-        
         points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
+            
+        if debug_segments is not None:
+            debug_segments.append(points.copy())  # collect this segment's smoothed points for QA visualization
+
         if points.shape[0] < 3:
             return 0.0
 
@@ -243,6 +266,9 @@ class BiomarkerAnalyzer:
         }
 
     def _compute_density(vesselX, vesselY, smoothedX, smoothedY, smooth_window):
+        if len(vesselX) < 2:
+            return np.nan
+
         # Preparations
         ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
         arcLength = np.sum(ds)
@@ -311,7 +337,8 @@ class BiomarkerAnalyzer:
         vessel_y,
         pix2mm,
         soam_sample_spacing_mm=0.03,
-        soam_smoothing_window=10,
+        soam_smoothing_window=5,
+        debug_segments=None,
     ):
         """Compute PWAOC, a paper-aligned SOAM and Density from one vessel centerline.
 
@@ -331,15 +358,17 @@ class BiomarkerAnalyzer:
             vessel_y,
             pix2mm,
         )
-        if metrics is None:
-            return None
+        # FIXME keep none PWAOC available links
+        # if metrics is None:
+        #     return None
 
         # SOAM
         vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
         vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
-        if vesselX.size < 3 or vesselY.size < 3:
-            return metrics
-
+        # FIXME keep all links
+        # if vesselX.size < 3 or vesselY.size < 3:
+        #     return metrics
+    
         smooth_window = max(int(soam_smoothing_window), 1)
         smoothedX = BiomarkerAnalyzer._movmean(vesselX, smooth_window)
         smoothedY = BiomarkerAnalyzer._movmean(vesselY, smooth_window)
@@ -352,17 +381,27 @@ class BiomarkerAnalyzer:
             soam_sample_spacing_mm,
         )
 
-        metrics = metrics.copy()
-        metrics["SOAM"] = BiomarkerAnalyzer._compute_soam(resampled)
+        # Skip all preliminary smoothing if vessel too small
+        # if vesselX.size < 3 or vesselY.size < 3:
+        #     resampled = np.column_stack((vesselX, vesselY))
+
+        soam_value = BiomarkerAnalyzer._compute_soam(resampled, debug_segments=debug_segments)
 
         # Density
-        metrics["tortDensity"] = BiomarkerAnalyzer._compute_density(
+        density_value = BiomarkerAnalyzer._compute_density(
             vesselX,
             vesselY,
             smoothedX,
             smoothedY,
             smooth_window
         )
+
+        if metrics is None:
+            return None
+
+        metrics = metrics.copy()
+        metrics["SOAM"] = soam_value
+        metrics["tortDensity"] = density_value
 
         return metrics
 
@@ -390,46 +429,6 @@ class BiomarkerAnalyzer:
             "tortDensity_mean": np.nan,
             "tortDensity_std": np.nan,
         }
-
-    @staticmethod
-    def compute_new_tortuosity_metrics_from_mat_file(mat_path):
-        """Load MATLAB link data and return summarized tortuosity metrics."""
-        import scipy.io as sio
-
-        mat = sio.loadmat(mat_path, squeeze_me=True, struct_as_record=False)
-
-        if "links" not in mat:
-            raise KeyError("MAT file must contain a 'links' variable.")
-        if "realImageSizeMm" not in mat:
-            raise KeyError("MAT file must contain 'realImageSizeMm'.")
-        if "fullImSizePix" not in mat:
-            raise KeyError("MAT file must contain 'fullImSizePix'.")
-
-        image_size_mm = float(np.asarray(mat["realImageSizeMm"]).squeeze())
-        full_im_size_pix = np.asarray(mat["fullImSizePix"]).astype(float).ravel()
-        if full_im_size_pix.size == 0:
-            raise ValueError("'fullImSizePix' must contain at least one value.")
-
-        pix2mm = image_size_mm / full_im_size_pix[0] if full_im_size_pix[0] > 0 else 0.0
-        mat_links = np.atleast_1d(mat["links"])
-
-        per_link_metrics = []
-
-        for link in mat_links:
-            if not hasattr(link, "x") or not hasattr(link, "y"):
-                continue
-
-            # metrics = BiomarkerAnalyzer._compute_pwaoc(
-            metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
-                link.x,
-                link.x,
-                link.y,
-                pix2mm,
-            )
-            if metrics is not None:
-                per_link_metrics.append(metrics)
-
-        return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
     @staticmethod
     def process(canvas: Canvas) -> None:
@@ -748,14 +747,32 @@ class BiomarkerAnalyzer:
         }
 
         # Tortuosity metrics (PWAOC, SOAM, etc.)
-        canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
+        canvas.new_tort_metrics, soam_debug_image, soam_debug_image_end, links_image, links_image_end = BiomarkerAnalyzer.new_tortuosity_metrics(
             links=links,
             binary_image=canvas.binary_image,
             image_size_var=canvas.image_size_var,
             fullImSizePix=canvas.fullImSizePix,
+            collect_soam_debug_image=True,
         )
         canvas.new_tort_metrics = {key: round(float(value), 2) for key, value in canvas.new_tort_metrics.items()}
         micro_stats.update(canvas.new_tort_metrics)
+
+        # Save combined SOAM-smoothed segments so smoothing aggressiveness can be inspected visually
+        if hasattr(canvas, "current_save_folder"):
+            images_dir = os.path.join(canvas.current_save_folder, "images")
+            os.makedirs(images_dir, exist_ok=True)
+            soam_debug_path = os.path.join(images_dir, f"{canvas.FileLabelName}_SOAM_Smoothed.png")
+            cv2.imwrite(soam_debug_path, soam_debug_image)
+            print(f"SOAM smoothed segments debug image saved to: {soam_debug_path}")
+            soam_debug_path_end = os.path.join(images_dir, f"{canvas.FileLabelName}_SOAM_Smoothed_EndPoint.png")
+            cv2.imwrite(soam_debug_path_end, soam_debug_image_end)
+            print(f"SOAM smoothed segments end debug image saved to: {soam_debug_path_end}")
+            links_debug_path = os.path.join(images_dir, f"{canvas.FileLabelName}_Links.png")
+            cv2.imwrite(links_debug_path, links_image)
+            print(f"Links debug image saved to: {links_debug_path}")
+            links_debug_path_end = os.path.join(images_dir, f"{canvas.FileLabelName}_Links_EndPoint.png")
+            cv2.imwrite(links_debug_path_end, links_image_end)
+            print(f"Links end debug image saved to: {links_debug_path_end}")
 
         # Function parameters (Frangi, MedFilt, etc.)
         param_stats = {
@@ -802,12 +819,55 @@ class BiomarkerAnalyzer:
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
 
     @staticmethod
+    def _rasterize_soam_debug_segments(segments, pix2mm, image_shape):
+        """Combine per-link SOAM-smoothed points (mm space) into one binary image for visual QA."""
+        debug_image = np.zeros(image_shape, dtype=np.uint8)
+        debug_image_end = np.zeros((*image_shape, 3), dtype=np.uint8)  # 3 channels so BGR colors render (not grayscale)
+        if not segments or pix2mm <= 0:
+            return debug_image, debug_image_end
+
+        height, width = image_shape
+        for points in segments:
+            pixel_points = np.rint(points / pix2mm).astype(int)
+            cols = np.clip(pixel_points[:, 0], 0, width - 1)
+            rows = np.clip(pixel_points[:, 1], 0, height - 1)
+
+            if len(rows) == 0:
+                continue
+
+            # Single point segment: green
+            if len(rows) == 1:
+                print(f"[Single]: [{rows[0]},{cols[0]}]")
+                debug_image[rows[0], cols[0]] = 255
+                debug_image_end[rows[0], cols[0]] = (0, 255, 0)
+                cv2.circle(debug_image, (int(cols[0]), int(rows[0])), 0, 255, -1)
+                cv2.circle(debug_image_end, (int(cols[0]), int(rows[0])), 0, (0, 255, 0), -1)
+                continue
+
+            # Double point segment: orange
+            if len(rows) == 2:
+                print(f"[Double]: [{rows[0]},{cols[0]}] -> [{rows[1]},{cols[1]}]")
+                cv2.line(debug_image, (int(cols[0]), int(rows[0])), (int(cols[1]), int(rows[1])), 255, 1)
+                cv2.line(debug_image_end, (int(cols[0]), int(rows[0])), (int(cols[1]), int(rows[1])), (0, 165, 255), 1)
+                continue
+
+            # Multi-point segment: gray line with red start and blue end points
+            for j in range(len(rows) - 1):
+                cv2.line(debug_image, (int(cols[j]), int(rows[j])), (int(cols[j + 1]), int(rows[j + 1])), 255, 1)
+                cv2.line(debug_image_end, (int(cols[j]), int(rows[j])), (int(cols[j + 1]), int(rows[j + 1])), (123,123,123), 1)
+
+                cv2.circle(debug_image_end, (int(cols[0]), int(rows[0])), 0, (0, 0, 255), -1)
+                cv2.circle(debug_image_end, (int(cols[len(rows) - 1]), int(rows[len(rows) - 1])), 0, (255, 0, 0), -1)
+       
+        return debug_image, debug_image_end
+
+    @staticmethod
     #! This is the one being used by BiomarkerAnalyzer.process() and in regional analysis
-    def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix):
+    def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix, collect_soam_debug_image=False):
         """Compute summarized tortuosity metrics directly from graph links."""
         binary = binary_image
         if links is None or len(links) == 0:
-            return {
+            empty_metrics = {
                 "PWAOC_mean": np.nan,
                 "PWAOC_std": np.nan,
                 "SOAM_mean": np.nan,
@@ -815,6 +875,11 @@ class BiomarkerAnalyzer:
                 "tortDensity_mean": np.nan,
                 "tortDensity_std": np.nan,
             }
+            if collect_soam_debug_image:
+                empty_debug = np.zeros(binary_image.shape, dtype=np.uint8)
+                empty_debug_end = np.zeros((*binary_image.shape, 3), dtype=np.uint8)
+                return empty_metrics, empty_debug, empty_debug_end
+            return empty_metrics
 
         # Image scale
         image_size_mm = float(image_size_var.get())
@@ -824,386 +889,32 @@ class BiomarkerAnalyzer:
         image_shape = binary.shape
 
         per_link_metrics = []
+        debug_segments = [] if collect_soam_debug_image else None
+        link_segments = [] if collect_soam_debug_image else None
 
         for link in links:
             indices = np.asarray(link.path, dtype=int)
-            if indices.size < 3:
-                continue
 
             rows, cols = np.unravel_index(indices, image_shape)
+            if collect_soam_debug_image:
+                # mm-space points (col, row) so this matches the format _rasterize_soam_debug_segments expects
+                link_segments.append(np.column_stack((cols, rows)).astype(float) * pix2mm)
             #! Use Janelle's smoothing
             metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 cols,
                 rows,
                 pix2mm,
-                soam_sample_spacing_mm=0.003 # 0.003 mm = 1 px for 3mm/1000px images
+                soam_sample_spacing_mm=0.003, # 0.003 mm = 1 px for 3mm/1000px images
+                debug_segments=debug_segments,
             )
             if metrics is not None:
                 per_link_metrics.append(metrics)
 
-        return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
+        summary = BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
-    @staticmethod
-    def new_tortuosity_metrics_all(canvas: Canvas) -> None:
-        """Compute the legacy full tortuosity metric set for every link on the canvas. Not in use but kept for reference."""
-        import numpy as np
+        if collect_soam_debug_image:
+            links_image, links_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(link_segments, pix2mm, image_shape)
+            debug_image, debug_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(debug_segments, pix2mm, image_shape)
+            return summary, debug_image, debug_image_end, links_image, links_image_end
 
-        links = canvas.skeleton_links
-        binary = canvas.binary_image
-
-        if links is None or len(links) == 0:
-            return
-
-        eps = np.finfo(float).eps
-
-        # Image scale
-        image_size_mm = float(canvas.image_size_var.get())
-        img_height, img_width = canvas.fullImSizePix
-        pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
-
-        image_shape = binary.shape
-
-        metric_names = [
-            "AOC","TSC","TSCN","tortDensity","DT",
-            "PWAOC","ISR","SOAM","tortAngle","VCI1","VCI2"
-        ]
-
-        def movmean(arr, window):
-            """Compute a centered moving average for the nested legacy metric routine."""
-            arr = np.asarray(arr, dtype=float)
-            n = arr.size
-            if n == 0 or window <= 1:
-                return arr.copy()
-
-            half_left = (window - 1) // 2
-            half_right = window // 2
-
-            csum = np.cumsum(np.insert(arr, 0, 0.0))
-            out = np.empty(n)
-
-            for i in range(n):
-                start = max(0, i - half_left)
-                end = min(n, i + half_right + 1)
-                out[i] = (csum[end] - csum[start]) / (end - start)
-
-            return out
-
-        def trimmean_10(arr):
-            """Return the 10% trimmed mean used by the legacy tortuosity export."""
-            arr = np.asarray(arr)
-            arr = arr[np.isfinite(arr)]
-            if arr.size == 0:
-                return np.nan
-            arr = np.sort(arr)
-            trim = int(np.floor(0.1 * arr.size))
-            if arr.size - 2 * trim <= 0:
-                return np.mean(arr)
-            return np.mean(arr[trim:arr.size - trim])
-
-        per_link_metrics = []
-
-        for link in links:
-
-            indices = np.asarray(link.path, dtype=int)
-            if indices.size < 3:
-                continue
-
-            rows, cols = np.unravel_index(indices, image_shape)
-
-            vesselX = cols.astype(float) * pix2mm
-            vesselY = rows.astype(float) * pix2mm
-            numPoints = len(vesselX)
-
-            ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
-            arcLength = np.sum(ds)
-
-            chordLength = np.sqrt(
-                (vesselX[-1]-vesselX[0])**2 +
-                (vesselY[-1]-vesselY[0])**2
-            )
-
-            if arcLength <= 0:
-                continue
-
-            windowSize = 10
-
-            smoothedX = movmean(vesselX, windowSize)
-            smoothedY = movmean(vesselY, windowSize)
-
-            dx = np.gradient(smoothedX)
-            dy = np.gradient(smoothedY)
-
-            dx = movmean(dx, windowSize)
-            dy = movmean(dy, windowSize)
-
-            ddx = np.gradient(dx)
-            ddy = np.gradient(dy)
-
-            ddx = movmean(ddx, windowSize)
-            ddy = movmean(ddy, windowSize)
-
-            curvature = (dx*ddy - ddx*dy) / ((dx**2 + dy**2)**(3/2) + eps)
-            curvature = movmean(curvature, windowSize)
-
-            signCurv = np.sign(curvature)
-            inflecIdx = np.where(np.diff(signCurv) != 0)[0] + 1
-            nSeg = len(inflecIdx) + 1
-
-            x = np.arange(1, numPoints+1)
-
-            v1 = np.array([
-                vesselY[-1]-vesselY[0],
-                vesselX[-1]-vesselX[0]
-            ])
-
-            v2 = np.array([x[-1]-x[0],0])
-
-            angle = np.arccos(
-                np.clip(
-                    np.dot(v1,v2) /
-                    (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
-                    -1,1
-                )
-            )
-
-            vessel = np.column_stack((smoothedY, smoothedX))
-            vesselSlope = np.sign(v1[1])
-
-            rot = np.array([
-                [np.cos(vesselSlope*angle),-np.sin(vesselSlope*angle)],
-                [np.sin(vesselSlope*angle), np.cos(vesselSlope*angle)]
-            ])
-
-            vessel_rot = vessel @ rot
-            vessel_rot = vessel_rot[:,1]
-
-            gradCurv = np.gradient(vessel_rot)
-            gradCurv = movmean(gradCurv, windowSize)
-
-            signGradCurv = np.sign(gradCurv)
-            extremaIdx = np.where(np.diff(signGradCurv)!=0)[0] + 1
-
-            testY = np.diff(vesselY[extremaIdx]) if len(extremaIdx)>1 else []
-            testX = np.diff(vesselX[extremaIdx]) if len(extremaIdx)>1 else []
-
-            trueExtrema = []
-
-            if len(extremaIdx) >= 1:
-
-                trueExtrema = [extremaIdx[0]]
-                thr = 3*pix2mm
-
-                for kk in range(1,len(extremaIdx)):
-
-                    cond1 = abs(testY[kk-1])>thr and abs(testX[kk-1])>thr
-
-                    cond2 = (
-                        (abs(testY[kk-1])>thr or abs(testX[kk-1])>thr)
-                        and (extremaIdx[kk]-extremaIdx[kk-1] > 100)
-                    )
-
-                    if cond1 or cond2:
-                        trueExtrema.append(extremaIdx[kk])
-
-                nExtrema = max(len(trueExtrema),1)
-
-            else:
-                nExtrema = 1
-
-            AOC = np.nan if chordLength==0 else arcLength/chordLength
-
-            TSC = np.sum((curvature[1:-1]**2)*ds[1:]) if len(curvature)>=3 else np.nan
-            TSCN = np.sum((curvature[1:-1]**2)*ds[1:]/arcLength) if arcLength>0 else np.nan
-
-            segAOCs = []
-            segArcs = []
-
-            segStart = 0
-
-            for k in range(nSeg):
-
-                if k < len(inflecIdx):
-                    segEnd = inflecIdx[k]
-                else:
-                    segEnd = len(vesselX)-1
-
-                segArc = np.sum(
-                    np.sqrt(
-                        np.diff(vesselX[segStart:segEnd+1])**2 +
-                        np.diff(vesselY[segStart:segEnd+1])**2
-                    )
-                )
-
-                segChord = np.sqrt(
-                    (vesselX[segEnd]-vesselX[segStart])**2 +
-                    (vesselY[segEnd]-vesselY[segStart])**2
-                )
-
-                segAOC_val = np.nan if segChord==0 else segArc/segChord
-
-                segAOCs.append(segAOC_val)
-                segArcs.append(segArc)
-
-                segStart = segEnd
-
-            segAOCs = np.asarray(segAOCs)
-            segArcs = np.asarray(segArcs)
-
-            if nSeg>1 and arcLength>0:
-                tortDensity = ((nSeg-1)/nSeg)*(np.sum(segAOCs-1)/arcLength)
-            else:
-                tortDensity = segAOCs[0] if segAOCs.size>0 else np.nan
-
-            DT = np.nansum(segAOCs*segArcs)/arcLength if arcLength>0 else np.nan
-
-            PWAOC = AOC*nExtrema if np.isfinite(AOC) else np.nan
-
-            ISR = np.sum(np.abs(curvature))/numPoints if numPoints>0 else np.nan
-
-            if numPoints<3:
-                SOAM = 0
-            else:
-
-                totalWeightedAngle = 0
-
-                for j in range(1,numPoints-1):
-
-                    v1 = np.array([
-                        vesselX[j]-vesselX[j-1],
-                        vesselY[j]-vesselY[j-1]
-                    ])
-
-                    v2 = np.array([
-                        vesselX[j+1]-vesselX[j],
-                        vesselY[j+1]-vesselY[j]
-                    ])
-
-                    cosTheta = np.clip(
-                        np.dot(v1,v2) /
-                        (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
-                        -1,1
-                    )
-
-                    angleRad = np.arccos(cosTheta)
-                    totalWeightedAngle += angleRad
-
-                SOAM = totalWeightedAngle/arcLength
-
-            segStart = 0
-            angleRads = []
-
-            for k in range(nSeg):
-
-                if k < len(inflecIdx):
-                    segEnd = inflecIdx[k]
-                else:
-                    segEnd = len(vesselX)-1
-
-                midpointIndex = round((segEnd-segStart)/2)+segStart
-
-                v1 = np.array([
-                    vesselX[midpointIndex]-vesselX[segStart],
-                    vesselY[midpointIndex]-vesselY[segStart]
-                ])
-
-                v2 = np.array([
-                    vesselX[segEnd]-vesselX[midpointIndex],
-                    vesselY[segEnd]-vesselY[midpointIndex]
-                ])
-
-                cosTheta = np.clip(
-                    np.dot(v1,v2) /
-                    (np.linalg.norm(v1)*np.linalg.norm(v2)+eps),
-                    -1,1
-                )
-
-                angleRads.append(np.arccos(cosTheta))
-
-            angleRads = np.asarray(angleRads)
-
-            tortAngle = np.sum(angleRads*segArcs)/nSeg if nSeg>0 else np.nan
-
-            windowSize = 4
-
-            smoothedX = movmean(vesselX, windowSize)
-            smoothedY = movmean(vesselY, windowSize)
-
-            dx = np.diff(smoothedX)
-            dy = np.diff(smoothedY)
-
-            ds = np.sqrt(dx**2 + dy**2)
-
-            if len(ds)>1:
-
-                arcLength2 = np.sum(ds)
-
-                theta = np.arctan2(dy,dx)
-                dtheta = np.zeros_like(theta)
-
-                for j in range(1,len(theta)-1):
-                    dtheta[j] = (theta[j+1]-theta[j-1])/(ds[j]+ds[j-1])
-
-                dtheta[0] = (theta[1]-theta[0])/ds[0]
-                dtheta[-1] = (theta[-1]-theta[-2])/ds[-1]
-
-                window = 4
-                nPoints = len(smoothedX)
-
-                L_local = np.zeros(nPoints)
-
-                for j in range(nPoints):
-
-                    idxStart = max(0,j-window//2)
-                    idxEnd = min(nPoints,j+window//2+1)
-
-                    localCentroidX = np.mean(smoothedX[idxStart:idxEnd])
-                    localCentroidY = np.mean(smoothedY[idxStart:idxEnd])
-
-                    r_local = np.sqrt(
-                        (smoothedX[j]-localCentroidX)**2 +
-                        (smoothedY[j]-localCentroidY)**2
-                    )
-
-                    L_local[j] = r_local**2
-
-                dL_local = np.abs(np.diff(L_local))
-
-                robust_dL = trimmean_10(dL_local)
-                VCI1 = robust_dL/(arcLength2/len(dL_local))
-
-            else:
-                VCI1 = np.nan
-
-            with np.errstate(divide='ignore',invalid='ignore'):
-                curv_safe = curvature.copy()
-                curv_safe[np.abs(curv_safe) < 1e-6] = np.nan
-                inv_curv = 1.0 / curv_safe
-                t = np.gradient(inv_curv)
-
-            t[~np.isfinite(t)] = np.nan
-            VCI2 = np.nansum(t)/numPoints
-
-            per_link_metrics.append({
-                "AOC":AOC,"TSC":TSC,"TSCN":TSCN,
-                "tortDensity":tortDensity,"DT":DT,
-                "PWAOC":PWAOC,"ISR":ISR,
-                "SOAM":SOAM,"tortAngle":tortAngle,
-                "VCI1":VCI1,"VCI2":VCI2
-            })
-
-        meanMetrics = {}
-
-        for name in metric_names:
-
-            vals = np.array([m[name] for m in per_link_metrics],dtype=float)
-
-            meanMetrics[f"{name}_mean"] = np.nanmean(vals)
-            meanMetrics[f"{name}_std"] = np.nanstd(vals)
-
-        if not hasattr(canvas,"new_tort_metrics"):
-            canvas.new_tort_metrics = {}
-
-        canvas.new_tort_metrics.update(meanMetrics)
-
- 
-
+        return summary
