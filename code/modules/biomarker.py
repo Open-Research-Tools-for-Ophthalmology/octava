@@ -17,13 +17,29 @@ from scipy.stats import skew, kurtosis
 # import os
 # from datetime import datetime
 
+class Link:
+    def __init__(self, path: list[int], rows: list[float], cols: list[float], points: list[tuple[float, float]]):
+        """
+        Link object represent a vessel segment
 
+        @example path (pix): [1,2,3,1001,2002]
+        @example rows (mm): [0,0,0,1,2]
+        @example cols (mm): [1,2,3,1,2]
+        @example points (mm): [(0,1),(0,2),(0,3),(1,1),(2,2)]
+        """
+        self.path = path
+        self.rows = rows
+        self.cols = cols
+        self.points = points
+        self.pixLength = None
+   
 class BiomarkerAnalyzer:
     """
     Compute vessel biomarkers from the current canvas state.
     Results are stored in canvas.metrics and shown in the GUI.
     """
 
+    # Smoother functions
     @staticmethod
     def _movmean(arr, window):
         """Compute a centered moving average with preservation of data trend at edge values."""
@@ -127,17 +143,70 @@ class BiomarkerAnalyzer:
             return points
 
     @staticmethod
+    def _tort_smoothing(links, image_shape=1000, pix2mm=0.003, movmean_window=10, resample_spacing=0.003, bspline_s=1):
+        """
+        All-in-one smoothing for all possible tortuosity metrics
+        1st links from skeletonisation
+            -> 2nd movMean
+            -> 3rd resampled
+            -> 4rd bsplined
+        @param links: Links parsed from skeletonisation Link(start: int, end: int, path: list,  label: int), where path consists of flat index of each point
+        @param image_shape: Shape of the image used for unraveling indices.
+        @param movmean_window: Window size for moving mean smoothing.
+        @param resample_spacing: Spacing for resampling the points, recommended to set to same as pix2mm, physical size of 1 pix
+        @param bspline_s: Smoothing factor for B-spline smoothing, s = b_spline_s_factor * len(points)
+        @return List[Link]
+        """
+
+        # Get x and y coords from the links list
+        smoothed_links = []
+        for link in links:   
+            indices = np.asarray(link.path, dtype=int)
+            vessel_x, vessel_y = np.unravel_index(indices, image_shape)
+
+            vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
+            vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
+
+            # Moving mean smoothing
+            smoothedX = BiomarkerAnalyzer._movmean(vesselX, movmean_window)
+            smoothedY = BiomarkerAnalyzer._movmean(vesselY, movmean_window)
+            smoothedX[0], smoothedX[-1] = vesselX[0], vesselX[-1]
+            smoothedY[0], smoothedY[-1] = vesselY[0], vesselY[-1]
+
+            # Resample points
+            smoothedPoints = np.column_stack((smoothedX, smoothedY))
+            resampledPoints = BiomarkerAnalyzer._resample_xy_by_arclength(
+                smoothedPoints,
+                resample_spacing,
+            )
+
+            # B-spline smoothing
+            bsplinedPoints = BiomarkerAnalyzer._points_smoothing(resampledPoints, bspline_s * len(resampledPoints))
+
+            # Remove duplicates
+            bsplinedPoints = BiomarkerAnalyzer._remove_duplicate_xy_points(bsplinedPoints)
+
+            # Aggregate all links
+            bsplinedPoints_pix = (bsplinedPoints / pix2mm).astype(int)
+            bsplinedPath = [np.ravel_multi_index(point, image_shape) for point in bsplinedPoints_pix]
+            bsplinedRows, bsplinedCols = [arr * pix2mm for arr in np.unravel_index(bsplinedPath, image_shape)]
+            smoothed_links.append(Link(
+                path=bsplinedPath,
+                rows=bsplinedRows,
+                cols=bsplinedCols,
+                points=bsplinedPoints
+            ))
+
+        return smoothed_links
+
+    # Metrics calculation functions
+    @staticmethod
     def _compute_soam(points, debug_segments=None):
         """
         Compute SOAM from evenly-spaced 'x' and 'y' points, 
         as summed turning angle per resampled arc length.
         This is the current in-use function to compute SOAM.
-        """
-        s = len(points)  # change s depending on number of points
-
-        points = BiomarkerAnalyzer._points_smoothing(points, s)  # not sure what to set for s
-        points = BiomarkerAnalyzer._remove_duplicate_xy_points(points)
-            
+        """         
         if debug_segments is not None:
             debug_segments.append(points.copy())  # collect this segment's smoothed points for QA visualization
 
@@ -164,20 +233,12 @@ class BiomarkerAnalyzer:
         return total_angle / arc_length
 
     @staticmethod
-    def _compute_pwaoc(vessel_x, vessel_y, pix2mm):
+    def _compute_pwaoc(vesselX, vesselY, pix2mm):
         """
         Compute PWAOC tortuosity metrics for one vessel centerline.
         This is the current function used to compute PWAOC metrics.
         Previously contained SOAM calculation but was removed due redundancy.
         """
-        vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
-        vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
-        
-        # smooth points using B spline smoothing
-        points = np.column_stack((vesselX, vesselY))
-        points = BiomarkerAnalyzer._points_smoothing(points, s=len(points))
-        vesselX, vesselY = points[:, 0], points[:, 1]
-
         if vesselX.size < 3 or vesselY.size < 3:
             return None
 
@@ -261,31 +322,34 @@ class BiomarkerAnalyzer:
         AOC = np.nan if chordLength == 0 else arcLength / chordLength
         PWAOC = AOC * nExtrema if np.isfinite(AOC) else np.nan
 
-        return {
-            "PWAOC": PWAOC,
-        }
+        return PWAOC
 
-    def _compute_density(vesselX, vesselY, smoothedX, smoothedY, smooth_window):
+    def _compute_density(vesselX, vesselY):
         if len(vesselX) < 2:
             return np.nan
 
         # Preparations
+        window_size = 10
+
         ds = np.sqrt(np.diff(vesselX)**2 + np.diff(vesselY)**2)
         arcLength = np.sum(ds)
 
+        smoothedX = BiomarkerAnalyzer._movmean(vesselX, window_size)
+        smoothedY = BiomarkerAnalyzer._movmean(vesselY, window_size)
+
         dx = np.gradient(smoothedX)
         dy = np.gradient(smoothedY)
-        dx = BiomarkerAnalyzer._movmean(dx, smooth_window)
-        dy = BiomarkerAnalyzer._movmean(dy, smooth_window)
+        dx = BiomarkerAnalyzer._movmean(dx, window_size)
+        dy = BiomarkerAnalyzer._movmean(dy, window_size)
 
         ddx = np.gradient(dx)
         ddy = np.gradient(dy)
-        ddx = BiomarkerAnalyzer._movmean(ddx, smooth_window)
-        ddy = BiomarkerAnalyzer._movmean(ddy, smooth_window)
+        ddx = BiomarkerAnalyzer._movmean(ddx, window_size)
+        ddy = BiomarkerAnalyzer._movmean(ddy, window_size)
 
         eps = np.finfo(float).eps
         curvature = (dx * ddy - ddx * dy) / ((dx**2 + dy**2)**(3/2) + eps)
-        curvature = BiomarkerAnalyzer._movmean(curvature, smooth_window)
+        curvature = BiomarkerAnalyzer._movmean(curvature, window_size)
 
         signCurv = np.sign(curvature)
         inflecIdx = np.where(np.diff(signCurv) != 0)[0] + 1
@@ -335,9 +399,8 @@ class BiomarkerAnalyzer:
     def _compute_new_tortuosity_metrics(
         vessel_x,
         vessel_y,
+        points,
         pix2mm,
-        soam_sample_spacing_mm=0.03,
-        soam_smoothing_window=5,
         debug_segments=None,
     ):
         """Compute PWAOC, a paper-aligned SOAM and Density from one vessel centerline.
@@ -353,53 +416,19 @@ class BiomarkerAnalyzer:
         """
 
         # PWAOC
-        metrics = BiomarkerAnalyzer._compute_pwaoc(
-            vessel_x,
-            vessel_y,
-            pix2mm,
-        )
-        # FIXME keep none PWAOC available links
-        # if metrics is None:
-        #     return None
+        pwaoc_value = BiomarkerAnalyzer._compute_pwaoc(vessel_x, vessel_y, pix2mm)
 
         # SOAM
-        vesselX = np.asarray(vessel_x, dtype=float).ravel() * pix2mm
-        vesselY = np.asarray(vessel_y, dtype=float).ravel() * pix2mm
-        # FIXME keep all links
-        # if vesselX.size < 3 or vesselY.size < 3:
-        #     return metrics
-    
-        smooth_window = max(int(soam_smoothing_window), 1)
-        smoothedX = BiomarkerAnalyzer._movmean(vesselX, smooth_window)
-        smoothedY = BiomarkerAnalyzer._movmean(vesselY, smooth_window)
-        smoothedX[0], smoothedX[-1] = vesselX[0], vesselX[-1]
-        smoothedY[0], smoothedY[-1] = vesselY[0], vesselY[-1]
-
-        points = np.column_stack((smoothedX, smoothedY))
-        resampled = BiomarkerAnalyzer._resample_xy_by_arclength(
-            points,
-            soam_sample_spacing_mm,
-        )
-
-        # Skip all preliminary smoothing if vessel too small
-        # if vesselX.size < 3 or vesselY.size < 3:
-        #     resampled = np.column_stack((vesselX, vesselY))
-
-        soam_value = BiomarkerAnalyzer._compute_soam(resampled, debug_segments=debug_segments)
+        soam_value = BiomarkerAnalyzer._compute_soam(points, debug_segments=debug_segments)
 
         # Density
-        density_value = BiomarkerAnalyzer._compute_density(
-            vesselX,
-            vesselY,
-            smoothedX,
-            smoothedY,
-            smooth_window
-        )
+        density_value = BiomarkerAnalyzer._compute_density(vessel_x, vessel_y)
 
-        if metrics is None:
+        if pwaoc_value is None and soam_value is None and density_value is None:
             return None
 
-        metrics = metrics.copy()
+        metrics = {}
+        metrics["PWAOC"] = pwaoc_value
         metrics["SOAM"] = soam_value
         metrics["tortDensity"] = density_value
 
@@ -441,6 +470,10 @@ class BiomarkerAnalyzer:
 
         Nx, Ny = binary.shape
         image_size_mm = float(canvas.image_size_var.get())
+
+        # Smoothed links for all tortuosity calculation
+        pix2mm=image_size_mm / Nx
+        links = BiomarkerAnalyzer._tort_smoothing(links, binary.shape, pix2mm, 5, pix2mm, 1)
 
         # Read optional image type from GUI
         img_type = canvas.img_type_var.get() if hasattr(canvas, "img_type_var") else None
@@ -829,8 +862,8 @@ class BiomarkerAnalyzer:
         height, width = image_shape
         for points in segments:
             pixel_points = np.rint(points / pix2mm).astype(int)
-            cols = np.clip(pixel_points[:, 0], 0, width - 1)
-            rows = np.clip(pixel_points[:, 1], 0, height - 1)
+            rows = np.clip(pixel_points[:, 0], 0, height - 1)
+            cols = np.clip(pixel_points[:, 1], 0, width - 1)
 
             if len(rows) == 0:
                 continue
@@ -865,7 +898,6 @@ class BiomarkerAnalyzer:
     #! This is the one being used by BiomarkerAnalyzer.process() and in regional analysis
     def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix, collect_soam_debug_image=False):
         """Compute summarized tortuosity metrics directly from graph links."""
-        binary = binary_image
         if links is None or len(links) == 0:
             empty_metrics = {
                 "PWAOC_mean": np.nan,
@@ -886,25 +918,19 @@ class BiomarkerAnalyzer:
         img_height, _ = fullImSizePix
         pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
 
-        image_shape = binary.shape
-
         per_link_metrics = []
         debug_segments = [] if collect_soam_debug_image else None
         link_segments = [] if collect_soam_debug_image else None
 
         for link in links:
-            indices = np.asarray(link.path, dtype=int)
-
-            rows, cols = np.unravel_index(indices, image_shape)
             if collect_soam_debug_image:
-                # mm-space points (col, row) so this matches the format _rasterize_soam_debug_segments expects
-                link_segments.append(np.column_stack((cols, rows)).astype(float) * pix2mm)
+                link_segments.append(np.asarray(link.points, dtype=float))
             #! Use Janelle's smoothing
             metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
-                cols,
-                rows,
+                link.cols,
+                link.rows,
+                link.points,
                 pix2mm,
-                soam_sample_spacing_mm=0.003, # 0.003 mm = 1 px for 3mm/1000px images
                 debug_segments=debug_segments,
             )
             if metrics is not None:
@@ -913,8 +939,8 @@ class BiomarkerAnalyzer:
         summary = BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
 
         if collect_soam_debug_image:
-            links_image, links_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(link_segments, pix2mm, image_shape)
-            debug_image, debug_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(debug_segments, pix2mm, image_shape)
+            links_image, links_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(link_segments, 3/1000, (1000,1000))
+            debug_image, debug_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(debug_segments, 3/1000, (1000,1000))
             return summary, debug_image, debug_image_end, links_image, links_image_end
 
         return summary
