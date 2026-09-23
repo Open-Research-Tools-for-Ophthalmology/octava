@@ -2,8 +2,6 @@ from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
-
-from sympy import root
 from window_onh_editor import *
 from window_advanced_settings import *
 from window_regional_analysis_settings import *
