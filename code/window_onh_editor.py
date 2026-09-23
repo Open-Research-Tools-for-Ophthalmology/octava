@@ -7,6 +7,7 @@ from tkinter import (
     Toplevel,
     Frame,
     Label,
+    PhotoImage,
 )
 from theme import *
 import customtkinter as ctk
@@ -14,7 +15,7 @@ from tkinter import Canvas
 import numpy as np
 from modules.resize_image import *
 from PIL import Image, ImageTk
-from resource_path import ICONS_PATH
+from resource_path import ASSETS_PATH, ICONS_PATH
 
 def window_onh_editor(canvas):
     # Check if an image is loaded
@@ -33,6 +34,7 @@ def window_onh_editor(canvas):
     
     subwindow_onh = Toplevel()
     subwindow_onh.title("Optical Nerve Head Editor")
+    subwindow_onh.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
     subwindow_onh.geometry("800x650")
     subwindow_onh.configure(bg="#FBE3D6")
 

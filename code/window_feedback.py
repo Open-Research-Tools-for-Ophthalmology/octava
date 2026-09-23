@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import Canvas, Toplevel, messagebox
 from urllib import response
+from resource_path import ASSETS_PATH
 from theme import *
 import customtkinter as ctk
 from dotenv import load_dotenv
@@ -32,6 +33,7 @@ async def send_email(name: str, address: str, feedback_text: str):
 def open_feedback_window(canvas: Canvas):
   subwindow = Toplevel()
   subwindow.title("Feedback")
+  subwindow.iconphoto(False, tk.PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.geometry("700x620")
   subwindow.configure(bg = bg_colour)
 

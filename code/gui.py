@@ -2,6 +2,8 @@ from email.mime import image
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Checkbutton, IntVar, Spinbox, StringVar, ttk, DoubleVar
 from tkinter.ttk import Combobox
+
+from sympy import root
 from window_onh_editor import *
 from window_advanced_settings import *
 from window_regional_analysis_settings import *
@@ -26,10 +28,10 @@ from modules.onh_vessel_separation import *
 from modules.histogram import HistogramPlotter
 from modules.preview_thumbnail import init_thumbnail_zoom_pan
 from test import *
-from resource_path import ICONS_PATH
+from resource_path import ASSETS_PATH, ICONS_PATH
 
 # command for bundling on mac with pyinstaller: 
-# pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' --icon "./assets/icons/favicon.png" ./code/gui.py
+# pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' --icon "./code/assets/favicon.png" ./code/gui.py
 
 # Global window registry
 OPEN_WINDOWS = {}
@@ -79,6 +81,7 @@ def on_closing():
 
 window = Tk()
 window.title("OCTAVA")
+window.iconphoto(False, tk.PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
 window.geometry("1210x750")
 window.configure(bg = bg_colour)
 

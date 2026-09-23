@@ -5,6 +5,7 @@ from tkinter import (
     Toplevel,
     Frame,
     Label,
+    PhotoImage,
 )
 from theme import *
 import customtkinter as ctk
@@ -13,7 +14,7 @@ import numpy as np
 from modules.resize_image import *
 from PIL import Image, ImageTk
 from modules.load_image import load_image
-from resource_path import ICONS_PATH
+from resource_path import ASSETS_PATH, ICONS_PATH
 
 
 def subwindow_subset(canvas):
@@ -26,6 +27,7 @@ def subwindow_subset(canvas):
 
     subwindow_subset = Toplevel()
     subwindow_subset.title("Subset Editor")
+    subwindow_subset.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
     subwindow_subset.geometry("800x650")
     subwindow_subset.configure(bg="#FBE3D6")
 

@@ -63,7 +63,7 @@ jobs:
               # Bundle all runtimes and assets folder
               #! --hidden-import to resolve missing import issues on Linux, see https://stackoverflow.com/questions/46680429/importerror-no-module-named-tkinter-finder
               run: |
-                  pyinstaller --noconsole --onefile --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' --icon "./assets/icons/favicon.png" ./code/gui.py
+                  pyinstaller --noconsole --onefile --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' --icon "./code/assets/favicon.png" ./code/gui.py
               working-directory: ./
 
             - name: Upload Artifact

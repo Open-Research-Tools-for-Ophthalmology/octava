@@ -4,6 +4,7 @@ import webbrowser
 import tkinter as tk
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, Spinbox
+from resource_path import ASSETS_PATH
 from theme import *
 import customtkinter as ctk
 
@@ -16,6 +17,7 @@ def close(window):
 def open_help_window(canvas):
   subwindow = Toplevel()
   subwindow.title("Help")
+  subwindow.iconphoto(False, tk.PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.geometry("800x600")
   subwindow.configure(bg = bg_colour)
 

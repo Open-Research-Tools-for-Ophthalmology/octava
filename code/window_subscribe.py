@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import Canvas, Toplevel, messagebox
+from resource_path import ASSETS_PATH
 from theme import *
 import customtkinter as ctk
 import requests
@@ -20,6 +21,7 @@ def close(window):
 def open_subscribe_window(canvas: Canvas):
   subwindow = Toplevel()
   subwindow.title("Subscribe for Updates")
+  subwindow.iconphoto(False, tk.PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.geometry("500x350")
   subwindow.configure(bg = bg_colour)
 
