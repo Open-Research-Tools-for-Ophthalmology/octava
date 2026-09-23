@@ -201,15 +201,12 @@ class BiomarkerAnalyzer:
 
     # Metrics calculation functions
     @staticmethod
-    def _compute_soam(points, debug_segments=None):
+    def _compute_soam(points):
         """
         Compute SOAM from evenly-spaced 'x' and 'y' points, 
         as summed turning angle per resampled arc length.
         This is the current in-use function to compute SOAM.
-        """         
-        if debug_segments is not None:
-            debug_segments.append(points.copy())  # collect this segment's smoothed points for QA visualization
-
+        """
         if points.shape[0] < 3:
             return 0.0
 
@@ -401,7 +398,6 @@ class BiomarkerAnalyzer:
         vessel_y,
         points,
         pix2mm,
-        debug_segments=None,
     ):
         """Compute PWAOC, a paper-aligned SOAM and Density from one vessel centerline.
 
@@ -419,7 +415,7 @@ class BiomarkerAnalyzer:
         pwaoc_value = BiomarkerAnalyzer._compute_pwaoc(vessel_x, vessel_y, pix2mm)
 
         # SOAM
-        soam_value = BiomarkerAnalyzer._compute_soam(points, debug_segments=debug_segments)
+        soam_value = BiomarkerAnalyzer._compute_soam(points)
 
         # Density
         density_value = BiomarkerAnalyzer._compute_density(vessel_x, vessel_y)
@@ -780,32 +776,33 @@ class BiomarkerAnalyzer:
         }
 
         # Tortuosity metrics (PWAOC, SOAM, etc.)
-        canvas.new_tort_metrics, soam_debug_image, soam_debug_image_end, links_image, links_image_end = BiomarkerAnalyzer.new_tortuosity_metrics(
+        canvas.new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
             links=links,
-            binary_image=canvas.binary_image,
             image_size_var=canvas.image_size_var,
             fullImSizePix=canvas.fullImSizePix,
-            collect_soam_debug_image=True,
         )
         canvas.new_tort_metrics = {key: round(float(value), 2) for key, value in canvas.new_tort_metrics.items()}
         micro_stats.update(canvas.new_tort_metrics)
 
-        # Save combined SOAM-smoothed segments so smoothing aggressiveness can be inspected visually
+        # Save the smoothed skeleton: this same smoothing now feeds every metric above, not just SOAM
         if hasattr(canvas, "current_save_folder"):
             images_dir = os.path.join(canvas.current_save_folder, "images")
             os.makedirs(images_dir, exist_ok=True)
-            soam_debug_path = os.path.join(images_dir, f"{canvas.FileLabelName}_SOAM_Smoothed.png")
-            cv2.imwrite(soam_debug_path, soam_debug_image)
-            print(f"SOAM smoothed segments debug image saved to: {soam_debug_path}")
-            soam_debug_path_end = os.path.join(images_dir, f"{canvas.FileLabelName}_SOAM_Smoothed_EndPoint.png")
-            cv2.imwrite(soam_debug_path_end, soam_debug_image_end)
-            print(f"SOAM smoothed segments end debug image saved to: {soam_debug_path_end}")
-            links_debug_path = os.path.join(images_dir, f"{canvas.FileLabelName}_Links.png")
-            cv2.imwrite(links_debug_path, links_image)
-            print(f"Links debug image saved to: {links_debug_path}")
-            links_debug_path_end = os.path.join(images_dir, f"{canvas.FileLabelName}_Links_EndPoint.png")
-            cv2.imwrite(links_debug_path_end, links_image_end)
-            print(f"Links end debug image saved to: {links_debug_path_end}")
+
+            image_identifier = canvas.FileLabelName + '_' + canvas.img_type_var.get()
+            twig_size = canvas.twig_size.get()
+            curr_idx = len([
+                f for f in os.listdir(images_dir)
+                if f"{image_identifier}_Skeletonised_TwigSize" in f
+            ])
+
+            smoothed_skeleton = BiomarkerAnalyzer._rasterize_smoothed_skeleton(links, pix2mm, binary.shape)
+            smoothed_path = os.path.join(
+                images_dir,
+                f"{image_identifier}_Skeletonised_TwigSize{twig_size}_{curr_idx}.png"
+            )
+            cv2.imwrite(smoothed_path, smoothed_skeleton)
+            print(f"Smoothed skeleton image saved to: {smoothed_path}")
 
         # Function parameters (Frangi, MedFilt, etc.)
         param_stats = {
@@ -852,54 +849,37 @@ class BiomarkerAnalyzer:
             canvas.itemconfig(canvas.tortuosity_value_id, text=f"{mean_tortuosity:.3f}")
 
     @staticmethod
-    def _rasterize_soam_debug_segments(segments, pix2mm, image_shape):
-        """Combine per-link SOAM-smoothed points (mm space) into one binary image for visual QA."""
-        debug_image = np.zeros(image_shape, dtype=np.uint8)
-        debug_image_end = np.zeros((*image_shape, 3), dtype=np.uint8)  # 3 channels so BGR colors render (not grayscale)
-        if not segments or pix2mm <= 0:
-            return debug_image, debug_image_end
+    def _rasterize_smoothed_skeleton(links, pix2mm, image_shape):
+        """Rasterize smoothed link centerlines (mm space) into a single 0/255 skeleton image."""
+        skeleton_img = np.zeros(image_shape, dtype=np.uint8)
+        if not links or pix2mm <= 0:
+            return skeleton_img
 
         height, width = image_shape
-        for points in segments:
+        for link in links:
+            points = np.asarray(link.points, dtype=float)
+            if points.shape[0] == 0:
+                continue
+
             pixel_points = np.rint(points / pix2mm).astype(int)
             rows = np.clip(pixel_points[:, 0], 0, height - 1)
             cols = np.clip(pixel_points[:, 1], 0, width - 1)
 
-            if len(rows) == 0:
-                continue
-
-            # Single point segment: green
             if len(rows) == 1:
-                print(f"[Single]: [{rows[0]},{cols[0]}]")
-                debug_image[rows[0], cols[0]] = 255
-                debug_image_end[rows[0], cols[0]] = (0, 255, 0)
-                cv2.circle(debug_image, (int(cols[0]), int(rows[0])), 0, 255, -1)
-                cv2.circle(debug_image_end, (int(cols[0]), int(rows[0])), 0, (0, 255, 0), -1)
+                cv2.circle(skeleton_img, (int(cols[0]), int(rows[0])), 0, 255, -1)
                 continue
 
-            # Double point segment: orange
-            if len(rows) == 2:
-                print(f"[Double]: [{rows[0]},{cols[0]}] -> [{rows[1]},{cols[1]}]")
-                cv2.line(debug_image, (int(cols[0]), int(rows[0])), (int(cols[1]), int(rows[1])), 255, 1)
-                cv2.line(debug_image_end, (int(cols[0]), int(rows[0])), (int(cols[1]), int(rows[1])), (0, 165, 255), 1)
-                continue
-
-            # Multi-point segment: gray line with red start and blue end points
             for j in range(len(rows) - 1):
-                cv2.line(debug_image, (int(cols[j]), int(rows[j])), (int(cols[j + 1]), int(rows[j + 1])), 255, 1)
-                cv2.line(debug_image_end, (int(cols[j]), int(rows[j])), (int(cols[j + 1]), int(rows[j + 1])), (123,123,123), 1)
+                cv2.line(skeleton_img, (int(cols[j]), int(rows[j])), (int(cols[j + 1]), int(rows[j + 1])), 255, 1)
 
-                cv2.circle(debug_image_end, (int(cols[0]), int(rows[0])), 0, (0, 0, 255), -1)
-                cv2.circle(debug_image_end, (int(cols[len(rows) - 1]), int(rows[len(rows) - 1])), 0, (255, 0, 0), -1)
-       
-        return debug_image, debug_image_end
+        return skeleton_img
 
     @staticmethod
     #! This is the one being used by BiomarkerAnalyzer.process() and in regional analysis
-    def new_tortuosity_metrics(links, binary_image, image_size_var, fullImSizePix, collect_soam_debug_image=False):
+    def new_tortuosity_metrics(links, image_size_var, fullImSizePix):
         """Compute summarized tortuosity metrics directly from graph links."""
         if links is None or len(links) == 0:
-            empty_metrics = {
+            return {
                 "PWAOC_mean": np.nan,
                 "PWAOC_std": np.nan,
                 "SOAM_mean": np.nan,
@@ -907,11 +887,6 @@ class BiomarkerAnalyzer:
                 "tortDensity_mean": np.nan,
                 "tortDensity_std": np.nan,
             }
-            if collect_soam_debug_image:
-                empty_debug = np.zeros(binary_image.shape, dtype=np.uint8)
-                empty_debug_end = np.zeros((*binary_image.shape, 3), dtype=np.uint8)
-                return empty_metrics, empty_debug, empty_debug_end
-            return empty_metrics
 
         # Image scale
         image_size_mm = float(image_size_var.get())
@@ -919,28 +894,16 @@ class BiomarkerAnalyzer:
         pix2mm = image_size_mm / img_height if img_height > 0 else 0.0
 
         per_link_metrics = []
-        debug_segments = [] if collect_soam_debug_image else None
-        link_segments = [] if collect_soam_debug_image else None
 
         for link in links:
-            if collect_soam_debug_image:
-                link_segments.append(np.asarray(link.points, dtype=float))
             #! Use Janelle's smoothing
             metrics = BiomarkerAnalyzer._compute_new_tortuosity_metrics(
                 link.cols,
                 link.rows,
                 link.points,
                 pix2mm,
-                debug_segments=debug_segments,
             )
             if metrics is not None:
                 per_link_metrics.append(metrics)
 
-        summary = BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
-
-        if collect_soam_debug_image:
-            links_image, links_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(link_segments, 3/1000, (1000,1000))
-            debug_image, debug_image_end = BiomarkerAnalyzer._rasterize_soam_debug_segments(debug_segments, 3/1000, (1000,1000))
-            return summary, debug_image, debug_image_end, links_image, links_image_end
-
-        return summary
+        return BiomarkerAnalyzer._summarize_new_tort_metrics(per_link_metrics)
