@@ -5,6 +5,7 @@ from tkinter import (
     Toplevel,
     Frame,
     Label,
+    PhotoImage,
 )
 from theme import *
 import customtkinter as ctk
@@ -15,7 +16,7 @@ from modules.resize_image import *
 from PIL import Image, ImageTk
 from modules.faz_utils import display_faz_image, load_faz_grayscale_arr
 from modules.auto_faz.auto_faz import auto_faz
-from resource_path import ICONS_PATH
+from resource_path import ASSETS_PATH, ICONS_PATH
 
 def subwindow4(canvas, editable=False):
     # Check if an image is loaded
@@ -27,6 +28,7 @@ def subwindow4(canvas, editable=False):
 
     subwindow4 = Toplevel()
     subwindow4.title(editable and "FAZ Editor" or "FAZ Viewer")
+    subwindow4.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
     subwindow4.geometry("800x650")
     subwindow4.configure(bg="#FBE3D6")
 

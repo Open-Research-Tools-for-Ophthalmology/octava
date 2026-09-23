@@ -1,4 +1,5 @@
 from pathlib import Path
+from resource_path import ASSETS_PATH
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Toplevel, Checkbutton, IntVar, StringVar, Spinbox
 from theme import *
 from tkinter.ttk import Combobox
@@ -41,6 +42,7 @@ def subwindow2(canvas):
   
   subwindow = Toplevel()
   subwindow.title("Regional Analysis Settings")
+  subwindow.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.configure(bg = "#FBE3D6")
   view_height = 350 if is_retina_mode else 300 if is_onh_mode else 250
   subwindow.geometry(f"300x{view_height}")

@@ -2,6 +2,7 @@
 # https://github.com/ParthJadhav/Tkinter-Designer
 
 from pathlib import Path
+from resource_path import ASSETS_PATH
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
@@ -83,6 +84,7 @@ def subwindow1(canvas):
 
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
+  subwindow.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.geometry(f"360x{window_height}")
   subwindow.configure(bg = subwindow_bg_colour)
 

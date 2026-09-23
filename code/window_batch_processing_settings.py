@@ -1,4 +1,5 @@
 from pathlib import Path
+from resource_path import ASSETS_PATH
 from tkinter import (
     Tk,
     Canvas,
@@ -41,6 +42,7 @@ def subwindow3(canvas, open_window_fn=None):
       
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
+    subwindow.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
     subwindow.geometry("350x415")
     subwindow.configure(bg="#FBE3D6")
     

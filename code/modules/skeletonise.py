@@ -100,11 +100,11 @@ def skeletonise(canvas: Canvas, raw_img: np.ndarray, bin_img: np.ndarray, displa
     skel_pil = Image.fromarray(skel_uint8, mode="L")
 
     # Save files in original shape
-    print("Skeleton image shape:", canvas.skeleton_image.shape)
-    image_identifier = canvas.FileLabelName + '_' + canvas.img_type_var.get()
-    curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if f'{image_identifier}_Skeletonised_TwigSize' in f])
-    img_path = os.path.join(canvas.current_save_folder, "images", f"{image_identifier}_Skeletonised_TwigSize{twig_size}_{curr_idx}.png")
-    cv2.imwrite(img_path, canvas.skeleton_image * 255)
+    # print("Skeleton image shape:", canvas.skeleton_image.shape)
+    # image_identifier = canvas.FileLabelName + '_' + canvas.img_type_var.get()
+    # curr_idx = len([f for f in os.listdir(os.path.join(canvas.current_save_folder, "images")) if f'{image_identifier}_Skeletonised_TwigSize' in f])
+    # img_path = os.path.join(canvas.current_save_folder, "images", f"{image_identifier}_Skeletonised_TwigSize{twig_size}_{curr_idx}.png")
+    # cv2.imwrite(img_path, canvas.skeleton_image * 255)
 
     resized_img = resize_image(skel_pil)
     img_tk = ImageTk.PhotoImage(resized_img)

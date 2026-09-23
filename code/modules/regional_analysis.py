@@ -692,6 +692,13 @@ def run_analysis_on_regions(
 				links = getattr(canvas, "skeleton_links", None)
 				nodes = getattr(canvas, "skeleton_nodes", None)
 
+				Nx, Ny = binaryReg[i].shape
+				image_size_mm = float(canvas.image_size_var.get())
+
+				# Smoothed links for all tortuosity calculation
+				pix2mm=image_size_mm / Nx
+				links = BiomarkerAnalyzer._tort_smoothing(links, binaryReg[i].shape, pix2mm, 5, pix2mm, 1)
+
 				if links is not None and len(links) > 0:
 						# sum(~[app.Gnodes.ep])
 						nodes_count = count_branchpoints(nodes)
@@ -778,8 +785,7 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["kurtTort"] = 0
 
 				new_tort_metrics = BiomarkerAnalyzer.new_tortuosity_metrics(
-						links=canvas.skeleton_links,
-						binary_image=binaryReg[i],
+						links=links,
 						image_size_var=canvas.image_size_var,
 						fullImSizePix=canvas.fullImSizePix,
 				)
