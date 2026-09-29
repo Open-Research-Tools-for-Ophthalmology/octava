@@ -40,6 +40,11 @@ def fit_path_to_canvas(path: str, canvas: tk.Canvas, font: tuple, max_width: int
 
 def display_text_to_canvas(canvas: tk.Canvas, text_x: int, text_y: int, display_text: str, font_spec: tuple):
     """Draw a left-anchored text label on the canvas and return its item id."""
+    TAG_FOLDER_TEXT = "folder_text"
+
+    # Remove any previously drawn label at that spot
+    canvas.delete(TAG_FOLDER_TEXT)
+
     # Draw a single-line, left-anchored label (no wrapping needed because we fit it)
     return canvas.create_text(
         text_x, text_y,
@@ -47,6 +52,7 @@ def display_text_to_canvas(canvas: tk.Canvas, text_x: int, text_y: int, display_
         fill="#333333",
         font=font_spec,
         anchor="w",
+        tags=(TAG_FOLDER_TEXT,)
     )
 
 def select_file(canvas: tk.Canvas, mainCanvas: tk.Canvas):
