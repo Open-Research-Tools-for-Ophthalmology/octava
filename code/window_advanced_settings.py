@@ -80,7 +80,7 @@ def subwindow1(canvas):
       hasattr(canvas, "img_type_var")
       and canvas.img_type_var.get() == "ONH"
   )
-  window_height = 410
+  window_height = 405
 
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
@@ -345,7 +345,7 @@ def subwindow1(canvas):
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=button_yellow_colour,
-                          corner_radius=8,border_width=1,
+                          corner_radius=6,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
   button1.place(x=30, y=265)
@@ -432,11 +432,11 @@ def subwindow1(canvas):
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=button_blue_colour,
-                          corner_radius=8,border_width=1,
+                          corner_radius=6,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
 
-  close_y = 325
+  close_y = 320
   button_close.place(x=30, y=close_y)
 
   subwindow.resizable(False, False)

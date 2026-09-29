@@ -44,7 +44,7 @@ def subwindow2(canvas):
   subwindow.title("Regional Analysis Settings")
   subwindow.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
   subwindow.configure(bg = "#FBE3D6")
-  view_height = 350 if is_retina_mode else 300 if is_onh_mode else 250
+  view_height = 315 if is_retina_mode else 300 if is_onh_mode else 250
   subwindow.geometry(f"300x{view_height}")
   subcanvas2 = Canvas(
       subwindow,
@@ -61,7 +61,7 @@ def subwindow2(canvas):
     # eye type dropdown
     subcanvas2.create_text(
         45.0,
-        50.0,
+        30.0,
         anchor="nw",
         text="Eye",
         fill=text_colour,
@@ -76,7 +76,7 @@ def subwindow2(canvas):
     )
     eye_combobox.place(
         x=80.0,
-        y=45.0,
+        y=25.0,
         width=150.0,
         height=30.0
     )
@@ -153,7 +153,7 @@ def subwindow2(canvas):
           x=40.0,
           y=140.0
       )
-  else: # [square, etdrs, extended etdrs, foveal rings, wide-field]
+  else: #Retina: [square, etdrs, extended etdrs, foveal rings, wide-field]
       # square grid checkbox
       square_grid_checkbox = Checkbutton(
           subwindow,
@@ -165,7 +165,7 @@ def subwindow2(canvas):
       )
       square_grid_checkbox.place(
           x=40.0,
-          y=100.0
+          y=65.0
       )
 
       # etdrs grid checkbox
@@ -179,7 +179,7 @@ def subwindow2(canvas):
       )
       etdrs_grid_checkbox.place(
           x=40.0,
-          y=130.0
+          y=95.0
       )
 
       # extended etdrs grid checkbox
@@ -193,7 +193,7 @@ def subwindow2(canvas):
       )
       extended_etdrs_checkbox.place(
           x=40.0,
-          y=160.0
+          y=125.0
       )
 
       # foveal rings checkbox
@@ -207,7 +207,7 @@ def subwindow2(canvas):
       )
       foveal_rings_checkbox.place(
           x=40.0,
-          y=190.0
+          y=155.0
       )
 
       # Wide-field retina settings with customized spinbox for ring width
@@ -221,14 +221,14 @@ def subwindow2(canvas):
       )
       wide_field_checkbox.place(
         x=40.0,
-        y=220.0
+        y=185.0
       )
       wide_field_ring_width_spinbox = Spinbox(
         subwindow,
         from_=1,
         to=10.00,
         increment=1,
-        width=4,
+        width=3,
         textvariable=canvas.wide_field_ring_width_var,
         bg=bg_colour,
         fg=text_colour,
@@ -238,7 +238,7 @@ def subwindow2(canvas):
       )
       wide_field_ring_width_spinbox.place(
         x=180.0,
-        y=222.0
+        y=187.0
       )
 
   # close
@@ -248,7 +248,7 @@ def subwindow2(canvas):
     font=("Roboto", 14 * -1),
     text_color=text_colour,
     fg_color=button_blue_colour,
-    corner_radius=8,border_width=1,
+    corner_radius=6,border_width=1,
     hover_color=button_blue_hover,
     border_color=button_border_colour
   )

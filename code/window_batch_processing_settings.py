@@ -70,14 +70,14 @@ def subwindow3(canvas, open_window_fn=None):
         font=("Roboto", 14 * -1),
         text_color=text_colour,
         fg_color=button_yellow_colour,
-        corner_radius=8,
+        corner_radius=6,
         border_width=1,
         hover_color=button_yellow_hover,
         border_color=button_border_colour,
     )
     button1.place(x=45, y=30)
     round_rectangle(
-        subcanvas3, 45, 85, 260, 40, radius=8, fill=bg_colour, outline=bg_colour
+        subcanvas3, 45, 85, 260, 40, radius=6, fill=bg_colour, outline=bg_colour
     )
 
     # batch resize checkbox
@@ -173,7 +173,7 @@ def subwindow3(canvas, open_window_fn=None):
         font=("Roboto", 14 * -1),
         text_color=text_colour,
         fg_color=button_blue_colour,
-        corner_radius=8,
+        corner_radius=6,
         border_width=1,
         hover_color=button_blue_hover,
         border_color=button_border_colour,
