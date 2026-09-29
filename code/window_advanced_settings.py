@@ -80,7 +80,7 @@ def subwindow1(canvas):
       hasattr(canvas, "img_type_var")
       and canvas.img_type_var.get() == "ONH"
   )
-  window_height = 480
+  window_height = 405
 
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
@@ -186,7 +186,7 @@ def subwindow1(canvas):
 
   # twig size Spinbox
   subcanvas1.create_text(
-      50.0,
+      48.0,
       100.0,
       anchor="nw",
       text="Twig size",
@@ -206,7 +206,7 @@ def subwindow1(canvas):
       highlightthickness=0,  # removes the focus highlight border
   )
   twig_size_spinbox.place(
-      x=120.0,
+      x=118.0,
       y=100.0
   )
 
@@ -341,16 +341,15 @@ def subwindow1(canvas):
 
   button1 = ctk.CTkButton(subwindow, text="Image Subset",
                           command=lambda: subwindow_subset(canvas),
-                          width=250,height=45,
+                          width=300,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=button_yellow_colour,
-                          corner_radius=8,border_width=1,
+                          corner_radius=6,border_width=1,
                           hover_color=button_yellow_hover,
       border_color=button_border_colour  )
-  button1.place(x=50, y=270)
+  button1.place(x=30, y=265)
 
-  close_y = 410
 
   if is_onh_mode and hasattr(canvas, "onh_large_vessel_threshold_um"):
       subcanvas1.create_text(
@@ -429,14 +428,16 @@ def subwindow1(canvas):
   #close
   button_close = ctk.CTkButton(subwindow, text="Close",
                           command=lambda: close(subwindow, canvas),
-                          width=130,height=45,
+                          width=300,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
                           fg_color=button_blue_colour,
-                          corner_radius=8,border_width=1,
+                          corner_radius=6,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_close.place(x=114, y=close_y)
+
+  close_y = 320
+  button_close.place(x=30, y=close_y)
 
   subwindow.resizable(False, False)
   return subwindow

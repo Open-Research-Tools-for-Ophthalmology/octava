@@ -18,14 +18,14 @@ def open_help_window(canvas):
   subwindow = Toplevel()
   subwindow.title("Help")
   subwindow.iconphoto(False, tk.PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
-  subwindow.geometry("800x600")
+  subwindow.geometry("680x550")
   subwindow.configure(bg = bg_colour)
 
   subcanvas = Canvas(
       subwindow,
       bg = bg_colour,
-      width = 800,
-      height = 600,
+      width = 680,
+      height = 550,
       bd = 0,
       highlightthickness = 0,
       relief = "ridge"
@@ -34,8 +34,8 @@ def open_help_window(canvas):
   subcanvas.place(x = 0, y = 0)
 
   subcanvas.create_text(
-      100.0,
-      50.0,
+      40.0,
+      30.0,
       anchor="nw",
       text="Instructions",
       fill="#10203F",
@@ -43,16 +43,16 @@ def open_help_window(canvas):
   )
 
   subcanvas.create_text(
-      100.0,
-      100.0,
+      40.0,
+      60.0,
       anchor="nw",
       text=
-        "1. Select the region of interest from 'Retina', 'ONH' or 'Skin'. Change 'Prebinary' or 'Image size (mm)' settings if needed.\n"
-        "2. Load an image using the 'Load Image' button. Supported formats include PNG, JPG/JPEG, BMP, and TIF/TIFF.\n"
-        "3. Select a folder to save results using the 'Save Folder' button.\n"
-        "4. Adjust any optional settings if needed by clicking the 'Advanced Settings', 'Regional Analysis Settings', and 'Batch Processing Settings' buttons.\n"
-        "5. Click 'Start Processing' to start the analysis.\n"
-        "6. Process optional FAZ segmentation with provided 'Auto FAZ' function or label manually using 'Point FAZ'. Click 'Measure FAZ' to save images and metrics.\n"
+        "1. Select the region of interest from 'Retina', 'ONH' or 'Skin'. Change 'Prebinary' or 'Image size (mm)' settings if needed.\n\n"
+        "2. Load an image using the 'Load Image' button. Supported formats include PNG, JPG/JPEG, BMP, and TIF/TIFF.\n\n"
+        "3. Select a folder to save results using the 'Save Folder' button.\n\n"
+        "4. Adjust any optional settings if needed by clicking the 'Advanced Settings', 'Regional Analysis Settings', and 'Batch Processing Settings' buttons.\n\n"
+        "5. Click 'Start Processing' to start the analysis.\n\n"
+        "6. Process optional FAZ segmentation with provided 'Auto FAZ' function or label manually using 'Point FAZ'. Click 'Measure FAZ' to save images and metrics.\n\n"
         "7. Once processing is complete, check the selected save folder for output files.",
       fill="#10203F",
       font=("Roboto", 16),
@@ -70,7 +70,18 @@ def open_help_window(canvas):
                           corner_radius=8,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
-  button_issues.place(x=200, y=500)
+  button_issues.place(x=140, y=410)
+
+  button_close = ctk.CTkButton(subwindow, text="Close",
+                        command=lambda: close(subwindow),
+                        width=400,height=45,
+                        font=("Roboto", 14 * -1),
+                        text_color=text_colour,
+                        fg_color=button_blue_colour,
+                        corner_radius=8,border_width=1,
+                        hover_color=button_blue_hover,
+    border_color=button_border_colour  )
+  button_close.place(x=140, y=465)
 
   subwindow.resizable(False, False)
   return subwindow

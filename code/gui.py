@@ -523,7 +523,7 @@ def update_default_results_layout():
 
     canvas.coords(canvas.results_title_id, 880.0, 410.0)
     canvas.coords(canvas.bin_size_label_id, 960.0, 410.0)
-    binsize_spinbox.place(x=1082.0, y=408.0)
+    binsize_spinbox.place(x=1087.0, y=408.0)
 
     canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
@@ -748,7 +748,7 @@ canvas.hist_plotter = HistogramPlotter(
 binsize_spinbox = Spinbox(
     from_=1,
     to=10,
-    width=4,
+    width=2,
     textvariable=canvas.bin_size_var,
     command=lambda: canvas.hist_plotter.update_plot(
         canvas.tort_bin_size_var.get() if canvas._hist_mode == "tortuosity" else canvas.bin_size_var.get()
@@ -760,7 +760,7 @@ binsize_spinbox = Spinbox(
     highlightthickness=0
 )
 binsize_spinbox.place(
-    x=1082.0,
+    x=1087.0,
     y=408.0
 )
 

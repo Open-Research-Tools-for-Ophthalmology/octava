@@ -70,7 +70,7 @@ def open_feedback_window(canvas: Canvas):
                                 text_color=text_colour,
                                 border_width=1,
                                 border_color=text_colour,
-                                corner_radius=10)
+                                corner_radius=6)
   name_box.place(x=50, y=60)
 
 
@@ -95,7 +95,7 @@ def open_feedback_window(canvas: Canvas):
                                 text_color=text_colour,
                                 border_width=1,
                                 border_color=text_colour,
-                                corner_radius=10)
+                                corner_radius=6)
   address_box.place(x=50, y=160)
 
 
@@ -120,7 +120,7 @@ def open_feedback_window(canvas: Canvas):
                                 text_color=text_colour,
                                 border_width=1,
                                 border_color=text_colour,
-                                corner_radius=10)
+                                corner_radius=6)
   feedback_box.place(x=50, y=260)
 
   async def on_submit():
@@ -160,13 +160,13 @@ def open_feedback_window(canvas: Canvas):
                           width=150,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
-                          fg_color=bg_colour,
-                          corner_radius=8,border_width=1,
+                          fg_color=button_blue_colour,
+                          corner_radius=6,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour)
   button_close.place(x=330, y=530)
 
-  #close
+  #submit
   button_submit = ctk.CTkButton(
         subwindow, text="Send Feedback",
         command=lambda: asyncio.run(on_submit()),
@@ -174,7 +174,7 @@ def open_feedback_window(canvas: Canvas):
         font=("Roboto", 14 * -1),
         text_color=text_colour,
         fg_color=button_yellow_colour,
-        corner_radius=8, border_width=1,
+        corner_radius=6, border_width=1,
         hover_color=button_yellow_hover,
         border_color=button_border_colour
   )

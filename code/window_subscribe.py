@@ -37,12 +37,24 @@ def open_subscribe_window(canvas: Canvas):
 
   subcanvas.place(x = 0, y = 0)
 
-  # preferred name
+  # tips
   subcanvas.create_text(
       50.0,
       30.0,
       anchor="nw",
-      text="We'll notify you when new updates are available. You only need to subscribe once. Please enter your name:",
+      text="We'll notify you when new updates are available. You only need to subscribe once.",
+      fill="#10203F",
+      font=("Roboto", 16),
+      width=400,
+      justify="left"
+  )
+
+  # preferred name
+  subcanvas.create_text(
+      50.0,
+      80.0,
+      anchor="nw",
+      text="Please enter your name:",
       fill="#10203F",
       font=("Roboto", 16),
       width=400,
@@ -58,7 +70,7 @@ def open_subscribe_window(canvas: Canvas):
                                 text_color=text_colour,
                                 border_width=1,
                                 border_color=text_colour,
-                                corner_radius=10)
+                                corner_radius=6)
   name_box.place(x=50, y=110)
 
 
@@ -83,7 +95,7 @@ def open_subscribe_window(canvas: Canvas):
                                 text_color=text_colour,
                                 border_width=1,
                                 border_color=text_colour,
-                                corner_radius=10)
+                                corner_radius=6)
   address_box.place(x=50, y=200)
 
 
@@ -119,8 +131,8 @@ def open_subscribe_window(canvas: Canvas):
                           width=100,height=40,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
-                          fg_color=bg_colour,
-                          corner_radius=8,border_width=1,
+                          fg_color=button_blue_colour,
+                          corner_radius=6,border_width=1,
                           hover_color=button_blue_hover,
       border_color=button_border_colour)
   button_close.place(x=240, y=270)
@@ -134,7 +146,7 @@ def open_subscribe_window(canvas: Canvas):
         font=("Roboto", 14 * -1),
         text_color=text_colour,
         fg_color=button_yellow_colour,
-        corner_radius=8, border_width=1,
+        corner_radius=6, border_width=1,
         hover_color=button_yellow_hover,
         border_color=button_border_colour
   )
