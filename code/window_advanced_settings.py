@@ -119,21 +119,6 @@ def subwindow1(canvas):
 
   subcanvas1.create_rectangle( 30, 35, 330, 240, fill="#FBE3D6", outline=text_colour)
 
-  # image_image_1 = PhotoImage(
-  #     file=relative_to_assets("image_1.png"))
-  # image_1 = subcanvas1.create_image(
-  #     178.0,
-  #     100.0,
-  #     image=image_image_1
-  # )
-
-  image_image_2 = PhotoImage(
-      file=relative_to_assets("image_2.png"))
-  image_2 = subcanvas1.create_image(
-      178.0,
-      345.0,
-      image=image_image_2
-  )
 
   subcanvas1.create_text(
       45.0,
