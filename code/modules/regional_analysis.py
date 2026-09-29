@@ -16,6 +16,7 @@ from openpyxl import Workbook
 import cv2
 
 RIGHT_EYE = "Right Eye"
+IMAGE_OUTPUT_ENABLED = False
 
 class GridType(Enum):
 	'''Enum for different types of regional analysis grids.'''
@@ -631,8 +632,9 @@ def run_analysis_on_regions(
 		canvas.regional_metrics = [{} for _ in range(len(binaryReg))]
 
 		# Create validation folder
-		validation_folder = os.path.join(canvas.current_save_folder, 		"regional_validation")
-		os.makedirs(validation_folder, exist_ok=True)
+		if IMAGE_OUTPUT_ENABLED:
+			validation_folder = os.path.join(canvas.current_save_folder, "regional_validation")
+			os.makedirs(validation_folder, exist_ok=True)
 
 		for i in range(len(binaryReg)):
 
@@ -647,31 +649,32 @@ def run_analysis_on_regions(
 				
 				change_status_to_waiting(canvas, status="● Regional analysis...")
 
-				image_type = str(canvas.img_type_var.get())
-				region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
-				file_prefix = f"{canvas.FileLabelName}_{image_type}_{grid_type.value}_R{i+1:02d}_{region_name}"
+				if IMAGE_OUTPUT_ENABLED:
+					image_type = str(canvas.img_type_var.get())
+					region_name = re.sub(r'\s+', '_', str(canvas.RAlabels[i]).strip("_"))
+					file_prefix = f"{canvas.FileLabelName}_{image_type}_{grid_type.value}_R{i+1:02d}_{region_name}"
 
-				cv2.imwrite(
-					os.path.join(validation_folder, f"{file_prefix}_img.png"),
-					imgReg[i].astype(np.uint8),
-				)
+					cv2.imwrite(
+						os.path.join(validation_folder, f"{file_prefix}_img.png"),
+						imgReg[i].astype(np.uint8),
+					)
 
-				cv2.imwrite(
-						os.path.join(validation_folder, f"{file_prefix}_binary.png"),
-						binaryReg[i].astype(np.uint8),
-				)
+					cv2.imwrite(
+							os.path.join(validation_folder, f"{file_prefix}_binary.png"),
+							binaryReg[i].astype(np.uint8),
+					)
 
-				cv2.imwrite(
-						os.path.join(validation_folder, f"{file_prefix}_skel.png"),
-						(canvas.skeleton_image.astype(np.uint8) * 255),
-				)
+					cv2.imwrite(
+							os.path.join(validation_folder, f"{file_prefix}_skel.png"),
+							(canvas.skeleton_image.astype(np.uint8) * 255),
+					)
 
-				np.savez(
-						os.path.join(validation_folder, f"{file_prefix}_data.npz"),
-						imgRegion=imgReg[i],
-						binaryRegion=binaryReg[i],
-						skelRegion=(canvas.skeleton_image.astype(np.uint8) * 255),
-				)
+					np.savez(
+							os.path.join(validation_folder, f"{file_prefix}_data.npz"),
+							imgRegion=imgReg[i],
+							binaryRegion=binaryReg[i],
+							skelRegion=(canvas.skeleton_image.astype(np.uint8) * 255),
+					)
 
 				# Image name
 				canvas.regional_metrics[i]["Name"] = canvas.FileLabelName
