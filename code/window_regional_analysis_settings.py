@@ -244,7 +244,7 @@ def subwindow2(canvas):
   # close
   button_close = ctk.CTkButton(subwindow, text="Close",
     command=lambda: close(subwindow),
-    width=130,height=45,
+    width=220,height=45,
     font=("Roboto", 14 * -1),
     text_color=text_colour,
     fg_color=button_blue_colour,
@@ -252,7 +252,7 @@ def subwindow2(canvas):
     hover_color=button_blue_hover,
     border_color=button_border_colour
   )
-  button_close.place(x=80, y=view_height - 80)
+  button_close.place(x=40, y=view_height - 80)
 
   subwindow.resizable(False, False)
   return subwindow

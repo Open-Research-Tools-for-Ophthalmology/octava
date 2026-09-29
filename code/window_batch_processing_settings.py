@@ -64,9 +64,9 @@ def subwindow3(canvas, open_window_fn=None):
     button1 = ctk.CTkButton(
         subwindow,
         text="Select Raw Data Folder",
-        command=lambda: select_folder(subcanvas3, canvas, 60, 100),
+        command=lambda: select_folder(subcanvas3, canvas, 60, 105),
         width=260,
-        height=40,
+        height=45,
         font=("Roboto", 14 * -1),
         text_color=text_colour,
         fg_color=button_yellow_colour,
@@ -77,7 +77,7 @@ def subwindow3(canvas, open_window_fn=None):
     )
     button1.place(x=45, y=30)
     round_rectangle(
-        subcanvas3, 45, 80, 260, 40, radius=8, fill=bg_colour, outline=bg_colour
+        subcanvas3, 45, 85, 260, 40, radius=8, fill=bg_colour, outline=bg_colour
     )
 
     # batch resize checkbox
@@ -168,7 +168,7 @@ def subwindow3(canvas, open_window_fn=None):
             canvas.bp_batch_resize_bool_var.trace_vdelete("w", trace_id),
             close(subwindow)
         ),
-        width=130,
+        width=270,
         height=45,
         font=("Roboto", 14 * -1),
         text_color=text_colour,
@@ -178,7 +178,7 @@ def subwindow3(canvas, open_window_fn=None):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=110, y=335)
+    button_close.place(x=40, y=335)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)
