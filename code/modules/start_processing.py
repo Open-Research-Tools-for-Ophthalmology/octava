@@ -472,11 +472,8 @@ def start_batch_processing_threaded(canvas: Canvas):
             # Variable image size (optional)
             if canvas.bp_variable_image_size_bool_var.get() == 1:
                 df = canvas.bp_variable_image_size_df[canvas.bp_variable_image_size_df['name'] == image_file]
-                if df.empty:
-                    canvas.image_size_var.set(int(image_df['size']) if image_df is not None else 1) # Default kernel image size is 1
-                else:
-                    image_df = df.iloc[0]
-                    canvas.image_size_var.set(int(image_df['size']))
+                image_row = df.iloc[0] if not df.empty else None
+                canvas.image_size_var.set(float(image_row['size']) if image_row is not None else 3) # Default image size is 3
 
             # Create save folders per image
             make_save_folder(canvas)

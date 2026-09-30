@@ -635,8 +635,8 @@ class BiomarkerAnalyzer:
                 'skeleton': np.zeros((width, width), dtype=bool),
                 'binary': np.zeros((width, width), dtype=bool)
             }
-            Z_pad['skeleton'][:min(Nx, width), :min(Nx, width)] = Z_skeleton
-            Z_pad['binary'][:min(Nx, width), :min(Nx, width)] = Z_binary
+            Z_pad['skeleton'][:min(Nx, width), :min(Nx, width)] = Z_skeleton[:min(Nx, width), :min(Nx, width)]
+            Z_pad['binary'][:min(Nx, width), :min(Nx, width)] = Z_binary[:min(Nx, width), :min(Nx, width)]
 
             counts = {
                 'skeleton': {4: []},
