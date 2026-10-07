@@ -725,24 +725,69 @@ def run_analysis_on_regions(
 
 						# Total / Mean / Median length (µm)
 						canvas.regional_metrics[i]["totalLength"] = round(total_length_mm, 2)
-						links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
-						links_length_um = np.asarray(links_length_pix) * pix_to_mm * 1000
-						canvas.regional_metrics[i]["MeanLength"] = round(np.mean(links_length_um))
-						canvas.regional_metrics[i]["MedianLength"] = round(np.median(links_length_um))
-						links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
-						canvas.regional_metrics[i]["varLengths"] = round(np.var(links_length_um_flatten, ddof=1))
-						canvas.regional_metrics[i]["skewLengths"] = round(skew(links_length_um_flatten), 2)
-						canvas.regional_metrics[i]["kurtLengths"] = round(kurtosis(links_length_um_flatten, fisher=False), 2)
+						if links is not None and len(links) > 0:
+							links_length_pix = [l.pixLength for l in links if l.pixLength is not None]
+							links_length_um = np.asarray(links_length_pix) * pix_to_mm * 1000
+							links_length_um_flatten = links_length_um.flatten() # Flatten to 1d
+
+							if len(links_length_um_flatten) > 0:
+									mean_length = np.mean(links_length_um_flatten)
+									median_length = np.median(links_length_um_flatten)
+
+									# ensure we have enough data points
+									if len(links_length_um_flatten) > 1:
+											var_length = np.var(links_length_um_flatten, ddof=1)
+											var_length = 0.0 if np.isnan(var_length) else var_length
+											skew_length = skew(links_length_um_flatten)
+											kurt_length = kurtosis(links_length_um_flatten, fisher=False)
+									else:
+											var_length = 0.0
+											skew_length = 0.0
+											kurt_length = 0.0
+							else:
+									mean_length = 0.0
+									median_length = 0.0
+									var_length = 0.0
+									skew_length = 0.0
+									kurt_length = 0.0
+
+						canvas.regional_metrics[i]["MeanLength"] = round(mean_length)
+						canvas.regional_metrics[i]["MedianLength"] = round(median_length)
+						canvas.regional_metrics[i]["varLengths"] = round(var_length)
+						canvas.regional_metrics[i]["skewLengths"] = round(skew_length, 2)
+						canvas.regional_metrics[i]["kurtLengths"] = round(kurt_length, 2)
 
 						# Mean / Median diameter (µm)
 						links_diameter_pix = compute_diameter_list(links, binaryReg[i])
 						links_diameter_um = np.asarray(links_diameter_pix) * pix_to_mm * 1000
-						canvas.regional_metrics[i]["MeanDiam"] = round(np.mean(links_diameter_um), 1)
-						canvas.regional_metrics[i]["MedianDiam"] = round(np.median(links_diameter_um), 1)
 						links_diameter_um_flatten = links_diameter_um.flatten() # Flatten to 1d
-						canvas.regional_metrics[i]["varDiams"] = round(np.var(links_diameter_um_flatten, ddof=1))
-						canvas.regional_metrics[i]["skewDiams"] = round(skew(links_diameter_um_flatten), 2)
-						canvas.regional_metrics[i]["kurtDiams"] = round(kurtosis(links_diameter_um_flatten, fisher=False), 2)
+
+						if len(links_diameter_um_flatten) > 0:
+								mean_diameter = np.mean(links_diameter_um_flatten)
+								median_diameter = np.median(links_diameter_um_flatten)
+
+								# ensure we have enough data points
+								if len(links_diameter_um_flatten) > 1:
+										var_diameter = np.var(links_diameter_um_flatten, ddof=1)
+										var_diameter = 0.0 if np.isnan(var_diameter) else var_diameter
+										skew_diameter = skew(links_diameter_um_flatten)
+										kurt_diameter = kurtosis(links_diameter_um_flatten, fisher=False)
+								else:
+										var_diameter = 0.0
+										skew_diameter = 0.0
+										kurt_diameter = 0.0
+						else:
+								mean_diameter = 0.0
+								median_diameter = 0.0
+								var_diameter = 0.0
+								skew_diameter = 0.0
+								kurt_diameter = 0.0
+
+						canvas.regional_metrics[i]["MeanDiam"] = round(mean_diameter)
+						canvas.regional_metrics[i]["MedianDiam"] = round(median_diameter)
+						canvas.regional_metrics[i]["varDiams"] = round(var_diameter)
+						canvas.regional_metrics[i]["skewDiams"] = round(skew_diameter, 2)
+						canvas.regional_metrics[i]["kurtDiams"] = round(kurt_diameter, 2)
 
 						# Branch density
 						canvas.regional_metrics[i]["BD"] = round(
@@ -756,11 +801,31 @@ def run_analysis_on_regions(
 						# mean tortuosity
 						tortuosity_list = compute_tortuosity_list(links, binaryReg[i])
 						tortuosity_arr = np.asarray(tortuosity_list)
-						canvas.regional_metrics[i]["MeanTort"] = round(np.mean(tortuosity_arr), 2)
 						tortuosity_arr_flatten = tortuosity_arr.flatten() # Flatten to 1d
-						canvas.regional_metrics[i]["varTort"] = round(np.var(tortuosity_arr_flatten, ddof=1), 2)
-						canvas.regional_metrics[i]["skewTort"] = round(skew(tortuosity_arr_flatten), 2)
-						canvas.regional_metrics[i]["kurtTort"] = round(kurtosis(tortuosity_arr_flatten, fisher=False), 2)
+
+						if len(tortuosity_arr_flatten) > 0:
+								mean_tort = np.mean(tortuosity_arr_flatten)
+
+								# ensure we have enough data points
+								if len(tortuosity_arr_flatten) > 1:
+										var_tort = np.var(tortuosity_arr_flatten, ddof=1)
+										var_tort = 0.0 if np.isnan(var_tort) else var_tort
+										skew_tort = skew(tortuosity_arr_flatten)
+										kurt_tort = kurtosis(tortuosity_arr_flatten, fisher=False)
+								else:
+										var_tort = 0.0
+										skew_tort = 0.0
+										kurt_tort = 0.0
+						else:
+								mean_tort = 0.0
+								var_tort = 0.0
+								skew_tort = 0.0
+								kurt_tort = 0.0
+
+						canvas.regional_metrics[i]["MeanTort"] = round(mean_tort, 2)
+						canvas.regional_metrics[i]["varTort"] = round(var_tort, 2)
+						canvas.regional_metrics[i]["skewTort"] = round(skew_tort, 2)
+						canvas.regional_metrics[i]["kurtTort"] = round(kurt_tort, 2)
 
 				# If no skeleton graph
 				else:
