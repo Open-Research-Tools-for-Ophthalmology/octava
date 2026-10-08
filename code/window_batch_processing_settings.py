@@ -39,11 +39,12 @@ def subwindow3(canvas, open_window_fn=None):
         hasattr(canvas, "img_type_var")
         and canvas.img_type_var.get() == "Retina"
     )
-      
+
+    window_height = 415 if is_retina_mode else 375
     subwindow = Toplevel()
     subwindow.title("Batch Processing Settings")
     subwindow.iconphoto(False, PhotoImage(file=str(ASSETS_PATH / "favicon.png")))
-    subwindow.geometry("350x415")
+    subwindow.geometry(f"350x{window_height}")
     subwindow.configure(bg="#FBE3D6")
     
     # Trace checkbox to enable/disable batch resize entry
@@ -178,7 +179,7 @@ def subwindow3(canvas, open_window_fn=None):
         hover_color=button_blue_hover,
         border_color=button_border_colour,
     )
-    button_close.place(x=40, y=335)
+    button_close.place(x=40, y=335 if is_retina_mode else 300)
 
     # Populate selected folder path if already set
     print("Current selected folder path:", canvas.bp_selected_folder_path)

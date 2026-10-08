@@ -769,7 +769,7 @@ class BiomarkerAnalyzer:
             "BD": round(float(branchpoint_density), 2),
             "Fractal_dimension (Skeleton)": round(float(fractal_dim['skeleton'][4]), 2),
             "Fractal_dimension (Binary)": round(float(fractal_dim['binary'][4]), 2),
-            "MeanTort": round(float(mean_tortuosity), 2),
+            "AOC": round(float(mean_tortuosity), 2),
             "varTort": round(float(var_tortuosity), 2),
             "skewTort": round(float(skew_tortuosity), 2),
             "kurtTort": round(float(kurt_tortuosity), 2),
