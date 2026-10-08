@@ -822,7 +822,7 @@ def run_analysis_on_regions(
 								skew_tort = 0.0
 								kurt_tort = 0.0
 
-						canvas.regional_metrics[i]["MeanTort"] = round(mean_tort, 2)
+						canvas.regional_metrics[i]["AOC"] = round(mean_tort, 2)
 						canvas.regional_metrics[i]["varTort"] = round(var_tort, 2)
 						canvas.regional_metrics[i]["skewTort"] = round(skew_tort, 2)
 						canvas.regional_metrics[i]["kurtTort"] = round(kurt_tort, 2)
@@ -847,7 +847,7 @@ def run_analysis_on_regions(
 						canvas.regional_metrics[i]["BD"] = 0
 						# slope = compute_fractal_dimension(canvas)
 						# canvas.regional_metrics[i]["FD"] = round(slope, 4)
-						canvas.regional_metrics[i]["MeanTort"] = 0
+						canvas.regional_metrics[i]["AOC"] = 0
 						canvas.regional_metrics[i]["varTort"] = 0
 						canvas.regional_metrics[i]["skewTort"] = 0
 						canvas.regional_metrics[i]["kurtTort"] = 0

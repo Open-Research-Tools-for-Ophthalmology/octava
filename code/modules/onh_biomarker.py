@@ -668,7 +668,7 @@ class ONHBiomarkerAnalyzer:
             "VAD": round(metrics["vessel_area_density_pct"], 1),
             "VLD": round(metrics["vessel_length_density_mm_per_mm2"], 1),
             "MeanDiam": round(metrics["mean_diameter_um"], 1),
-            "MeanTort": round(metrics["mean_tortuosity"], 2),
+            "AOC": round(metrics["mean_tortuosity"], 2),
             "Vessel_area": metrics["vessel_area_mm2"],
             "ROI_area": metrics["onh_roi_area_mm2"],
             "VesselLength": metrics["vessel_length_mm"],
