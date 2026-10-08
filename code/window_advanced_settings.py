@@ -80,7 +80,7 @@ def subwindow1(canvas):
       hasattr(canvas, "img_type_var")
       and canvas.img_type_var.get() == "ONH"
   )
-  window_height = 405
+  window_height = 465 if is_onh_mode else 405
 
   subwindow = Toplevel()
   subwindow.title("Advanced Settings")
@@ -421,7 +421,7 @@ def subwindow1(canvas):
                           hover_color=button_blue_hover,
       border_color=button_border_colour  )
 
-  close_y = 320
+  close_y = 400 if is_onh_mode else 320
   button_close.place(x=30, y=close_y)
 
   subwindow.resizable(False, False)
