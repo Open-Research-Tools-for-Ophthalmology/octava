@@ -456,7 +456,7 @@ def update_optional_buttons_state(*args):
         canvas.onh_segmentation_dropdown.place_forget()
 
         canvas.itemconfig(canvas.segmentation_title_id, text="FAZ Segmentation")
-        update_default_results_layout()
+        update_default_results_layout(full_width=(img_type == "Skin"))
 
     # Disable FAZ only for Skin
     if img_type == "Skin":
@@ -515,40 +515,42 @@ def update_onh_results_layout():
     canvas.coords(canvas.tortuosity_value_id, 580.0, 635.0)
 
 
-def update_default_results_layout():
-    set_canvas_items_state(canvas.segmentation_panel_ids, "normal")
-    set_canvas_items_state(canvas.results_panel_ids, "normal")
-    set_canvas_items_state(canvas.onh_results_panel_ids, "hidden")
-    canvas.itemconfigure(canvas.segmentation_title_id, state="normal")
+def update_default_results_layout(full_width=False):
+    # full_width (Skin): FAZ Segmentation panel is hidden and the results panel spans the full width
+    set_canvas_items_state(canvas.segmentation_panel_ids, "hidden" if full_width else "normal")
+    set_canvas_items_state(canvas.results_panel_ids, "hidden" if full_width else "normal")
+    set_canvas_items_state(canvas.onh_results_panel_ids, "normal" if full_width else "hidden")
+    canvas.itemconfigure(canvas.segmentation_title_id, state="hidden" if full_width else "normal")
 
-    canvas.coords(canvas.results_title_id, 880.0, 410.0)
-    canvas.coords(canvas.bin_size_label_id, 960.0, 410.0)
-    binsize_spinbox.place(x=1087.0, y=408.0)
+    dx = -250.0 if full_width else 0.0
 
-    canvas.coords(canvas.micro_metrics_title_id, 710.0, 435.0)
+    canvas.coords(canvas.results_title_id, 760.0 if full_width else 880.0, 410.0)
+    canvas.coords(canvas.bin_size_label_id, 990.0 if full_width else 960.0, 410.0)
+    binsize_spinbox.place(x=1121.0 if full_width else 1087.0, y=408.0)
+
+    canvas.coords(canvas.micro_metrics_title_id, 710.0 + dx, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
-    canvas.coords(canvas.hist_title_id, 980.0, 435.0)
-    hist_frame.place(x=945, y=455)
+    canvas.coords(canvas.hist_title_id, 880.0 if full_width else 980.0, 435.0)
+    hist_frame.place(x=890 if full_width else 945, y=455)
 
-    canvas.coords(canvas.vad_label_id, 710.0, 470.0)
-    canvas.coords(canvas.vad_value_id, 853.0, 470.0)
-    canvas.coords(canvas.length_density_label_id, 710.0, 500.0)
-    canvas.coords(canvas.length_density_value_id, 866.0, 500.0)
-    canvas.coords(canvas.mean_diameter_label_id, 710.0, 530.0)
-    canvas.coords(canvas.mean_diameter_value_id, 825.0, 530.0)
+    canvas.coords(canvas.vad_label_id, 710.0 + dx, 470.0)
+    canvas.coords(canvas.vad_value_id, 853.0 + dx, 470.0)
+    canvas.coords(canvas.length_density_label_id, 710.0 + dx, 500.0)
+    canvas.coords(canvas.length_density_value_id, 866.0 + dx, 500.0)
+    canvas.coords(canvas.mean_diameter_label_id, 710.0 + dx, 530.0)
+    canvas.coords(canvas.mean_diameter_value_id, 825.0 + dx, 530.0)
     set_canvas_items_state([
         canvas.branch_density_label_id,
         canvas.branch_density_value_id,
         canvas.fractal_dim_label_id,
         canvas.fractal_dim_value_id,
     ], "normal")
-    canvas.coords(canvas.branch_density_label_id, 710.0, 560.0)
-    canvas.coords(canvas.branch_density_value_id, 857.0, 560.0)
-    canvas.coords(canvas.fractal_dim_label_id, 710.0, 590.0)
-    canvas.coords(canvas.fractal_dim_value_id, 843.0, 590.0)
-    canvas.coords(canvas.tortuosity_label_id, 710.0, 620.0)
-    canvas.coords(canvas.tortuosity_value_id, 830.0, 620.0)
-
+    canvas.coords(canvas.branch_density_label_id, 710.0 + dx, 560.0)
+    canvas.coords(canvas.branch_density_value_id, 857.0 + dx, 560.0)
+    canvas.coords(canvas.fractal_dim_label_id, 710.0 + dx, 590.0)
+    canvas.coords(canvas.fractal_dim_value_id, 843.0 + dx, 590.0)
+    canvas.coords(canvas.tortuosity_label_id, 710.0 + dx, 620.0)
+    canvas.coords(canvas.tortuosity_value_id, 830.0 + dx, 620.0)
 
 
 
