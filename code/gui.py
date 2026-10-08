@@ -29,7 +29,7 @@ from test import *
 from resource_path import ASSETS_PATH, ICONS_PATH
 
 # command for bundling on mac with pyinstaller: 
-# pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --hidden-import='PIL._tkinter_finder' --icon "./code/assets/favicon.png" ./code/gui.py
+# pyinstaller --noconsole --windowed --add-data "./code/assets:assets" --add-data "./cache.json:." --hidden-import='PIL._tkinter_finder' --icon "./code/assets/favicon.icns" ./code/gui.py
 
 # Global window registry
 OPEN_WINDOWS = {}

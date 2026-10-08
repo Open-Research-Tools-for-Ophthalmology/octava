@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 from dataclasses import dataclass, asdict
-
+from resource_path import CACHE_PATH
 @dataclass
 class GUIConfig:
     """
@@ -31,7 +31,7 @@ class GUIConfig:
     prebinary_var: int = 0
 
 class ConfigManager:
-    def __init__(self, filename="cache.json"):
+    def __init__(self, filename=CACHE_PATH):
         self.filename = filename
         self.config = GUIConfig()  # starts with defaults
         self.load()
