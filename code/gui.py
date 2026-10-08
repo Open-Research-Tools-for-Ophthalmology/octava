@@ -531,7 +531,7 @@ def update_default_results_layout(full_width=False):
     canvas.coords(canvas.micro_metrics_title_id, 710.0 + dx, 435.0)
     canvas.itemconfig(canvas.micro_metrics_title_id, text="Microvascular Metrics (whole image)")
     canvas.coords(canvas.hist_title_id, 880.0 if full_width else 980.0, 435.0)
-    hist_frame.place(x=890 if full_width else 945, y=455)
+    hist_frame.place(x=890 if full_width else 955, y=455)
 
     canvas.coords(canvas.vad_label_id, 710.0 + dx, 470.0)
     canvas.coords(canvas.vad_value_id, 853.0 + dx, 470.0)
@@ -735,8 +735,10 @@ canvas.bin_size_label_id = canvas.create_text(
     font=("Roboto Medium", 12 * -1)
 )
 
-hist_frame = ctk.CTkFrame(window, fg_color=bg_colour, width=230, height=180)
-hist_frame.place(x=945, y=450)
+hist_frame = ctk.CTkFrame(window, fg_color=bg_colour, width=220, height=180)
+hist_frame.pack_propagate(False)
+hist_frame.grid_propagate(False)
+hist_frame.place(x=955, y=450)
 
 canvas.hist_plotter = HistogramPlotter(
     master_frame=hist_frame,
