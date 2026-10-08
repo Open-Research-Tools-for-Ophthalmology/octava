@@ -23,3 +23,4 @@ def get_resource_path(relative_path):
 # Convenience constants for common paths
 ASSETS_PATH = get_resource_path("assets")
 ICONS_PATH = get_resource_path("assets/icons")
+CACHE_PATH = get_resource_path("cache.json")
