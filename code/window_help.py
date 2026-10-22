@@ -62,7 +62,7 @@ def open_help_window(canvas):
 
   # lead to github issues page to collect feedback
   button_issues = ctk.CTkButton(subwindow, text="Github Issues",
-                          command=lambda: webbrowser.open("https://github.com/milanaveed/octava/issues"),
+                          command=lambda: webbrowser.open("https://github.com/Open-Research-Tools-for-Ophthalmology/octava/issues"),
                           width=400,height=45,
                           font=("Roboto", 14 * -1),
                           text_color=text_colour,
