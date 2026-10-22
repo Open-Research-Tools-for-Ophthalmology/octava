@@ -1,6 +1,4 @@
-/source/*/
-!/source/Scripts/*
-/source/*.xlsx
+/source/*
 
 /test_images/*
 !/test_images/5001.tif
