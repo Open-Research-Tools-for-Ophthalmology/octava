@@ -2,7 +2,7 @@
 
 # OCTAVA
 
-[![Latest GitHub release](https://img.shields.io/github/release/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/releases) [![All releases](https://img.shields.io/github/downloads/Open-Research-Tools-for-Ophthalmology/octava/total.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/releases) [![Issues](https://img.shields.io/github/issues/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/issues)[![GitHub stars](https://img.shields.io/github/stars/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/stargazers) [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/LICENSE)
+[![Latest GitHub release](https://img.shields.io/github/release/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/releases) [![All releases](https://img.shields.io/github/downloads/Open-Research-Tools-for-Ophthalmology/octava/total.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/releases) [![Issues](https://img.shields.io/github/issues/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/issues)[![GitHub stars](https://img.shields.io/github/stars/Open-Research-Tools-for-Ophthalmology/octava.svg)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/stargazers) [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Open-Research-Tools-for-Ophthalmology/octava/blob/main/LICENSE)
 
 </div>
 
