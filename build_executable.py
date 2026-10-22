@@ -67,6 +67,7 @@ def build_executable():
         f'--add-data "{assets_path}:assets" '
         f'--hidden-import=PIL._tkinter_finder '
         f'--icon "{icon_path}" '
+        f'--name="octava" '
         f'"{script_path}"'
     )
     
