@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.ndimage import median_filter, convolve
 from skfuzzy.cluster import cmeans
+import time
 
 def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
     """
@@ -123,9 +124,34 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
     h = gaussian_kernel(11, 1.5)
     gX = smooth_function(h, X)
 
-    # Fuzzy C-means clustering
-    data = gX.flatten()[np.newaxis, :]
-    cntr, u, _, _, _, _, _ = cmeans(data, nth, 2, error=1e-5, maxiter=100)
+    # Flatten all smoothed image pixels
+    flat = gX.ravel()
+
+    # Use 5% of the pixels for FCM
+    sample_size = int(flat.size * 0.05)
+
+    # Fixed random seed
+    rng = np.random.default_rng(42)
+
+    # Select random pixels without replacement
+    indices = rng.choice(flat.size, size=sample_size, replace=False)
+
+    # Prepare the sampled data for FCM
+    data = flat[indices].reshape(1, -1)
+
+    print(f"Original pixels: {flat.size:,}")
+    print(f"Sampled pixels: {data.shape[1]:,}")
+
+    start_fcm = time.perf_counter()
+
+    cntr, u, _, _, _, iterations, fpc = cmeans(data, nth, 2, error=1e-5, maxiter=100, seed=42)
+    
+    fcm_time = time.perf_counter() - start_fcm
+
+    print(f"FCM TIME: {fcm_time:.3f} seconds")
+    print(f"FCM ITERATIONS: {iterations}")
+    print(f"CLUSTER CENTRES: {np.sort(cntr.flatten())}")
+
     Xfcm = np.sort(cntr.flatten())
 
     max_gX = np.max(gX)
@@ -159,4 +185,3 @@ def fuzzy_thresholding(X:np.ndarray, nth:int, w:int) -> np.ndarray:
     Y = Y * (Y > 0) + (Y == 0)
 
     return Y
-
